@@ -2,275 +2,156 @@ import Link from "next/link";
 
 export default function HomePage() {
   return (
-    <div
-      style={{
-        fontFamily: "Arial, sans-serif",
-        minHeight: "100vh",
-        backgroundColor: "#f9fafb",
-      }}
-    >
-      {/* HERO SECTION */}
+    <main style={{ fontFamily: "Arial, sans-serif", background: "#f8fafc" }}>
       <section
         style={{
-          backgroundColor: "#111827",
+          padding: "90px 20px",
+          background: "linear-gradient(135deg, #0f172a, #2563eb)",
           color: "white",
-          padding: "80px 20px",
           textAlign: "center",
         }}
       >
-        <h1
-          style={{
-            fontSize: 48,
-            marginBottom: 20,
-          }}
-        >
-          Find Top Freelancers in South Africa
+        <h1 style={{ fontSize: 56, marginBottom: 20 }}>
+          Hire Trusted Freelancers in South Africa
         </h1>
 
-        <p
-          style={{
-            fontSize: 20,
-            maxWidth: 700,
-            margin: "0 auto 30px",
-          }}
-        >
-          Hire developers, designers,
-          writers, marketers and more.
+        <p style={{ fontSize: 20, maxWidth: 760, margin: "0 auto 35px" }}>
+          Post jobs, receive proposals, manage projects, message freelancers,
+          and pay securely on one professional platform.
         </p>
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: 15,
-            flexWrap: "wrap",
-          }}
-        >
-          <Link
-            href="/register"
-            style={primaryButton}
-          >
+        <div style={{ display: "flex", gap: 15, justifyContent: "center", flexWrap: "wrap" }}>
+          <Link href="/register" style={primaryBtn}>
             Get Started
           </Link>
 
-          <Link
-            href="/search"
-            style={secondaryButton}
-          >
+          <Link href="/search" style={secondaryBtn}>
             Search Marketplace
           </Link>
         </div>
       </section>
 
-      {/* FEATURES */}
-      <section
-        style={{
-          padding: "70px 20px",
-          maxWidth: 1200,
-          margin: "0 auto",
-        }}
-      >
-        <h2
-          style={{
-            textAlign: "center",
-            fontSize: 36,
-            marginBottom: 50,
-          }}
-        >
-          Why Choose SA Freelancers?
-        </h2>
+      <section style={{ maxWidth: 1200, margin: "60px auto", padding: 20 }}>
+        <h2 style={sectionTitle}>Popular Services</h2>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(250px, 1fr))",
-            gap: 25,
-          }}
-        >
-          <div style={cardStyle}>
-            <h3>Verified Freelancers</h3>
+        <div style={grid}>
+          {[
+            "Web Development",
+            "Graphic Design",
+            "Writing",
+            "Marketing",
+            "Video Editing",
+            "Engineering",
+          ].map((item) => (
+            <div key={item} style={card}>
+              <h3>{item}</h3>
+              <p>Find skilled freelancers for {item.toLowerCase()} projects.</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
-            <p>
-              Browse trusted professionals
-              with portfolios and reviews.
-            </p>
+      <section style={{ background: "white", padding: "70px 20px" }}>
+        <h2 style={sectionTitle}>How It Works</h2>
+
+        <div style={{ ...grid, maxWidth: 1100, margin: "0 auto" }}>
+          <div style={card}>
+            <h3>1. Post a Job</h3>
+            <p>Clients create projects with budget, category, and details.</p>
           </div>
 
-          <div style={cardStyle}>
-            <h3>Secure Messaging</h3>
-
-            <p>
-              Communicate safely inside the
-              platform.
-            </p>
+          <div style={card}>
+            <h3>2. Get Proposals</h3>
+            <p>Freelancers apply with pricing and cover messages.</p>
           </div>
 
-          <div style={cardStyle}>
-            <h3>Ratings & Reviews</h3>
-
-            <p>
-              Hire freelancers with proven
-              track records.
-            </p>
-          </div>
-
-          <div style={cardStyle}>
-            <h3>South African Focus</h3>
-
-            <p>
-              Built specifically for local
-              businesses and freelancers.
-            </p>
+          <div style={card}>
+            <h3>3. Hire & Pay</h3>
+            <p>Accept a freelancer, create a project, and pay securely.</p>
           </div>
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
-      <section
-        style={{
-          backgroundColor: "white",
-          padding: "70px 20px",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1100,
-            margin: "0 auto",
-          }}
-        >
-          <h2
-            style={{
-              textAlign: "center",
-              fontSize: 36,
-              marginBottom: 50,
-            }}
-          >
-            How It Works
-          </h2>
+      <section style={{ maxWidth: 1100, margin: "70px auto", padding: 20 }}>
+        <h2 style={sectionTitle}>Why Users Trust Us</h2>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 25,
-            }}
-          >
-            <div style={cardStyle}>
-              <h3>1. Post a Job</h3>
+        <div style={grid}>
+          <div style={card}>
+            <h3>Secure Payments</h3>
+            <p>PayFast integration helps clients pay through the platform.</p>
+          </div>
 
-              <p>
-                Clients post projects and
-                requirements.
-              </p>
-            </div>
+          <div style={card}>
+            <h3>Reviews & Profiles</h3>
+            <p>View freelancer profiles, portfolios, CVs, and ratings.</p>
+          </div>
 
-            <div style={cardStyle}>
-              <h3>2. Receive Applications</h3>
-
-              <p>
-                Freelancers apply with
-                proposals and pricing.
-              </p>
-            </div>
-
-            <div style={cardStyle}>
-              <h3>3. Hire Talent</h3>
-
-              <p>
-                Review profiles, portfolios
-                and ratings.
-              </p>
-            </div>
-
-            <div style={cardStyle}>
-              <h3>4. Complete Projects</h3>
-
-              <p>
-                Collaborate and grow your
-                business.
-              </p>
-            </div>
+          <div style={card}>
+            <h3>Controlled Messaging</h3>
+            <p>Messaging helps reduce unsafe off-platform communication.</p>
           </div>
         </div>
       </section>
 
-      {/* CTA */}
       <section
         style={{
-          backgroundColor: "#111827",
+          background: "#0f172a",
           color: "white",
           textAlign: "center",
           padding: "70px 20px",
         }}
       >
-        <h2
-          style={{
-            fontSize: 40,
-            marginBottom: 20,
-          }}
-        >
-          Ready to Start?
-        </h2>
-
-        <p
-          style={{
-            fontSize: 18,
-            marginBottom: 30,
-          }}
-        >
-          Join South Africa’s growing
-          freelance marketplace today.
+        <h2 style={{ fontSize: 40 }}>Ready to build your next project?</h2>
+        <p style={{ fontSize: 18, marginBottom: 30 }}>
+          Join South Africa’s growing freelance marketplace.
         </p>
 
-        <Link
-          href="/register"
-          style={primaryButton}
-        >
-          Create Account
+        <Link href="/register" style={primaryBtn}>
+          Create Free Account
         </Link>
       </section>
 
-      {/* FOOTER */}
-      <footer
-        style={{
-          padding: 20,
-          textAlign: "center",
-          backgroundColor: "#f3f4f6",
-        }}
-      >
-        <p>
-          © 2026 SA Freelancers. All rights
-          reserved.
-        </p>
+      <footer style={{ padding: 25, textAlign: "center", background: "#e5e7eb" }}>
+        © 2026 SA Freelancers. Built for South African talent.
       </footer>
-    </div>
+    </main>
   );
 }
 
-const primaryButton = {
-  backgroundColor: "#2563eb",
+const primaryBtn = {
+  backgroundColor: "#22c55e",
   color: "white",
   padding: "14px 24px",
-  borderRadius: 8,
+  borderRadius: 10,
   textDecoration: "none",
   fontWeight: "bold",
 };
 
-const secondaryButton = {
+const secondaryBtn = {
   backgroundColor: "white",
-  color: "#111827",
+  color: "#0f172a",
   padding: "14px 24px",
-  borderRadius: 8,
+  borderRadius: 10,
   textDecoration: "none",
   fontWeight: "bold",
 };
 
-const cardStyle = {
+const sectionTitle = {
+  textAlign: "center" as const,
+  fontSize: 36,
+  marginBottom: 35,
+};
+
+const grid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+  gap: 22,
+};
+
+const card = {
   backgroundColor: "white",
   padding: 25,
-  borderRadius: 10,
-  boxShadow:
-    "0 2px 10px rgba(0,0,0,0.08)",
+  borderRadius: 14,
+  boxShadow: "0 8px 25px rgba(15, 23, 42, 0.08)",
+  border: "1px solid #e5e7eb",
 };

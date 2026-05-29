@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 
@@ -29,52 +30,86 @@ export default function LoginPage() {
     }
 
     router.push("/dashboard");
-
     setLoading(false);
   };
 
   return (
-    <div
-      style={{
-        maxWidth: 400,
-        margin: "50px auto",
-        display: "flex",
-        flexDirection: "column",
-        gap: 12,
-      }}
-    >
-      <h1>Login</h1>
+    <main style={page}>
+      <div style={card}>
+        <h1>Welcome Back</h1>
 
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        style={{ padding: 10 }}
-      />
+        <p style={{ color: "#64748b" }}>
+          Login to manage jobs, projects, payments, and messages.
+        </p>
 
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        style={{ padding: 10 }}
-      />
+        <input
+          type="email"
+          placeholder="Email address"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={input}
+        />
 
-      <button
-        onClick={handleLogin}
-        disabled={loading}
-        style={{
-          padding: 12,
-          backgroundColor: "black",
-          color: "white",
-          borderRadius: 6,
-        }}
-      >
-        {loading ? "Logging in..." : "Login"}
-      </button>
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={input}
+        />
 
-      {message && <p>{message}</p>}
-    </div>
+        <button onClick={handleLogin} disabled={loading} style={button}>
+          {loading ? "Logging in..." : "Login"}
+        </button>
+
+        {message && <p style={{ color: "red" }}>{message}</p>}
+
+        <p style={{ marginTop: 20 }}>
+          No account?{" "}
+          <Link href="/register" style={{ color: "#2563eb", fontWeight: "bold" }}>
+            Create one
+          </Link>
+        </p>
+      </div>
+    </main>
   );
 }
+
+const page = {
+  minHeight: "80vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "linear-gradient(135deg, #eff6ff, #f8fafc)",
+  padding: 20,
+};
+
+const card = {
+  width: "100%",
+  maxWidth: 430,
+  background: "white",
+  padding: 35,
+  borderRadius: 20,
+  border: "1px solid #e5e7eb",
+  boxShadow: "0 15px 35px rgba(15,23,42,0.08)",
+};
+
+const input = {
+  width: "100%",
+  padding: 14,
+  marginTop: 15,
+  borderRadius: 12,
+  border: "1px solid #cbd5e1",
+};
+
+const button = {
+  width: "100%",
+  marginTop: 20,
+  padding: 14,
+  background: "#2563eb",
+  color: "white",
+  border: "none",
+  borderRadius: 12,
+  cursor: "pointer",
+  fontWeight: "bold",
+};

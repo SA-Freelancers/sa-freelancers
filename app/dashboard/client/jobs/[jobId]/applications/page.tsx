@@ -79,104 +79,183 @@ export default function ClientApplicationsPage() {
     setMessage(`Application ${status}`);
   };
 
-  if (loading) {
-    return <p style={{ padding: 20 }}>Loading applications...</p>;
-  }
+  if (loading) return <p>Loading applications...</p>;
 
   return (
-    <div style={{ maxWidth: 1000, margin: "40px auto" }}>
-      <h1>Applications</h1>
+    <div>
+      <section style={hero}>
+        <h1>Job Applications</h1>
+        <p>Review proposals, accept freelancers, message applicants, and manage hiring.</p>
+      </section>
 
-      {message && <p>{message}</p>}
+      {message && <p style={messageBox}>{message}</p>}
 
-      {applications.length === 0 && <p>No applications yet.</p>}
-
-      {applications.map((application) => (
-        <div
-          key={application.id}
-          style={{
-            backgroundColor: "white",
-            border: "1px solid #ddd",
-            borderRadius: 10,
-            padding: 20,
-            marginBottom: 20,
-          }}
-        >
-          <p>
-            <strong>Freelancer ID:</strong> {application.freelancer_id}
-          </p>
-
-          <p>
-            <strong>Proposed Budget:</strong> ZAR {application.proposed_budget}
-          </p>
-
-          <p>
-            <strong>Status:</strong> {application.status}
-          </p>
-
-          <p>{application.cover_message}</p>
-
-          <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button
-              type="button"
-              onClick={() => updateStatus(application.id, "accepted")}
-              style={greenButton}
-            >
-              Accept
-            </button>
-
-            <button
-              type="button"
-              onClick={() => updateStatus(application.id, "rejected")}
-              style={redButton}
-            >
-              Reject
-            </button>
-
-            <Link href={`/dashboard/messages/${application.id}`} style={blueLink}>
-              Message
-            </Link>
-
-            <Link href={`/freelancers/${application.freelancer_id}`} style={darkLink}>
-              View Profile
-            </Link>
-          </div>
+      {applications.length === 0 && (
+        <div style={emptyCard}>
+          <h2>No applications yet</h2>
+          <p>Freelancer proposals will appear here.</p>
         </div>
-      ))}
+      )}
+
+      <div style={grid}>
+        {applications.map((application) => (
+          <div key={application.id} style={card}>
+            <span style={statusBadge(application.status)}>
+              {application.status || "pending"}
+            </span>
+
+            <h3>Freelancer Application</h3>
+
+            <p>
+              <strong>Freelancer ID:</strong>
+              <br />
+              {application.freelancer_id}
+            </p>
+
+            <p>
+              <strong>Proposed Budget:</strong> ZAR {application.proposed_budget}
+            </p>
+
+            <p style={{ color: "#475569" }}>{application.cover_message}</p>
+
+            <div style={actions}>
+              <button
+                type="button"
+                onClick={() => updateStatus(application.id, "accepted")}
+                style={greenBtn}
+              >
+                Accept
+              </button>
+
+              <button
+                type="button"
+                onClick={() => updateStatus(application.id, "rejected")}
+                style={redBtn}
+              >
+                Reject
+              </button>
+
+              <Link href={`/dashboard/messages/${application.id}`} style={blueBtn}>
+                Message
+              </Link>
+
+              <Link href={`/freelancers/${application.freelancer_id}`} style={darkBtn}>
+                View Profile
+              </Link>
+
+              <Link href={`/dashboard/review/${application.id}`} style={purpleBtn}>
+                Review
+              </Link>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
-const greenButton = {
+const hero = {
+  background: "linear-gradient(135deg, #0f172a, #2563eb)",
+  color: "white",
+  padding: 35,
+  borderRadius: 18,
+  marginBottom: 30,
+};
+
+const grid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+  gap: 22,
+};
+
+const card = {
+  background: "white",
+  padding: 24,
+  borderRadius: 18,
+  border: "1px solid #e5e7eb",
+  boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
+};
+
+const emptyCard = {
+  background: "white",
+  padding: 30,
+  borderRadius: 18,
+  border: "1px solid #e5e7eb",
+};
+
+const messageBox = {
+  background: "#ecfdf5",
+  color: "#166534",
+  padding: 14,
+  borderRadius: 12,
+  marginBottom: 20,
+};
+
+const actions = {
+  display: "flex",
+  gap: 10,
+  flexWrap: "wrap" as const,
+  marginTop: 20,
+};
+
+const greenBtn = {
   padding: "10px 14px",
-  backgroundColor: "green",
+  background: "#16a34a",
   color: "white",
   border: "none",
-  borderRadius: 6,
+  borderRadius: 10,
   cursor: "pointer",
 };
 
-const redButton = {
+const redBtn = {
   padding: "10px 14px",
-  backgroundColor: "red",
+  background: "#dc2626",
   color: "white",
   border: "none",
-  borderRadius: 6,
+  borderRadius: 10,
   cursor: "pointer",
 };
 
-const blueLink = {
+const blueBtn = {
   padding: "10px 14px",
-  backgroundColor: "#2563eb",
+  background: "#2563eb",
   color: "white",
-  borderRadius: 6,
+  borderRadius: 10,
   textDecoration: "none",
 };
 
-const darkLink = {
+const darkBtn = {
   padding: "10px 14px",
-  backgroundColor: "#111827",
+  background: "#111827",
   color: "white",
-  borderRadius: 6,
+  borderRadius: 10,
   textDecoration: "none",
 };
+
+const purpleBtn = {
+  padding: "10px 14px",
+  background: "#7c3aed",
+  color: "white",
+  borderRadius: 10,
+  textDecoration: "none",
+};
+
+const statusBadge = (status: string) => ({
+  display: "inline-block",
+  background:
+    status === "accepted"
+      ? "#dcfce7"
+      : status === "rejected"
+      ? "#fee2e2"
+      : "#dbeafe",
+  color:
+    status === "accepted"
+      ? "#166534"
+      : status === "rejected"
+      ? "#991b1b"
+      : "#1d4ed8",
+  padding: "6px 10px",
+  borderRadius: 20,
+  fontWeight: "bold",
+  fontSize: 13,
+});

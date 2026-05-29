@@ -1,28 +1,29 @@
 "use client";
 
 import { useState } from "react";
-
 import { useParams } from "next/navigation";
-
 import { supabase } from "@/app/lib/supabase";
 
 export default function ReviewPage() {
-  const { applicationId } = useParams();
+  const params = useParams();
+  const applicationId = params.applicationId as string;
 
   const [rating, setRating] = useState(5);
-
   const [comment, setComment] = useState("");
-
   const [message, setMessage] = useState("");
 
   const submitReview = async () => {
+    setMessage("");
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) return;
+    if (!user) {
+      setMessage("Please login first.");
+      return;
+    }
 
-    // GET APPLICATION
     const { data: application } = await supabase
       .from("applications")
       .select("freelancer_id")
@@ -34,92 +35,110 @@ export default function ReviewPage() {
       return;
     }
 
-    const { error } = await supabase
-      .from("reviews")
-      .insert({
-        freelancer_id:
-          application.freelancer_id,
-
-        client_id: user.id,
-
-        application_id: applicationId,
-
-        rating,
-
-        comment,
-      });
+    const { error } = await supabase.from("reviews").insert({
+      freelancer_id: application.freelancer_id,
+      client_id: user.id,
+      application_id: applicationId,
+      rating,
+      comment,
+    });
 
     if (error) {
       setMessage(error.message);
       return;
     }
 
-    setMessage("Review submitted!");
-
+    setMessage("Review submitted successfully!");
     setComment("");
+    setRating(5);
   };
 
   return (
-    <div
-      style={{
-        maxWidth: 600,
-        margin: "40px auto",
-      }}
-    >
-      <h1>Leave Review</h1>
+    <div>
+      <section style={hero}>
+        <h1>Leave a Review</h1>
+        <p>Rate the freelancer and help other clients make better decisions.</p>
+      </section>
 
-      <label>Rating</label>
+      <div style={card}>
+        <label style={label}>Rating</label>
 
-      <select
-        value={rating}
-        onChange={(e) =>
-          setRating(Number(e.target.value))
-        }
-        style={{
-          width: "100%",
-          padding: 10,
-          marginBottom: 15,
-        }}
-      >
-        <option value={5}>5 Stars</option>
-        <option value={4}>4 Stars</option>
-        <option value={3}>3 Stars</option>
-        <option value={2}>2 Stars</option>
-        <option value={1}>1 Star</option>
-      </select>
+        <select
+          value={rating}
+          onChange={(e) => setRating(Number(e.target.value))}
+          style={input}
+        >
+          <option value={5}>⭐⭐⭐⭐⭐ 5 Stars</option>
+          <option value={4}>⭐⭐⭐⭐ 4 Stars</option>
+          <option value={3}>⭐⭐⭐ 3 Stars</option>
+          <option value={2}>⭐⭐ 2 Stars</option>
+          <option value={1}>⭐ 1 Star</option>
+        </select>
 
-      <textarea
-        placeholder="Write review..."
-        value={comment}
-        onChange={(e) =>
-          setComment(e.target.value)
-        }
-        style={{
-          width: "100%",
-          minHeight: 120,
-          padding: 10,
-          marginBottom: 15,
-        }}
-      />
+        <label style={label}>Review Comment</label>
 
-      <button
-        onClick={submitReview}
-        style={{
-          padding: "12px 18px",
-          backgroundColor: "black",
-          color: "white",
-          borderRadius: 6,
-          border: "none",
-        }}
-      >
-        Submit Review
-      </button>
+        <textarea
+          placeholder="Write your review..."
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          style={{ ...input, minHeight: 140 }}
+        />
 
-      {message && (
-        <p style={{ marginTop: 15 }}>
-          {message}
-        </p>
-      )}
+        <button onClick={submitReview} style={primaryBtn}>
+          Submit Review
+        </button>
+
+        {message && <p style={messageBox}>{message}</p>}
+      </div>
     </div>
   );
 }
+
+const hero = {
+  background: "linear-gradient(135deg, #0f172a, #7c3aed)",
+  color: "white",
+  padding: 35,
+  borderRadius: 18,
+  marginBottom: 30,
+};
+
+const card = {
+  background: "white",
+  padding: 30,
+  borderRadius: 18,
+  border: "1px solid #e5e7eb",
+  boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
+  maxWidth: 700,
+};
+
+const label = {
+  display: "block",
+  fontWeight: "bold",
+  marginBottom: 8,
+};
+
+const input = {
+  width: "100%",
+  padding: 13,
+  marginBottom: 18,
+  borderRadius: 10,
+  border: "1px solid #cbd5e1",
+};
+
+const primaryBtn = {
+  padding: "12px 18px",
+  background: "#7c3aed",
+  color: "white",
+  border: "none",
+  borderRadius: 10,
+  cursor: "pointer",
+  fontWeight: "bold",
+};
+
+const messageBox = {
+  marginTop: 18,
+  background: "#ecfdf5",
+  color: "#166534",
+  padding: 14,
+  borderRadius: 12,
+};

@@ -22,7 +22,7 @@ export default function FavoritesPage() {
       return;
     }
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("favorites")
       .select(`
         id,
@@ -42,78 +42,143 @@ export default function FavoritesPage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (!error && data) {
-      setFavorites(data);
-    }
-
+    setFavorites(data || []);
     setLoading(false);
   };
 
   const removeFavorite = async (favoriteId: string) => {
     await supabase.from("favorites").delete().eq("id", favoriteId);
-    setFavorites((prev) => prev.filter((fav) => fav.id !== favoriteId));
+
+    setFavorites((prev) =>
+      prev.filter((fav) => fav.id !== favoriteId)
+    );
   };
 
   if (loading) return <p>Loading favorites...</p>;
 
   return (
-    <div style={{ maxWidth: 900, margin: "40px auto" }}>
-      <h1>My Favorites</h1>
+    <div>
+      <section style={hero}>
+        <h1>Favorites</h1>
+        <p>View and manage saved freelancers and jobs.</p>
+      </section>
 
-      {favorites.length === 0 && <p>No favorites saved yet.</p>}
-
-      {favorites.map((fav) => (
-        <div
-          key={fav.id}
-          style={{
-            backgroundColor: "white",
-            padding: 20,
-            borderRadius: 10,
-            marginBottom: 15,
-            border: "1px solid #ddd",
-          }}
-        >
-          {fav.freelancer_id && (
-            <>
-              <h3>{fav.profiles?.full_name}</h3>
-              <p>{fav.profiles?.role}</p>
-              <p>{fav.profiles?.category}</p>
-
-              <Link href={`/freelancers/${fav.freelancer_id}`}>
-                View Freelancer
-              </Link>
-            </>
-          )}
-
-          {fav.job_id && (
-            <>
-              <h3>{fav.jobs?.title}</h3>
-              <p>{fav.jobs?.category}</p>
-              <p>ZAR {fav.jobs?.budget}</p>
-
-              <Link href={`/dashboard/jobs/${fav.job_id}`}>
-                View Job
-              </Link>
-            </>
-          )}
-
-          <br />
-
-          <button
-            onClick={() => removeFavorite(fav.id)}
-            style={{
-              marginTop: 12,
-              padding: "8px 12px",
-              backgroundColor: "red",
-              color: "white",
-              border: "none",
-              borderRadius: 6,
-            }}
-          >
-            Remove
-          </button>
+      {favorites.length === 0 && (
+        <div style={emptyCard}>
+          <h2>No favorites yet</h2>
+          <p>Save freelancers and jobs from the search page.</p>
         </div>
-      ))}
+      )}
+
+      <div style={grid}>
+        {favorites.map((fav) => (
+          <div key={fav.id} style={card}>
+            {fav.freelancer_id && (
+              <>
+                <span style={badge}>Freelancer</span>
+
+                <h3>{fav.profiles?.full_name || "Freelancer"}</h3>
+
+                <p>
+                  <strong>Role:</strong> {fav.profiles?.role || "N/A"}
+                </p>
+
+                <p>
+                  <strong>Category:</strong> {fav.profiles?.category || "N/A"}
+                </p>
+
+                <Link href={`/freelancers/${fav.freelancer_id}`} style={blueBtn}>
+                  View Freelancer
+                </Link>
+              </>
+            )}
+
+            {fav.job_id && (
+              <>
+                <span style={badge}>Job</span>
+
+                <h3>{fav.jobs?.title || "Job"}</h3>
+
+                <p>
+                  <strong>Category:</strong> {fav.jobs?.category || "N/A"}
+                </p>
+
+                <p>
+                  <strong>Budget:</strong> ZAR {fav.jobs?.budget || "N/A"}
+                </p>
+
+                <Link href={`/dashboard/jobs/${fav.job_id}`} style={blueBtn}>
+                  View Job
+                </Link>
+              </>
+            )}
+
+            <button onClick={() => removeFavorite(fav.id)} style={redBtn}>
+              Remove
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
+
+const hero = {
+  background: "linear-gradient(135deg, #0f172a, #2563eb)",
+  color: "white",
+  padding: 35,
+  borderRadius: 18,
+  marginBottom: 30,
+};
+
+const grid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: 22,
+};
+
+const card = {
+  background: "white",
+  padding: 24,
+  borderRadius: 18,
+  border: "1px solid #e5e7eb",
+  boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
+};
+
+const emptyCard = {
+  background: "white",
+  padding: 30,
+  borderRadius: 18,
+  border: "1px solid #e5e7eb",
+};
+
+const badge = {
+  display: "inline-block",
+  background: "#dbeafe",
+  color: "#1d4ed8",
+  padding: "6px 10px",
+  borderRadius: 20,
+  fontSize: 13,
+  fontWeight: "bold",
+};
+
+const blueBtn = {
+  display: "inline-block",
+  marginTop: 15,
+  marginRight: 10,
+  padding: "10px 14px",
+  background: "#2563eb",
+  color: "white",
+  borderRadius: 10,
+  textDecoration: "none",
+};
+
+const redBtn = {
+  marginTop: 15,
+  padding: "10px 14px",
+  background: "#dc2626",
+  color: "white",
+  border: "none",
+  borderRadius: 10,
+  cursor: "pointer",
+};

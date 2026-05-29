@@ -27,9 +27,7 @@ function PaymentSuccessContent() {
         })
         .eq("id", projectId);
 
-      if (!error) {
-        setSuccess(true);
-      }
+      if (!error) setSuccess(true);
 
       setLoading(false);
     };
@@ -37,44 +35,36 @@ function PaymentSuccessContent() {
     updatePayment();
   }, [projectId]);
 
-  if (loading) {
-    return <p style={{ padding: 20 }}>Processing payment...</p>;
-  }
+  if (loading) return <p>Processing payment...</p>;
 
   return (
-    <div style={{ maxWidth: 700, margin: "60px auto", textAlign: "center" }}>
-      <div
-        style={{
-          backgroundColor: "white",
-          padding: 40,
-          borderRadius: 12,
-          border: "1px solid #ddd",
-        }}
-      >
+    <div style={page}>
+      <div style={card}>
         {success ? (
           <>
-            <h1>Payment Successful 🎉</h1>
-            <p>Your project payment was completed.</p>
+            <div style={icon}>✅</div>
 
-            <Link
-              href="/dashboard/projects"
-              style={{
-                display: "inline-block",
-                marginTop: 20,
-                padding: "12px 18px",
-                backgroundColor: "green",
-                color: "white",
-                borderRadius: 8,
-                textDecoration: "none",
-              }}
-            >
+            <h1>Payment Successful</h1>
+
+            <p style={text}>
+              Your payment was completed and the project is now marked as paid.
+            </p>
+
+            <Link href="/dashboard/projects" style={button}>
               Back to Projects
             </Link>
           </>
         ) : (
           <>
-            <h1>Payment Failed</h1>
-            <p>Could not verify payment.</p>
+            <div style={icon}>⚠️</div>
+
+            <h1>Payment Could Not Be Verified</h1>
+
+            <p style={text}>Please return to your projects and try again.</p>
+
+            <Link href="/dashboard/projects" style={button}>
+              Back to Projects
+            </Link>
           </>
         )}
       </div>
@@ -84,8 +74,46 @@ function PaymentSuccessContent() {
 
 export default function PaymentSuccessPage() {
   return (
-    <Suspense fallback={<p style={{ padding: 20 }}>Loading payment...</p>}>
+    <Suspense fallback={<p>Loading payment...</p>}>
       <PaymentSuccessContent />
     </Suspense>
   );
 }
+
+const page = {
+  minHeight: "70vh",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+};
+
+const card = {
+  background: "white",
+  padding: 45,
+  borderRadius: 20,
+  border: "1px solid #e5e7eb",
+  boxShadow: "0 15px 35px rgba(15,23,42,0.08)",
+  textAlign: "center" as const,
+  maxWidth: 600,
+};
+
+const icon = {
+  fontSize: 60,
+  marginBottom: 20,
+};
+
+const text = {
+  color: "#475569",
+  fontSize: 17,
+  marginBottom: 30,
+};
+
+const button = {
+  display: "inline-block",
+  padding: "14px 22px",
+  background: "#16a34a",
+  color: "white",
+  borderRadius: 12,
+  textDecoration: "none",
+  fontWeight: "bold",
+};

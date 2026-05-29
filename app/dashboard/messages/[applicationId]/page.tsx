@@ -1,211 +1,178 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
 import { useParams } from "next/navigation";
-
 import { supabase } from "@/app/lib/supabase";
 
 export default function MessagesPage() {
-  const { applicationId } =
-    useParams();
+  const params = useParams();
+  const applicationId = params.applicationId as string;
 
-  const [messages,
-    setMessages] =
-    useState<any[]>([]);
-
-  const [newMessage,
-    setNewMessage] =
-    useState("");
-
-  const [currentUserId,
-    setCurrentUserId] =
-    useState("");
+  const [messages, setMessages] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [currentUserId, setCurrentUserId] = useState("");
 
   useEffect(() => {
-    loadMessages();
     getCurrentUser();
+    loadMessages();
   }, []);
 
-  const getCurrentUser =
-    async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+  const getCurrentUser = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-      if (user) {
-        setCurrentUserId(user.id);
-      }
-    };
+    if (user) setCurrentUserId(user.id);
+  };
 
-  const loadMessages =
-    async () => {
-      const { data } =
-        await supabase
-          .from("messages")
-          .select("*")
-          .eq(
-            "application_id",
-            applicationId
-          )
-          .order("created_at", {
-            ascending: true,
-          });
+  const loadMessages = async () => {
+    const { data } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("application_id", applicationId)
+      .order("created_at", { ascending: true });
 
-      if (data) {
-        setMessages(data);
-      }
-    };
+    setMessages(data || []);
+  };
 
-  const sendMessage =
-    async () => {
-      if (!newMessage.trim())
-        return;
+  const sendMessage = async () => {
+    if (!newMessage.trim()) return;
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    const blockedWords = [
+      "@gmail",
+      "@yahoo",
+      "@outlook",
+      "whatsapp",
+      "+27",
+      "telegram",
+      "instagram",
+      "facebook",
+      "call me",
+      "phone number",
+    ];
 
-      if (!user) return;
+    const lowerMessage = newMessage.toLowerCase();
 
-      const { error } =
-        await supabase
-          .from("messages")
-          .insert({
-            application_id:
-              applicationId,
+    const containsBlocked = blockedWords.some((word) =>
+      lowerMessage.includes(word)
+    );
 
-            sender_id: user.id,
+    if (containsBlocked) {
+      alert("Sharing contact details is not allowed.");
+      return;
+    }
 
-            message: newMessage,
-          });
+    const { error } = await supabase.from("messages").insert({
+      application_id: applicationId,
+      sender_id: currentUserId,
+      content: newMessage,
+    });
 
-      if (error) {
-        alert(error.message);
-        return;
-      }
+    if (error) {
+      alert(error.message);
+      return;
+    }
 
-      setNewMessage("");
-
-      loadMessages();
-    };
+    setNewMessage("");
+    loadMessages();
+  };
 
   return (
-    <div
-      style={{
-        maxWidth: 900,
-        margin: "40px auto",
-      }}
-    >
-      <h1>Messages</h1>
+    <div>
+      <section style={hero}>
+        <h1>Messages</h1>
+        <p>Communicate safely inside the platform.</p>
+      </section>
 
-      {/* CHAT BOX */}
-      <div
-        style={{
-          backgroundColor: "white",
-          border:
-            "1px solid #ddd",
-          borderRadius: 10,
-          padding: 20,
-          height: 500,
-          overflowY: "auto",
-          marginBottom: 20,
-        }}
-      >
-        {messages.length === 0 && (
-          <p>No messages yet.</p>
-        )}
+      <div style={chatBox}>
+        {messages.length === 0 && <p>No messages yet.</p>}
 
         {messages.map((msg) => {
-          const isMine =
-            msg.sender_id ===
-            currentUserId;
+          const isMine = msg.sender_id === currentUserId;
 
           return (
             <div
               key={msg.id}
               style={{
                 display: "flex",
-                justifyContent:
-                  isMine
-                    ? "flex-end"
-                    : "flex-start",
-
-                marginBottom: 15,
+                justifyContent: isMine ? "flex-end" : "flex-start",
+                marginBottom: 14,
               }}
             >
               <div
                 style={{
-                  backgroundColor:
-                    isMine
-                      ? "#2563eb"
-                      : "#e5e7eb",
-
-                  color: isMine
-                    ? "white"
-                    : "black",
-
-                  padding:
-                    "12px 16px",
-
-                  borderRadius: 14,
-
+                  background: isMine ? "#2563eb" : "#e5e7eb",
+                  color: isMine ? "white" : "#0f172a",
+                  padding: "12px 16px",
+                  borderRadius: 16,
                   maxWidth: "70%",
                 }}
               >
-                <p
-                  style={{
-                    margin: 0,
-                  }}
-                >
-                  {msg.message}
-                </p>
+                <p style={{ margin: 0 }}>{msg.content}</p>
+
+                <small style={{ opacity: 0.8 }}>
+                  {new Date(msg.created_at).toLocaleString()}
+                </small>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* INPUT */}
-      <div
-        style={{
-          display: "flex",
-          gap: 10,
-        }}
-      >
+      <div style={inputRow}>
         <input
           type="text"
-          placeholder="Type message..."
+          placeholder="Type your message..."
           value={newMessage}
-          onChange={(e) =>
-            setNewMessage(
-              e.target.value
-            )
-          }
-          style={{
-            flex: 1,
-            padding: 14,
-            borderRadius: 8,
-            border:
-              "1px solid #ccc",
-          }}
+          onChange={(e) => setNewMessage(e.target.value)}
+          style={input}
         />
 
-        <button
-          onClick={sendMessage}
-          style={{
-            padding:
-              "14px 20px",
-            backgroundColor:
-              "#2563eb",
-            color: "white",
-            border: "none",
-            borderRadius: 8,
-          }}
-        >
+        <button onClick={sendMessage} style={sendBtn}>
           Send
         </button>
       </div>
     </div>
   );
 }
+
+const hero = {
+  background: "linear-gradient(135deg, #0f172a, #2563eb)",
+  color: "white",
+  padding: 35,
+  borderRadius: 18,
+  marginBottom: 30,
+};
+
+const chatBox = {
+  background: "white",
+  border: "1px solid #e5e7eb",
+  borderRadius: 18,
+  padding: 24,
+  height: 500,
+  overflowY: "auto" as const,
+  boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
+};
+
+const inputRow = {
+  display: "flex",
+  gap: 12,
+  marginTop: 18,
+};
+
+const input = {
+  flex: 1,
+  padding: 14,
+  borderRadius: 12,
+  border: "1px solid #cbd5e1",
+};
+
+const sendBtn = {
+  padding: "14px 22px",
+  background: "#2563eb",
+  color: "white",
+  border: "none",
+  borderRadius: 12,
+  cursor: "pointer",
+  fontWeight: "bold",
+};

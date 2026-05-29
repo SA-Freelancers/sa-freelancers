@@ -18,10 +18,9 @@ export default function ProjectsPage() {
 
     const {
       data: { user },
-      error: userError,
     } = await supabase.auth.getUser();
 
-    if (userError || !user) {
+    if (!user) {
       setMessage("Please login first.");
       setLoading(false);
       return;
@@ -50,10 +49,7 @@ export default function ProjectsPage() {
     setLoading(false);
   };
 
-  const updateProjectStatus = async (
-    projectId: string,
-    status: string
-  ) => {
+  const updateProjectStatus = async (projectId: string, status: string) => {
     const { error } = await supabase
       .from("projects")
       .update({ status })
@@ -66,123 +62,170 @@ export default function ProjectsPage() {
 
     setProjects((prev) =>
       prev.map((project) =>
-        project.id === projectId
-          ? { ...project, status }
-          : project
+        project.id === projectId ? { ...project, status } : project
       )
     );
   };
 
-  if (loading) {
-    return <p style={{ padding: 20 }}>Loading projects...</p>;
-  }
+  if (loading) return <p>Loading projects...</p>;
 
   return (
-    <div style={{ maxWidth: 1000, margin: "40px auto" }}>
-      <h1>Projects</h1>
+    <div>
+      <div style={hero}>
+        <h1>Projects</h1>
+        <p>Track active work, payments, messages, and completion status.</p>
+      </div>
 
       {message && <p>{message}</p>}
 
-      {projects.length === 0 && <p>No projects yet.</p>}
-
-      {projects.map((project) => (
-        <div
-          key={project.id}
-          style={{
-            backgroundColor: "white",
-            padding: 20,
-            borderRadius: 10,
-            border: "1px solid #ddd",
-            marginBottom: 20,
-          }}
-        >
-          <h2>{project.jobs?.title || "Project"}</h2>
-
-          <p>
-            <strong>Category:</strong> {project.jobs?.category || "N/A"}
-          </p>
-
-          <p>
-            <strong>Budget:</strong> ZAR {project.jobs?.budget || "N/A"}
-          </p>
-
-          <p>
-            <strong>Status:</strong> {project.status}
-          </p>
-
-          <p>
-            <strong>Payment:</strong>{" "}
-            {project.payment_status || "unpaid"}
-          </p>
-
-          <div
-            style={{
-              marginTop: 20,
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <button
-              onClick={() =>
-                updateProjectStatus(project.id, "completed")
-              }
-              style={{
-                padding: "10px 14px",
-                backgroundColor: "green",
-                color: "white",
-                border: "none",
-                borderRadius: 6,
-              }}
-            >
-              Mark Completed
-            </button>
-
-            <button
-              onClick={() =>
-                updateProjectStatus(project.id, "cancelled")
-              }
-              style={{
-                padding: "10px 14px",
-                backgroundColor: "red",
-                color: "white",
-                border: "none",
-                borderRadius: 6,
-              }}
-            >
-              Cancel Project
-            </button>
-
-            <Link
-              href={`/dashboard/messages/${project.application_id}`}
-              style={{
-                padding: "10px 14px",
-                backgroundColor: "#2563eb",
-                color: "white",
-                borderRadius: 6,
-                textDecoration: "none",
-              }}
-            >
-              Open Messages
-            </Link>
-
-            {project.payment_status !== "paid" && (
-              <Link
-                href={`/dashboard/payment/${project.id}`}
-                style={{
-                  padding: "10px 14px",
-                  backgroundColor: "green",
-                  color: "white",
-                  borderRadius: 6,
-                  textDecoration: "none",
-                }}
-              >
-                Pay Now
-              </Link>
-            )}
-          </div>
+      {projects.length === 0 && (
+        <div style={emptyCard}>
+          <h2>No projects yet</h2>
+          <p>Projects appear after a client accepts a freelancer application.</p>
         </div>
-      ))}
+      )}
+
+      <div style={grid}>
+        {projects.map((project) => (
+          <div key={project.id} style={card}>
+            <span style={statusBadge(project.status)}>{project.status}</span>
+
+            <h2>{project.jobs?.title || "Project"}</h2>
+
+            <p>
+              <strong>Category:</strong> {project.jobs?.category || "N/A"}
+            </p>
+
+            <p>
+              <strong>Budget:</strong> ZAR {project.jobs?.budget || "N/A"}
+            </p>
+
+            <p>
+              <strong>Payment:</strong>{" "}
+              <span style={paymentBadge(project.payment_status)}>
+                {project.payment_status || "unpaid"}
+              </span>
+            </p>
+
+            <div style={actions}>
+              <Link
+                href={`/dashboard/messages/${project.application_id}`}
+                style={blueBtn}
+              >
+                Messages
+              </Link>
+
+              {project.payment_status !== "paid" && (
+                <Link
+                  href={`/dashboard/payment/${project.id}`}
+                  style={greenLink}
+                >
+                  Pay Now
+                </Link>
+              )}
+
+              <button
+                onClick={() => updateProjectStatus(project.id, "completed")}
+                style={greenBtn}
+              >
+                Complete
+              </button>
+
+              <button
+                onClick={() => updateProjectStatus(project.id, "cancelled")}
+                style={redBtn}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
+
+const hero = {
+  background: "linear-gradient(135deg, #0f172a, #2563eb)",
+  color: "white",
+  padding: 35,
+  borderRadius: 18,
+  marginBottom: 30,
+};
+
+const grid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+  gap: 22,
+};
+
+const card = {
+  background: "white",
+  padding: 24,
+  borderRadius: 18,
+  border: "1px solid #e5e7eb",
+  boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
+};
+
+const emptyCard = {
+  background: "white",
+  padding: 30,
+  borderRadius: 18,
+  border: "1px solid #e5e7eb",
+};
+
+const actions = {
+  display: "flex",
+  gap: 10,
+  flexWrap: "wrap" as const,
+  marginTop: 20,
+};
+
+const blueBtn = {
+  padding: "10px 14px",
+  background: "#2563eb",
+  color: "white",
+  borderRadius: 10,
+  textDecoration: "none",
+};
+
+const greenLink = {
+  padding: "10px 14px",
+  background: "#16a34a",
+  color: "white",
+  borderRadius: 10,
+  textDecoration: "none",
+};
+
+const greenBtn = {
+  padding: "10px 14px",
+  background: "#22c55e",
+  color: "white",
+  border: "none",
+  borderRadius: 10,
+  cursor: "pointer",
+};
+
+const redBtn = {
+  padding: "10px 14px",
+  background: "#dc2626",
+  color: "white",
+  border: "none",
+  borderRadius: 10,
+  cursor: "pointer",
+};
+
+const statusBadge = (status: string) => ({
+  display: "inline-block",
+  background: status === "completed" ? "#dcfce7" : status === "cancelled" ? "#fee2e2" : "#dbeafe",
+  color: status === "completed" ? "#166534" : status === "cancelled" ? "#991b1b" : "#1d4ed8",
+  padding: "6px 10px",
+  borderRadius: 20,
+  fontWeight: "bold",
+  fontSize: 13,
+});
+
+const paymentBadge = (status: string) => ({
+  color: status === "paid" ? "#16a34a" : "#dc2626",
+  fontWeight: "bold",
+});

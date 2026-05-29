@@ -11,10 +11,10 @@ export default function AdminDashboardPage() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    checkAdminAndLoadData();
+    loadAdminData();
   }, []);
 
-  const checkAdminAndLoadData = async () => {
+  const loadAdminData = async () => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -72,15 +72,11 @@ export default function AdminDashboardPage() {
     setJobs((prev) => prev.filter((job) => job.id !== jobId));
   };
 
-  const deleteUser = async (userId: string) => {
-    alert("For safety, delete users from Supabase Authentication → Users.");
-  };
-
-  if (loading) return <p>Loading admin...</p>;
+  if (loading) return <p>Loading admin dashboard...</p>;
 
   if (!isAdmin) {
     return (
-      <div style={{ padding: 30 }}>
+      <div style={card}>
         <h1>Access denied</h1>
         <p>You are not an admin.</p>
       </div>
@@ -88,27 +84,30 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1100, margin: "40px auto" }}>
-      <h1>Admin Dashboard</h1>
+    <div>
+      <section style={hero}>
+        <h1>Admin Dashboard</h1>
+        <p>Monitor users, jobs, applications, and platform activity.</p>
+      </section>
 
       <div style={statsGrid}>
-        <div style={card}>
-          <h3>Users</h3>
+        <div style={statCard}>
+          <h3>Total Users</h3>
           <p style={bigNumber}>{users.length}</p>
         </div>
 
-        <div style={card}>
-          <h3>Jobs</h3>
+        <div style={statCard}>
+          <h3>Total Jobs</h3>
           <p style={bigNumber}>{jobs.length}</p>
         </div>
 
-        <div style={card}>
+        <div style={statCard}>
           <h3>Applications</h3>
           <p style={bigNumber}>{applications.length}</p>
         </div>
       </div>
 
-      <section style={{ marginTop: 40 }}>
+      <section style={section}>
         <h2>Users</h2>
 
         {users.map((user) => (
@@ -116,17 +115,15 @@ export default function AdminDashboardPage() {
             <div>
               <strong>{user.full_name || "No name"}</strong>
               <p>{user.email}</p>
-              <p>{user.role}</p>
+              <p>
+                {user.role} {user.is_admin ? "• Admin" : ""}
+              </p>
             </div>
-
-            <button onClick={() => deleteUser(user.id)} style={dangerButton}>
-              Delete User
-            </button>
           </div>
         ))}
       </section>
 
-      <section style={{ marginTop: 40 }}>
+      <section style={section}>
         <h2>Jobs</h2>
 
         {jobs.map((job) => (
@@ -137,7 +134,7 @@ export default function AdminDashboardPage() {
               <p>ZAR {job.budget}</p>
             </div>
 
-            <button onClick={() => deleteJob(job.id)} style={dangerButton}>
+            <button onClick={() => deleteJob(job.id)} style={dangerBtn}>
               Delete Job
             </button>
           </div>
@@ -147,40 +144,61 @@ export default function AdminDashboardPage() {
   );
 }
 
-const statsGrid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-  gap: 20,
+const hero = {
+  background: "linear-gradient(135deg, #0f172a, #7c3aed)",
+  color: "white",
+  padding: 35,
+  borderRadius: 18,
+  marginBottom: 30,
 };
 
-const card = {
-  backgroundColor: "white",
-  padding: 20,
-  borderRadius: 10,
-  border: "1px solid #ddd",
+const statsGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: 22,
+};
+
+const statCard = {
+  background: "white",
+  padding: 25,
+  borderRadius: 18,
+  border: "1px solid #e5e7eb",
+  boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
 };
 
 const bigNumber = {
-  fontSize: 36,
+  fontSize: 42,
   fontWeight: "bold",
+  color: "#2563eb",
+};
+
+const section = {
+  marginTop: 40,
 };
 
 const listItem = {
-  backgroundColor: "white",
-  padding: 16,
-  borderRadius: 10,
-  border: "1px solid #ddd",
+  background: "white",
+  padding: 18,
+  borderRadius: 16,
+  border: "1px solid #e5e7eb",
   marginBottom: 12,
   display: "flex",
   justifyContent: "space-between",
   gap: 15,
 };
 
-const dangerButton = {
-  backgroundColor: "red",
+const dangerBtn = {
+  background: "#dc2626",
   color: "white",
   border: "none",
-  borderRadius: 6,
-  padding: "8px 12px",
-  height: 40,
+  borderRadius: 10,
+  padding: "10px 14px",
+  cursor: "pointer",
+};
+
+const card = {
+  background: "white",
+  padding: 30,
+  borderRadius: 18,
+  border: "1px solid #e5e7eb",
 };

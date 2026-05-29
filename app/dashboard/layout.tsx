@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-
 import { supabase } from "@/app/lib/supabase";
 
 export default function DashboardLayout({
@@ -11,110 +10,73 @@ export default function DashboardLayout({
 }) {
   const logout = async () => {
     await supabase.auth.signOut();
-
     window.location.href = "/login";
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-      }}
-    >
-      {/* SIDEBAR */}
-      <div
+    <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc" }}>
+      <aside
         style={{
-          width: 250,
-          backgroundColor: "#111827",
+          width: 260,
+          background: "#0f172a",
           color: "white",
-          padding: 20,
+          padding: 24,
+          position: "sticky",
+          top: 0,
+          height: "100vh",
         }}
-      ><Link href="/dashboard/projects" style={linkStyle}>
-  Projects
-</Link>
-        <h2
-          style={{
-            marginBottom: 30,
-          }}
-        >
-          SA Freelancers
-        </h2>
+      >
+        <h2 style={{ fontSize: 26, marginBottom: 8 }}>SA Freelancers</h2>
+        <p style={{ color: "#94a3b8", marginBottom: 30 }}>
+          Marketplace Dashboard
+        </p>
 
-        <nav
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
-          }}
-        >
-          <Link
-            href="/dashboard"
-            style={linkStyle}
-          >
-            Dashboard
-          </Link>
+        <nav style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <Link href="/dashboard" style={navLink}>🏠 Dashboard</Link>
+          <Link href="/dashboard/jobs" style={navLink}>💼 Jobs</Link>
+          <Link href="/dashboard/projects" style={navLink}>📌 Projects</Link>
+          <Link href="/dashboard/profile" style={navLink}>👤 Profile</Link>
+          <Link href="/dashboard/upload" style={navLink}>📁 Uploads</Link>
+          <Link href="/dashboard/favorites" style={navLink}>❤️ Favorites</Link>
+          <Link href="/dashboard/notifications" style={navLink}>🔔 Notifications</Link>
+          <Link href="/dashboard/admin" style={navLink}>🛡 Admin</Link>
 
-          <Link
-            href="/dashboard/jobs"
-            style={linkStyle}
-          >
-            Jobs
-          </Link>
-
-          <Link
-            href="/dashboard/profile"
-            style={linkStyle}
-          >
-            My Profile
-          </Link>
-<Link href="/dashboard/projects" style={linkStyle}>
-  Projects
-</Link>
-          <Link
-            href="/dashboard/notifications"
-            style={linkStyle}
-          >
-            Notifications
-          </Link>
-<Link href="/dashboard/favorites" style={linkStyle}>
-  Favorites
-</Link>
-          <button
-            onClick={logout}
-            style={{
-              marginTop: 20,
-              padding: "10px 12px",
-              borderRadius: 6,
-              border: "none",
-              backgroundColor: "red",
-              color: "white",
-              cursor: "pointer",
-            }}
-          >
+          <button onClick={logout} style={logoutBtn}>
             Logout
           </button>
         </nav>
-      </div>
+      </aside>
 
-      {/* PAGE CONTENT */}
-      <div
-        style={{
-          flex: 1,
-          padding: 30,
-          backgroundColor: "#f5f5f5",
-        }}
-      >
-        {children}
-      </div>
+      <main style={{ flex: 1, padding: 35 }}>
+        <div
+          style={{
+            maxWidth: 1200,
+            margin: "0 auto",
+          }}
+        >
+          {children}
+        </div>
+      </main>
     </div>
   );
 }
 
-const linkStyle = {
+const navLink = {
   color: "white",
   textDecoration: "none",
-  padding: "10px 12px",
-  borderRadius: 6,
-  backgroundColor: "#1f2937",
+  background: "#1e293b",
+  padding: "12px 14px",
+  borderRadius: 10,
+  fontWeight: 500,
+};
+
+const logoutBtn = {
+  marginTop: 25,
+  padding: "12px 14px",
+  background: "#dc2626",
+  color: "white",
+  border: "none",
+  borderRadius: 10,
+  cursor: "pointer",
+  fontWeight: "bold",
 };
