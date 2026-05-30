@@ -35,7 +35,7 @@ export default function Footer() {
             <h3>Resources</h3>
 
             <Link href="/safety">Trust & Safety</Link>
-            <Link href="/">Privacy Policy</Link>
+            <Link href="/privacy">Privacy Policy</Link>
             <Link href="/">Terms of Service</Link>
           </div>
         </div>
