@@ -189,3 +189,54 @@ body.dark footer {
   justify-content: center;
   text-decoration: none;
 }
+.dashboard-sidebar {
+  padding: 22px;
+  border-radius: 24px;
+  display: grid;
+  gap: 22px;
+  align-content: start;
+}
+
+.dashboard-sidebar h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.dashboard-sidebar p {
+  margin: 6px 0 0;
+  opacity: 0.7;
+}
+
+.dashboard-sidebar-nav {
+  display: grid;
+  gap: 10px;
+}
+
+.dashboard-sidebar-nav a {
+  text-decoration: none;
+  color: inherit;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-weight: 700;
+}
+
+.dashboard-sidebar-nav a:hover {
+  background: rgba(37, 99, 235, 0.12);
+}
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.dashboard-main {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+}
