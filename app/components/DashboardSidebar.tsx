@@ -6,13 +6,13 @@ import { usePathname } from "next/navigation";
 const links = [
   { href: "/dashboard", label: "Overview", icon: "📊" },
   { href: "/dashboard/projects", label: "Projects", icon: "📁" },
+  { href: "/dashboard/jobs/new", label: "Post Job", icon: "➕" },
   { href: "/dashboard/favorites", label: "Favorites", icon: "❤️" },
   { href: "/dashboard/notifications", label: "Notifications", icon: "🔔" },
   { href: "/dashboard/profile", label: "Profile Settings", icon: "👤" },
   { href: "/dashboard/upload", label: "Upload", icon: "⬆️" },
   { href: "/search", label: "Find Freelancers", icon: "🔍" },
 ];
-
 export default function DashboardSidebar() {
   const pathname = usePathname();
 
