@@ -1,13 +1,35 @@
 "use client";
 
-import EmptyState from "@/app/components/EmptyState";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/app/lib/supabase";
+import LoadingSkeleton from "@/app/components/LoadingSkeleton";
+import EmptyState from "@/app/components/EmptyState";
+
+type Favorite = {
+  id: string;
+  job_id?: string;
+  freelancer_id?: string;
+  jobs?: {
+    id: string;
+    title?: string;
+    description?: string;
+    budget?: number | string;
+    category?: string;
+  };
+  profiles?: {
+    id: string;
+    full_name?: string;
+    role?: string;
+    category?: string;
+    bio?: string;
+  };
+};
 
 export default function FavoritesPage() {
-  const [favorites, setFavorites] = useState<any[]>([]);
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     loadFavorites();
@@ -19,165 +41,121 @@ export default function FavoritesPage() {
     } = await supabase.auth.getUser();
 
     if (!user) {
+      setMessage("Please login first.");
       setLoading(false);
       return;
     }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("favorites")
-      .select(`
+      .select(
+        `
         id,
-        freelancer_id,
         job_id,
-        profiles:freelancer_id (
-          full_name,
-          role,
+        freelancer_id,
+        jobs (
+          id,
+          title,
+          description,
+          budget,
           category
         ),
-        jobs:job_id (
-          title,
+        profiles (
+          id,
+          full_name,
+          role,
           category,
-          budget
+          bio
         )
-      `)
+      `
+      )
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    setFavorites(data || []);
+    if (error) {
+      setMessage(error.message);
+      setLoading(false);
+      return;
+    }
+
+setFavorites((data as unknown as Favorite[]) || []);
     setLoading(false);
   };
 
-  const removeFavorite = async (favoriteId: string) => {
-    await supabase.from("favorites").delete().eq("id", favoriteId);
-
-    setFavorites((prev) =>
-      prev.filter((fav) => fav.id !== favoriteId)
-    );
-  };
-
-  if (loading) return <p>Loading favorites...</p>;
+  if (loading) return <LoadingSkeleton />;
 
   return (
-    <div>
-      <section className="hero-section" style={hero}>
-        <h1>Favorites</h1>
-        <p>View and manage saved freelancers and jobs.</p>
+    <main className="favorites-page">
+      <section className="favorites-hero dark-card">
+        <p className="dashboard-badge">Saved Items</p>
+
+        <h1>Your favorites</h1>
+
+        <p>
+          View jobs and freelancers you saved from the marketplace.
+        </p>
       </section>
 
-      {favorites.length === 0 && (
-  <EmptyState
-    emoji="❤️"
-    title="No favorites yet"
-    description="Save freelancers and jobs from the search page."
-    buttonText="Search Marketplace"
-    buttonLink="/search"
-  />
-)}
+      {message && <p className="search-message">{message}</p>}
 
-      <div style={grid}>
-        {favorites.map((fav) => (
-          <div key={fav.id} className="dark-card" style={card}>
-            {fav.freelancer_id && (
-              <>
-                <span style={badge}>Freelancer</span>
+      {favorites.length === 0 ? (
+        <EmptyState
+          emoji="❤️"
+          title="No favorites yet"
+          description="Saved jobs and freelancers will appear here."
+          buttonText="Browse Marketplace"
+          buttonLink="/search"
+        />
+      ) : (
+        <section className="marketplace-grid">
+          {favorites.map((favorite) => {
+            const job = favorite.jobs;
+            const freelancer = favorite.profiles;
 
-                <h3>{fav.profiles?.full_name || "Freelancer"}</h3>
+            return (
+              <div key={favorite.id} className="dark-card marketplace-card">
+                <span className="marketplace-badge">
+                  {job ? "Saved Job" : "Saved Freelancer"}
+                </span>
 
-                <p>
-                  <strong>Role:</strong> {fav.profiles?.role || "N/A"}
-                </p>
+                {job && (
+                  <>
+                    <h3>{job.title || "Untitled Job"}</h3>
+                    <p>{job.description?.slice(0, 140) || "No description."}</p>
+                    <p>
+                      <strong>Budget:</strong> ZAR {job.budget || "N/A"}
+                    </p>
 
-                <p>
-                  <strong>Category:</strong> {fav.profiles?.category || "N/A"}
-                </p>
+                    <Link
+                      href={`/dashboard/jobs/${job.id}`}
+                      className="primary-action-link"
+                    >
+                      View Job
+                    </Link>
+                  </>
+                )}
 
-                <Link href={`/freelancers/${fav.freelancer_id}`} style={blueBtn}>
-                  View Freelancer
-                </Link>
-              </>
-            )}
+                {freelancer && (
+                  <>
+                    <h3>{freelancer.full_name || "Unnamed Freelancer"}</h3>
+                    <p>
+                      <strong>Role:</strong> {freelancer.role || "N/A"}
+                    </p>
+                    <p>{freelancer.bio?.slice(0, 140) || "No bio yet."}</p>
 
-            {fav.job_id && (
-              <>
-                <span style={badge}>Job</span>
-
-                <h3>{fav.jobs?.title || "Job"}</h3>
-
-                <p>
-                  <strong>Category:</strong> {fav.jobs?.category || "N/A"}
-                </p>
-
-                <p>
-                  <strong>Budget:</strong> ZAR {fav.jobs?.budget || "N/A"}
-                </p>
-
-                <Link href={`/dashboard/jobs/${fav.job_id}`} style={blueBtn}>
-                  View Job
-                </Link>
-              </>
-            )}
-
-            <button onClick={() => removeFavorite(fav.id)} style={redBtn}>
-              Remove
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
+                    <Link
+                      href={`/freelancers/${freelancer.id}`}
+                      className="primary-action-link"
+                    >
+                      View Profile
+                    </Link>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </section>
+      )}
+    </main>
   );
 }
-
-const hero = {
-  background: "linear-gradient(135deg, #0f172a, #2563eb)",
-  padding: 35,
-  borderRadius: 18,
-  marginBottom: 30,
-};
-
-const grid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-  gap: 22,
-};
-
-const card = {
-  padding: 24,
-  borderRadius: 18,
-  boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
-};
-
-const emptyCard = {
-  padding: 30,
-  borderRadius: 18,
-};
-
-const badge = {
-  display: "inline-block",
-  background: "#dbeafe",
-  color: "#1d4ed8",
-  padding: "6px 10px",
-  borderRadius: 20,
-  fontSize: 13,
-  fontWeight: "bold",
-};
-
-const blueBtn = {
-  display: "inline-block",
-  marginTop: 15,
-  marginRight: 10,
-  padding: "10px 14px",
-  background: "#2563eb",
-  color: "white",
-  borderRadius: 10,
-  textDecoration: "none",
-};
-
-const redBtn = {
-  marginTop: 15,
-  padding: "10px 14px",
-  background: "#dc2626",
-  color: "white",
-  border: "none",
-  borderRadius: 10,
-  cursor: "pointer",
-};
