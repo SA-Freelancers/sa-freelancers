@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 
+const blockedContactPattern =
+  /(\bwhatsapp\b|\bemail\b|\bgmail\b|\byahoo\b|\boutlook\b|@|\+?\d[\d\s-]{7,}\d)/i;
+
 export default function NewJobPage() {
   const router = useRouter();
 
@@ -19,6 +22,13 @@ export default function NewJobPage() {
 
     if (!title.trim() || !category || !budget || !description.trim()) {
       setMessage("Please fill in all fields.");
+      return;
+    }
+
+    if (blockedContactPattern.test(description)) {
+      setMessage(
+        "Please do not include phone numbers, WhatsApp, emails, or outside contact details in the job description."
+      );
       return;
     }
 
@@ -51,6 +61,7 @@ export default function NewJobPage() {
 
     setMessage("Job posted successfully!");
     setPosting(false);
+
     router.push("/dashboard/projects");
   };
 
@@ -68,6 +79,11 @@ export default function NewJobPage() {
       </section>
 
       <section className="dark-card job-card">
+        <div className="job-warning">
+          Please do not include phone numbers, WhatsApp, emails or outside
+          contact details before hiring through the platform.
+        </div>
+
         <label className="form-label">Job Title</label>
 
         <input
