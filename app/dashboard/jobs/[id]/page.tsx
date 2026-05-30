@@ -3,15 +3,30 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
+import LoadingSkeleton from "@/app/components/LoadingSkeleton";
+import EmptyState from "@/app/components/EmptyState";
+
+type Job = {
+  id: string;
+  title?: string;
+  category?: string;
+  description?: string;
+  budget?: number | string;
+};
+
+const blockedContactPattern =
+  /(\bwhatsapp\b|\bemail\b|\bgmail\b|\byahoo\b|\boutlook\b|@|\+?\d[\d\s-]{7,}\d)/i;
 
 export default function JobDetailsPage() {
   const params = useParams();
-  const id = params.id as string;
+  const id = params.jobId as string;
 
-  const [job, setJob] = useState<any>(null);
+  const [job, setJob] = useState<Job | null>(null);
   const [proposal, setProposal] = useState("");
   const [price, setPrice] = useState("");
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     loadJob();
@@ -25,10 +40,30 @@ export default function JobDetailsPage() {
       .single();
 
     setJob(data);
+    setLoading(false);
   };
 
   const applyForJob = async () => {
     setMessage("");
+
+    if (!proposal.trim()) {
+      setMessage("Please write a short proposal first.");
+      return;
+    }
+
+    if (!price || Number(price) <= 0) {
+      setMessage("Please enter a valid proposed price.");
+      return;
+    }
+
+    if (blockedContactPattern.test(proposal)) {
+      setMessage(
+        "Please do not share phone numbers, WhatsApp, email addresses, or contact details before hiring."
+      );
+      return;
+    }
+
+    setSubmitting(true);
 
     const {
       data: { user },
@@ -36,6 +71,7 @@ export default function JobDetailsPage() {
 
     if (!user) {
       setMessage("Please login first.");
+      setSubmitting(false);
       return;
     }
 
@@ -49,122 +85,99 @@ export default function JobDetailsPage() {
 
     if (error) {
       setMessage(error.message);
+      setSubmitting(false);
       return;
     }
 
     setMessage("Application submitted successfully!");
     setProposal("");
     setPrice("");
+    setSubmitting(false);
   };
 
-  if (!job) return <p>Loading job...</p>;
+  if (loading) return <LoadingSkeleton />;
+
+  if (!job) {
+    return (
+      <main className="job-page">
+        <EmptyState
+          emoji="💼"
+          title="Job not found"
+          description="This job could not be found."
+          buttonText="Browse Marketplace"
+          buttonLink="/search"
+        />
+      </main>
+    );
+  }
 
   return (
-    <div>
-      <section className="hero-section" style={hero}>
-        <h1>{job.title}</h1>
-        <p>{job.category}</p>
+    <main className="job-page">
+      <section className="job-hero dark-card">
+        <p className="dashboard-badge">{job.category || "General Job"}</p>
+
+        <h1>{job.title || "Untitled Job"}</h1>
+
+        <p>
+          Review the project details and submit a professional proposal without
+          sharing outside contact details.
+        </p>
       </section>
 
-      <div style={layout}>
-        <section className="dark-card" style={card}>
-          <span style={badge}>{job.category || "General"}</span>
+      <section className="job-layout">
+        <div className="dark-card job-card">
+          <span className="marketplace-badge">
+            {job.category || "General"}
+          </span>
 
           <h2>Job Details</h2>
 
-          <p>{job.description}</p>
-
-          <p>
-            <strong>Budget:</strong>{" "}
-            <span style={priceText}>ZAR {job.budget}</span>
+          <p className="job-description">
+            {job.description || "No job description provided."}
           </p>
-        </section>
 
-        <section className="dark-card" style={card}>
-          <h2>Apply for this Job</h2>
+          <div className="job-budget-box">
+            <span>Client Budget</span>
+            <strong>ZAR {job.budget || "N/A"}</strong>
+          </div>
+        </div>
 
+        <div className="dark-card job-card">
+          <h2>Apply safely</h2>
+
+          <p className="job-warning">
+            Do not include phone numbers, WhatsApp, email addresses or external
+            contact details before the client hires you.
+          </p>
+
+          <label className="form-label">Your Proposal</label>
           <textarea
-            placeholder="Write your proposal..."
+            placeholder="Explain your experience, timeline, and how you will solve the client’s problem..."
             value={proposal}
             onChange={(e) => setProposal(e.target.value)}
-            style={{ ...input, minHeight: 140 }}
+            className="form-input proposal-textarea"
           />
 
+          <label className="form-label">Your Proposed Price</label>
           <input
             type="number"
-            placeholder="Your proposed price"
+            placeholder="Example: 2500"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
-            style={input}
+            className="form-input"
           />
 
-          <button onClick={applyForJob} style={button}>
-            Submit Application
+          <button
+            onClick={applyForJob}
+            disabled={submitting}
+            className="primary-action-btn"
+          >
+            {submitting ? "Submitting..." : "Submit Application"}
           </button>
 
-          {message && <p style={messageBox}>{message}</p>}
-        </section>
-      </div>
-    </div>
+          {message && <p className="upload-message">{message}</p>}
+        </div>
+      </section>
+    </main>
   );
 }
-
-const hero = {
-  background: "linear-gradient(135deg, #0f172a, #2563eb)",
-  padding: 35,
-  borderRadius: 18,
-  marginBottom: 30,
-};
-
-const layout = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-  gap: 25,
-};
-
-const card = {
-  padding: 28,
-  borderRadius: 18,
-  boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
-};
-
-const badge = {
-  display: "inline-block",
-  background: "#dbeafe",
-  color: "#1d4ed8",
-  padding: "6px 10px",
-  borderRadius: 20,
-  fontWeight: "bold",
-  fontSize: 13,
-  marginBottom: 15,
-};
-
-const input = {
-  width: "100%",
-  padding: 13,
-  marginBottom: 15,
-  borderRadius: 10,
-};
-
-const button = {
-  padding: "12px 18px",
-  background: "#2563eb",
-  color: "white",
-  border: "none",
-  borderRadius: 10,
-  cursor: "pointer",
-  fontWeight: "bold",
-};
-
-const priceText = {
-  color: "#22c55e",
-  fontWeight: "bold",
-};
-
-const messageBox = {
-  marginTop: 18,
-  background: "#ecfdf5",
-  color: "#166534",
-  padding: 14,
-  borderRadius: 12,
-};
