@@ -1,12 +1,22 @@
 "use client";
 
 import EmptyState from "@/app/components/EmptyState";
+import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/app/lib/supabase";
 
+type Notification = {
+  id: string;
+  title?: string;
+  body?: string;
+  link?: string;
+  is_read?: boolean;
+  created_at: string;
+};
+
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,7 +39,7 @@ export default function NotificationsPage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    setNotifications(data || []);
+    setNotifications((data as Notification[]) || []);
 
     await supabase
       .from("notifications")
@@ -39,62 +49,51 @@ export default function NotificationsPage() {
     setLoading(false);
   };
 
-  if (loading) return <p>Loading notifications...</p>;
+  if (loading) return <LoadingSkeleton />;
 
   return (
-    <div>
-      <section className="hero-section" style={hero}>
-        <h1>Notifications</h1>
-        <p>Stay updated on applications, messages, projects, and payments.</p>
+    <main className="notifications-page">
+      <section className="notifications-hero dark-card">
+        <p className="dashboard-badge">Notifications</p>
+
+        <h1>Your latest updates</h1>
+
+        <p>Stay updated on applications, messages, projects and payments.</p>
       </section>
 
-      {notifications.length === 0 && (
-  <EmptyState
-    emoji="🔔"
-    title="No notifications yet"
-    description="Your updates and alerts will appear here."
-    buttonText="Go Dashboard"
-    buttonLink="/dashboard"
-  />
-)}
+      {notifications.length === 0 ? (
+        <EmptyState
+          emoji="🔔"
+          title="No notifications yet"
+          description="Your updates and alerts will appear here."
+          buttonText="Go Dashboard"
+          buttonLink="/dashboard"
+        />
+      ) : (
+        <section className="notifications-list">
+          {notifications.map((notification) => (
+            <Link
+              key={notification.id}
+              href={notification.link || "/dashboard"}
+              className={`dark-card notification-card ${
+                notification.is_read ? "read" : "unread"
+              }`}
+            >
+              <div className="notification-icon">🔔</div>
 
-      <div style={{ display: "grid", gap: 15 }}>
-        {notifications.map((notification) => (
-          <Link
-            key={notification.id}
-            href={notification.link || "/dashboard"}
-            className="dark-card"
-            style={{
-              ...card,
-              opacity: notification.is_read ? 0.75 : 1,
-            }}
-          >
-            <h3>{notification.title}</h3>
-            <p>{notification.body}</p>
-            <small>{new Date(notification.created_at).toLocaleString()}</small>
-          </Link>
-        ))}
-      </div>
-    </div>
+              <div>
+                <h3>{notification.title || "Notification"}</h3>
+
+                <p>{notification.body || "You have a new update."}</p>
+
+                <small>
+                  {new Date(notification.created_at).toLocaleString()}
+                </small>
+              </div>
+            </Link>
+          ))}
+        </section>
+      )}
+    </main>
   );
 }
-
-const hero = {
-  background: "linear-gradient(135deg, #0f172a, #2563eb)",
-  padding: 35,
-  borderRadius: 18,
-  marginBottom: 30,
-};
-
-const card = {
-  display: "block",
-  padding: 22,
-  borderRadius: 16,
-  textDecoration: "none",
-  boxShadow: "0 8px 20px rgba(15,23,42,0.05)",
-};
-
-const emptyCard = {
-  padding: 30,
-  borderRadius: 18,
-};
