@@ -1572,3 +1572,16 @@ body:not(.dark) .home-hero * {
 .home-hero h1 span {
   color: #22c55e !important;
 }
+.navbar-wrapper,
+body:not(.dark) .navbar-wrapper {
+  background: rgba(15, 23, 42, 0.96) !important;
+}
+
+.navbar-logo,
+.navbar-link,
+.navbar-login-btn,
+body:not(.dark) .navbar-logo,
+body:not(.dark) .navbar-link,
+body:not(.dark) .navbar-login-btn {
+  color: white !important;
+}
