@@ -39,14 +39,14 @@ function PaymentSuccessContent() {
 
   return (
     <div style={page}>
-      <div style={card}>
+      <div className="dark-card" style={card}>
         {success ? (
           <>
             <div style={icon}>✅</div>
 
             <h1>Payment Successful</h1>
 
-            <p style={text}>
+            <p>
               Your payment was completed and the project is now marked as paid.
             </p>
 
@@ -60,7 +60,7 @@ function PaymentSuccessContent() {
 
             <h1>Payment Could Not Be Verified</h1>
 
-            <p style={text}>Please return to your projects and try again.</p>
+            <p>Please return to your projects and try again.</p>
 
             <Link href="/dashboard/projects" style={button}>
               Back to Projects
@@ -88,10 +88,8 @@ const page = {
 };
 
 const card = {
-  background: "white",
   padding: 45,
   borderRadius: 20,
-  border: "1px solid #e5e7eb",
   boxShadow: "0 15px 35px rgba(15,23,42,0.08)",
   textAlign: "center" as const,
   maxWidth: 600,
@@ -100,12 +98,6 @@ const card = {
 const icon = {
   fontSize: 60,
   marginBottom: 20,
-};
-
-const text = {
-  color: "#475569",
-  fontSize: 17,
-  marginBottom: 30,
 };
 
 const button = {

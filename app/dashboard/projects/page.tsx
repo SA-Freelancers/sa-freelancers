@@ -71,15 +71,15 @@ export default function ProjectsPage() {
 
   return (
     <div>
-      <div style={hero}>
+      <section className="hero-section" style={hero}>
         <h1>Projects</h1>
         <p>Track active work, payments, messages, and completion status.</p>
-      </div>
+      </section>
 
       {message && <p>{message}</p>}
 
       {projects.length === 0 && (
-        <div style={emptyCard}>
+        <div className="dark-card" style={emptyCard}>
           <h2>No projects yet</h2>
           <p>Projects appear after a client accepts a freelancer application.</p>
         </div>
@@ -87,8 +87,10 @@ export default function ProjectsPage() {
 
       <div style={grid}>
         {projects.map((project) => (
-          <div key={project.id} style={card}>
-            <span style={statusBadge(project.status)}>{project.status}</span>
+          <div key={project.id} className="dark-card" style={card}>
+            <span style={statusBadge(project.status)}>
+              {project.status || "active"}
+            </span>
 
             <h2>{project.jobs?.title || "Project"}</h2>
 
@@ -147,7 +149,6 @@ export default function ProjectsPage() {
 
 const hero = {
   background: "linear-gradient(135deg, #0f172a, #2563eb)",
-  color: "white",
   padding: 35,
   borderRadius: 18,
   marginBottom: 30,
@@ -160,18 +161,14 @@ const grid = {
 };
 
 const card = {
-  background: "white",
   padding: 24,
   borderRadius: 18,
-  border: "1px solid #e5e7eb",
   boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
 };
 
 const emptyCard = {
-  background: "white",
   padding: 30,
   borderRadius: 18,
-  border: "1px solid #e5e7eb",
 };
 
 const actions = {
@@ -217,8 +214,18 @@ const redBtn = {
 
 const statusBadge = (status: string) => ({
   display: "inline-block",
-  background: status === "completed" ? "#dcfce7" : status === "cancelled" ? "#fee2e2" : "#dbeafe",
-  color: status === "completed" ? "#166534" : status === "cancelled" ? "#991b1b" : "#1d4ed8",
+  background:
+    status === "completed"
+      ? "#dcfce7"
+      : status === "cancelled"
+      ? "#fee2e2"
+      : "#dbeafe",
+  color:
+    status === "completed"
+      ? "#166534"
+      : status === "cancelled"
+      ? "#991b1b"
+      : "#1d4ed8",
   padding: "6px 10px",
   borderRadius: 20,
   fontWeight: "bold",
@@ -226,6 +233,6 @@ const statusBadge = (status: string) => ({
 });
 
 const paymentBadge = (status: string) => ({
-  color: status === "paid" ? "#16a34a" : "#dc2626",
+  color: status === "paid" ? "#22c55e" : "#f87171",
   fontWeight: "bold",
 });

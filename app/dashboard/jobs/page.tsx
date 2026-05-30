@@ -60,12 +60,15 @@ export default function JobsPage() {
 
   return (
     <div>
-      <div style={hero}>
+      <section className="hero-section" style={hero}>
         <h1>Jobs Marketplace</h1>
-        <p>Create jobs, browse opportunities, and connect with freelancers.</p>
-      </div>
 
-      <div style={formCard}>
+        <p>
+          Create jobs, browse opportunities, and connect with freelancers.
+        </p>
+      </section>
+
+      <div className="dark-card" style={formCard}>
         <h2>Post a New Job</h2>
 
         <input
@@ -79,7 +82,10 @@ export default function JobsPage() {
           placeholder="Job description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          style={{ ...input, minHeight: 120 }}
+          style={{
+            ...input,
+            minHeight: 120,
+          }}
         />
 
         <input
@@ -108,19 +114,31 @@ export default function JobsPage() {
           Create Job
         </button>
 
-        {message && <p>{message}</p>}
+        {message && (
+          <p style={{ marginTop: 15 }}>
+            {message}
+          </p>
+        )}
       </div>
 
-      <h2 style={{ marginTop: 40 }}>Available Jobs</h2>
+      <h2 style={{ marginTop: 40 }}>
+        Available Jobs
+      </h2>
 
       <div style={grid}>
         {jobs.map((job) => (
-          <div key={job.id} style={card}>
-            <span style={badge}>{job.category || "General"}</span>
+          <div
+            key={job.id}
+            className="dark-card"
+            style={card}
+          >
+            <span style={badge}>
+              {job.category || "General"}
+            </span>
 
             <h3>{job.title}</h3>
 
-            <p style={{ color: "#475569" }}>
+            <p>
               {job.description?.slice(0, 140)}
             </p>
 
@@ -128,7 +146,10 @@ export default function JobsPage() {
               <strong>Budget:</strong> ZAR {job.budget}
             </p>
 
-            <Link href={`/dashboard/jobs/${job.id}`} style={linkBtn}>
+            <Link
+              href={`/dashboard/jobs/${job.id}`}
+              style={linkBtn}
+            >
               View Job
             </Link>
 
@@ -147,17 +168,14 @@ export default function JobsPage() {
 
 const hero = {
   background: "linear-gradient(135deg, #0f172a, #2563eb)",
-  color: "white",
   padding: 35,
   borderRadius: 18,
   marginBottom: 30,
 };
 
 const formCard = {
-  background: "white",
   padding: 25,
   borderRadius: 18,
-  border: "1px solid #e5e7eb",
   boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
 };
 
@@ -166,7 +184,6 @@ const input = {
   padding: 13,
   marginBottom: 14,
   borderRadius: 10,
-  border: "1px solid #cbd5e1",
 };
 
 const primaryBtn = {
@@ -181,16 +198,16 @@ const primaryBtn = {
 
 const grid = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gridTemplateColumns:
+    "repeat(auto-fit, minmax(280px, 1fr))",
   gap: 22,
 };
 
 const card = {
-  background: "white",
   padding: 24,
   borderRadius: 18,
-  border: "1px solid #e5e7eb",
-  boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
+  boxShadow:
+    "0 10px 25px rgba(15,23,42,0.06)",
 };
 
 const badge = {
@@ -218,8 +235,8 @@ const outlineBtn = {
   display: "inline-block",
   marginTop: 15,
   padding: "10px 14px",
-  background: "#f1f5f9",
-  color: "#0f172a",
+  background: "#475569",
+  color: "white",
   borderRadius: 10,
   textDecoration: "none",
 };

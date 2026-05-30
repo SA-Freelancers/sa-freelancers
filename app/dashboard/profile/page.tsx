@@ -70,13 +70,13 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <section style={hero}>
+      <section className="hero-section" style={hero}>
         <h1>My Profile</h1>
         <p>Update your professional identity, category, bio, and portfolio.</p>
       </section>
 
       <div style={layout}>
-        <section style={card}>
+        <section className="dark-card" style={card}>
           <h2>Edit Profile</h2>
 
           <input
@@ -105,6 +105,7 @@ export default function ProfilePage() {
             <option value="Video Editing">Video Editing</option>
             <option value="Marketing">Marketing</option>
             <option value="Engineering">Engineering</option>
+            <option value="Fitting & Turning">Fitting & Turning</option>
           </select>
 
           <textarea
@@ -118,10 +119,10 @@ export default function ProfilePage() {
             Save Profile
           </button>
 
-          {message && <p>{message}</p>}
+          {message && <p style={messageBox}>{message}</p>}
         </section>
 
-        <section style={card}>
+        <section className="dark-card" style={card}>
           <h2>Profile Preview</h2>
 
           {profile?.avatar_url ? (
@@ -150,9 +151,9 @@ export default function ProfilePage() {
             <strong>Category:</strong> {category || "Not selected"}
           </p>
 
-          <p style={{ color: "#475569" }}>{bio || "Your bio will appear here."}</p>
+          <p>{bio || "Your bio will appear here."}</p>
 
-          <hr style={{ margin: "25px 0" }} />
+          <hr style={{ margin: "25px 0", borderColor: "var(--border)" }} />
 
           <h3>Documents</h3>
 
@@ -179,7 +180,6 @@ export default function ProfilePage() {
 
 const hero = {
   background: "linear-gradient(135deg, #0f172a, #2563eb)",
-  color: "white",
   padding: 35,
   borderRadius: 18,
   marginBottom: 30,
@@ -192,10 +192,8 @@ const layout = {
 };
 
 const card = {
-  background: "white",
   padding: 28,
   borderRadius: 18,
-  border: "1px solid #e5e7eb",
   boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
 };
 
@@ -204,7 +202,6 @@ const input = {
   padding: 13,
   marginBottom: 14,
   borderRadius: 10,
-  border: "1px solid #cbd5e1",
 };
 
 const primaryBtn = {
@@ -227,4 +224,12 @@ const avatarPlaceholder = {
   justifyContent: "center",
   fontSize: 45,
   marginBottom: 18,
+};
+
+const messageBox = {
+  marginTop: 18,
+  background: "#ecfdf5",
+  color: "#166534",
+  padding: 14,
+  borderRadius: 12,
 };

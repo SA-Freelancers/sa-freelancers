@@ -63,12 +63,10 @@ export default function RegisterPage() {
 
   return (
     <main style={page}>
-      <div style={card}>
+      <div className="dark-card" style={card}>
         <h1>Create Account</h1>
 
-        <p style={{ color: "#64748b" }}>
-          Join SA Freelancers as a client or freelancer.
-        </p>
+        <p>Join SA Freelancers as a client or freelancer.</p>
 
         <input
           placeholder="Full name"
@@ -106,11 +104,11 @@ export default function RegisterPage() {
           {loading ? "Creating..." : "Create Account"}
         </button>
 
-        {message && <p>{message}</p>}
+        {message && <p style={{ marginTop: 15 }}>{message}</p>}
 
         <p style={{ marginTop: 20 }}>
           Already have an account?{" "}
-          <Link href="/login" style={{ color: "#2563eb", fontWeight: "bold" }}>
+          <Link href="/login" style={{ color: "#60a5fa", fontWeight: "bold" }}>
             Login
           </Link>
         </p>
@@ -124,17 +122,14 @@ const page = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  background: "linear-gradient(135deg, #eff6ff, #f8fafc)",
   padding: 20,
 };
 
 const card = {
   width: "100%",
   maxWidth: 460,
-  background: "white",
   padding: 35,
   borderRadius: 20,
-  border: "1px solid #e5e7eb",
   boxShadow: "0 15px 35px rgba(15,23,42,0.08)",
 };
 
@@ -143,7 +138,6 @@ const input = {
   padding: 14,
   marginTop: 15,
   borderRadius: 12,
-  border: "1px solid #cbd5e1",
 };
 
 const button = {

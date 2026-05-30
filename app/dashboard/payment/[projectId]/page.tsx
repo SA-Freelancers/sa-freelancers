@@ -44,12 +44,12 @@ export default function PaymentPage() {
 
   return (
     <div>
-      <section style={hero}>
+      <section className="hero-section" style={hero}>
         <h1>Secure Project Payment</h1>
         <p>Pay safely through PayFast to activate project payment tracking.</p>
       </section>
 
-      <div style={card}>
+      <div className="dark-card" style={card}>
         <span style={badge}>PayFast Checkout</span>
 
         <h2>{project.jobs?.title}</h2>
@@ -60,20 +60,26 @@ export default function PaymentPage() {
 
         <p>
           <strong>Amount:</strong>{" "}
-          <span style={{ fontSize: 28, fontWeight: "bold", color: "#16a34a" }}>
+          <span
+            style={{
+              fontSize: 28,
+              fontWeight: "bold",
+              color: "#22c55e",
+            }}
+          >
             ZAR {project.jobs?.budget}
           </span>
         </p>
 
-        <p style={{ color: "#475569" }}>
+        <p>
           You will be redirected to PayFast sandbox to complete payment.
         </p>
 
         <form action="https://sandbox.payfast.co.za/eng/process" method="post">
-          <input type="hidden" name="merchant_id" value={merchantId} />
-          <input type="hidden" name="merchant_key" value={merchantKey} />
-          <input type="hidden" name="amount" value={project.jobs?.budget} />
-          <input type="hidden" name="item_name" value={project.jobs?.title} />
+          <input type="hidden" name="merchant_id" value={merchantId || ""} />
+          <input type="hidden" name="merchant_key" value={merchantKey || ""} />
+          <input type="hidden" name="amount" value={project.jobs?.budget || ""} />
+          <input type="hidden" name="item_name" value={project.jobs?.title || "Project Payment"} />
           <input type="hidden" name="return_url" value={returnUrl} />
           <input type="hidden" name="cancel_url" value={cancelUrl} />
           <input type="hidden" name="notify_url" value={notifyUrl} />
@@ -89,17 +95,14 @@ export default function PaymentPage() {
 
 const hero = {
   background: "linear-gradient(135deg, #0f172a, #16a34a)",
-  color: "white",
   padding: 35,
   borderRadius: 18,
   marginBottom: 30,
 };
 
 const card = {
-  background: "white",
   padding: 32,
   borderRadius: 18,
-  border: "1px solid #e5e7eb",
   boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
   maxWidth: 700,
 };

@@ -36,13 +36,13 @@ export default function NotificationsPage() {
 
   return (
     <div>
-      <section style={hero}>
+      <section className="hero-section" style={hero}>
         <h1>Notifications</h1>
         <p>Stay updated on applications, messages, projects, and payments.</p>
       </section>
 
       {notifications.length === 0 && (
-        <div style={emptyCard}>
+        <div className="dark-card" style={emptyCard}>
           <h2>No notifications yet</h2>
           <p>Your updates will appear here.</p>
         </div>
@@ -53,18 +53,16 @@ export default function NotificationsPage() {
           <Link
             key={notification.id}
             href={notification.link || "/dashboard"}
-            style={{
-              ...card,
-              background: notification.is_read ? "white" : "#eff6ff",
-            }}
+            className="dark-card"
+            style={card}
           >
-            <div>
-              <h3>{notification.title}</h3>
-              <p style={{ color: "#475569" }}>{notification.body}</p>
-              <small>
-                {new Date(notification.created_at).toLocaleString()}
-              </small>
-            </div>
+            <h3>{notification.title}</h3>
+
+            <p>{notification.body}</p>
+
+            <small>
+              {new Date(notification.created_at).toLocaleString()}
+            </small>
           </Link>
         ))}
       </div>
@@ -74,7 +72,6 @@ export default function NotificationsPage() {
 
 const hero = {
   background: "linear-gradient(135deg, #0f172a, #2563eb)",
-  color: "white",
   padding: 35,
   borderRadius: 18,
   marginBottom: 30,
@@ -84,15 +81,11 @@ const card = {
   display: "block",
   padding: 22,
   borderRadius: 16,
-  border: "1px solid #e5e7eb",
   textDecoration: "none",
-  color: "#0f172a",
   boxShadow: "0 8px 20px rgba(15,23,42,0.05)",
 };
 
 const emptyCard = {
-  background: "white",
   padding: 30,
   borderRadius: 18,
-  border: "1px solid #e5e7eb",
 };

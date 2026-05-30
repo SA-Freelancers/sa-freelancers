@@ -5,25 +5,36 @@ export default function Footer() {
     <footer style={footer}>
       <div style={grid}>
         <div>
-          <h2>SA Freelancers</h2>
-          <p>
+          <h2 style={{ color: "white" }}>SA Freelancers</h2>
+
+          <p style={{ color: "#cbd5e1" }}>
             A South African freelance marketplace for clients and skilled
             professionals.
           </p>
         </div>
 
         <div>
-          <h3>Platform</h3>
-          <Link href="/search" style={link}>Search Marketplace</Link>
-          <Link href="/dashboard/jobs" style={link}>Jobs</Link>
-          <Link href="/register" style={link}>Create Account</Link>
+          <h3 style={{ color: "white" }}>Platform</h3>
+
+          <Link href="/search" style={link}>
+            Search Marketplace
+          </Link>
+
+          <Link href="/dashboard/jobs" style={link}>
+            Jobs
+          </Link>
+
+          <Link href="/register" style={link}>
+            Create Account
+          </Link>
         </div>
 
         <div>
-          <h3>Trust</h3>
-          <p>Secure payments</p>
-          <p>Verified profiles</p>
-          <p>Ratings & reviews</p>
+          <h3 style={{ color: "white" }}>Trust</h3>
+
+          <p style={{ color: "#cbd5e1" }}>Secure payments</p>
+          <p style={{ color: "#cbd5e1" }}>Verified profiles</p>
+          <p style={{ color: "#cbd5e1" }}>Ratings & reviews</p>
         </div>
       </div>
 
@@ -35,7 +46,7 @@ export default function Footer() {
 }
 
 const footer = {
-  background: "#0f172a",
+  background: "#020617",
   color: "white",
   padding: "45px 25px 20px",
 };

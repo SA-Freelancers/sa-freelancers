@@ -35,12 +35,10 @@ export default function LoginPage() {
 
   return (
     <main style={page}>
-      <div style={card}>
+      <div className="dark-card" style={card}>
         <h1>Welcome Back</h1>
 
-        <p style={{ color: "#64748b" }}>
-          Login to manage jobs, projects, payments, and messages.
-        </p>
+        <p>Login to manage jobs, projects, payments, and messages.</p>
 
         <input
           type="email"
@@ -62,11 +60,11 @@ export default function LoginPage() {
           {loading ? "Logging in..." : "Login"}
         </button>
 
-        {message && <p style={{ color: "red" }}>{message}</p>}
+        {message && <p style={{ color: "#ef4444" }}>{message}</p>}
 
         <p style={{ marginTop: 20 }}>
           No account?{" "}
-          <Link href="/register" style={{ color: "#2563eb", fontWeight: "bold" }}>
+          <Link href="/register" style={{ color: "#60a5fa", fontWeight: "bold" }}>
             Create one
           </Link>
         </p>
@@ -80,17 +78,14 @@ const page = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  background: "linear-gradient(135deg, #eff6ff, #f8fafc)",
   padding: 20,
 };
 
 const card = {
   width: "100%",
   maxWidth: 430,
-  background: "white",
   padding: 35,
   borderRadius: 20,
-  border: "1px solid #e5e7eb",
   boxShadow: "0 15px 35px rgba(15,23,42,0.08)",
 };
 
@@ -99,7 +94,6 @@ const input = {
   padding: 14,
   marginTop: 15,
   borderRadius: 12,
-  border: "1px solid #cbd5e1",
 };
 
 const button = {

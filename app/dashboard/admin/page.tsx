@@ -76,7 +76,7 @@ export default function AdminDashboardPage() {
 
   if (!isAdmin) {
     return (
-      <div style={card}>
+      <div className="dark-card" style={card}>
         <h1>Access denied</h1>
         <p>You are not an admin.</p>
       </div>
@@ -85,23 +85,23 @@ export default function AdminDashboardPage() {
 
   return (
     <div>
-      <section style={hero}>
+      <section className="hero-section" style={hero}>
         <h1>Admin Dashboard</h1>
         <p>Monitor users, jobs, applications, and platform activity.</p>
       </section>
 
       <div style={statsGrid}>
-        <div style={statCard}>
+        <div className="dark-card" style={statCard}>
           <h3>Total Users</h3>
           <p style={bigNumber}>{users.length}</p>
         </div>
 
-        <div style={statCard}>
+        <div className="dark-card" style={statCard}>
           <h3>Total Jobs</h3>
           <p style={bigNumber}>{jobs.length}</p>
         </div>
 
-        <div style={statCard}>
+        <div className="dark-card" style={statCard}>
           <h3>Applications</h3>
           <p style={bigNumber}>{applications.length}</p>
         </div>
@@ -111,12 +111,12 @@ export default function AdminDashboardPage() {
         <h2>Users</h2>
 
         {users.map((user) => (
-          <div key={user.id} style={listItem}>
+          <div key={user.id} className="dark-card" style={listItem}>
             <div>
               <strong>{user.full_name || "No name"}</strong>
-              <p>{user.email}</p>
+              <p>{user.email || "No email"}</p>
               <p>
-                {user.role} {user.is_admin ? "• Admin" : ""}
+                {user.role || "No role"} {user.is_admin ? "• Admin" : ""}
               </p>
             </div>
           </div>
@@ -127,10 +127,10 @@ export default function AdminDashboardPage() {
         <h2>Jobs</h2>
 
         {jobs.map((job) => (
-          <div key={job.id} style={listItem}>
+          <div key={job.id} className="dark-card" style={listItem}>
             <div>
               <strong>{job.title}</strong>
-              <p>{job.category}</p>
+              <p>{job.category || "No category"}</p>
               <p>ZAR {job.budget}</p>
             </div>
 
@@ -146,7 +146,6 @@ export default function AdminDashboardPage() {
 
 const hero = {
   background: "linear-gradient(135deg, #0f172a, #7c3aed)",
-  color: "white",
   padding: 35,
   borderRadius: 18,
   marginBottom: 30,
@@ -159,17 +158,15 @@ const statsGrid = {
 };
 
 const statCard = {
-  background: "white",
   padding: 25,
   borderRadius: 18,
-  border: "1px solid #e5e7eb",
   boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
 };
 
 const bigNumber = {
   fontSize: 42,
   fontWeight: "bold",
-  color: "#2563eb",
+  color: "#60a5fa",
 };
 
 const section = {
@@ -177,10 +174,8 @@ const section = {
 };
 
 const listItem = {
-  background: "white",
   padding: 18,
   borderRadius: 16,
-  border: "1px solid #e5e7eb",
   marginBottom: 12,
   display: "flex",
   justifyContent: "space-between",
@@ -197,8 +192,6 @@ const dangerBtn = {
 };
 
 const card = {
-  background: "white",
   padding: 30,
   borderRadius: 18,
-  border: "1px solid #e5e7eb",
 };

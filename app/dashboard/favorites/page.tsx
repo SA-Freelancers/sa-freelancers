@@ -58,13 +58,13 @@ export default function FavoritesPage() {
 
   return (
     <div>
-      <section style={hero}>
+      <section className="hero-section" style={hero}>
         <h1>Favorites</h1>
         <p>View and manage saved freelancers and jobs.</p>
       </section>
 
       {favorites.length === 0 && (
-        <div style={emptyCard}>
+        <div className="dark-card" style={emptyCard}>
           <h2>No favorites yet</h2>
           <p>Save freelancers and jobs from the search page.</p>
         </div>
@@ -72,7 +72,7 @@ export default function FavoritesPage() {
 
       <div style={grid}>
         {favorites.map((fav) => (
-          <div key={fav.id} style={card}>
+          <div key={fav.id} className="dark-card" style={card}>
             {fav.freelancer_id && (
               <>
                 <span style={badge}>Freelancer</span>
@@ -125,7 +125,6 @@ export default function FavoritesPage() {
 
 const hero = {
   background: "linear-gradient(135deg, #0f172a, #2563eb)",
-  color: "white",
   padding: 35,
   borderRadius: 18,
   marginBottom: 30,
@@ -138,18 +137,14 @@ const grid = {
 };
 
 const card = {
-  background: "white",
   padding: 24,
   borderRadius: 18,
-  border: "1px solid #e5e7eb",
   boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
 };
 
 const emptyCard = {
-  background: "white",
   padding: 30,
   borderRadius: 18,
-  border: "1px solid #e5e7eb",
 };
 
 const badge = {

@@ -15,7 +15,7 @@ export default function MessagesPage() {
   useEffect(() => {
     getCurrentUser();
     loadMessages();
-  }, []);
+  }, [applicationId]);
 
   const getCurrentUser = async () => {
     const {
@@ -79,12 +79,12 @@ export default function MessagesPage() {
 
   return (
     <div>
-      <section style={hero}>
+      <section className="hero-section" style={hero}>
         <h1>Messages</h1>
         <p>Communicate safely inside the platform.</p>
       </section>
 
-      <div style={chatBox}>
+      <div className="dark-card" style={chatBox}>
         {messages.length === 0 && <p>No messages yet.</p>}
 
         {messages.map((msg) => {
@@ -101,16 +101,29 @@ export default function MessagesPage() {
             >
               <div
                 style={{
-                  background: isMine ? "#2563eb" : "#e5e7eb",
-                  color: isMine ? "white" : "#0f172a",
+                  background: isMine ? "#2563eb" : "var(--surface)",
+                  color: isMine ? "white" : "var(--text)",
+                  border: isMine ? "none" : "1px solid var(--border)",
                   padding: "12px 16px",
                   borderRadius: 16,
                   maxWidth: "70%",
                 }}
               >
-                <p style={{ margin: 0 }}>{msg.content}</p>
+                <p
+                  style={{
+                    margin: 0,
+                    color: isMine ? "white" : "var(--muted)",
+                  }}
+                >
+                  {msg.content}
+                </p>
 
-                <small style={{ opacity: 0.8 }}>
+                <small
+                  style={{
+                    opacity: 0.8,
+                    color: isMine ? "white" : "var(--muted)",
+                  }}
+                >
                   {new Date(msg.created_at).toLocaleString()}
                 </small>
               </div>
@@ -138,15 +151,12 @@ export default function MessagesPage() {
 
 const hero = {
   background: "linear-gradient(135deg, #0f172a, #2563eb)",
-  color: "white",
   padding: 35,
   borderRadius: 18,
   marginBottom: 30,
 };
 
 const chatBox = {
-  background: "white",
-  border: "1px solid #e5e7eb",
   borderRadius: 18,
   padding: 24,
   height: 500,
@@ -164,7 +174,6 @@ const input = {
   flex: 1,
   padding: 14,
   borderRadius: 12,
-  border: "1px solid #cbd5e1",
 };
 
 const sendBtn = {

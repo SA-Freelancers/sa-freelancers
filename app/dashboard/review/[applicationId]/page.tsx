@@ -55,12 +55,12 @@ export default function ReviewPage() {
 
   return (
     <div>
-      <section style={hero}>
+      <section className="hero-section" style={hero}>
         <h1>Leave a Review</h1>
         <p>Rate the freelancer and help other clients make better decisions.</p>
       </section>
 
-      <div style={card}>
+      <div className="dark-card" style={card}>
         <label style={label}>Rating</label>
 
         <select
@@ -96,17 +96,14 @@ export default function ReviewPage() {
 
 const hero = {
   background: "linear-gradient(135deg, #0f172a, #7c3aed)",
-  color: "white",
   padding: 35,
   borderRadius: 18,
   marginBottom: 30,
 };
 
 const card = {
-  background: "white",
   padding: 30,
   borderRadius: 18,
-  border: "1px solid #e5e7eb",
   boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
   maxWidth: 700,
 };
@@ -122,7 +119,6 @@ const input = {
   padding: 13,
   marginBottom: 18,
   borderRadius: 10,
-  border: "1px solid #cbd5e1",
 };
 
 const primaryBtn = {

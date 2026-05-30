@@ -48,7 +48,7 @@ export default function FreelancerPublicProfilePage() {
 
   return (
     <main style={{ maxWidth: 1100, margin: "40px auto", padding: 20 }}>
-      <section style={hero}>
+      <section className="hero-section" style={hero}>
         <div>
           {profile.avatar_url ? (
             <img
@@ -69,24 +69,22 @@ export default function FreelancerPublicProfilePage() {
 
         <div>
           <h1>{profile.full_name || "Freelancer"}</h1>
-          <p style={{ fontSize: 18 }}>{profile.role || "Professional Freelancer"}</p>
+          <p>{profile.role || "Professional Freelancer"}</p>
           <p>⭐ {averageRating} ({reviews.length} reviews)</p>
         </div>
       </section>
 
       <div style={layout}>
-        <section style={card}>
+        <section className="dark-card" style={card}>
           <h2>About</h2>
 
           <p>
             <strong>Category:</strong> {profile.category || "N/A"}
           </p>
 
-          <p style={{ color: "#475569", lineHeight: 1.7 }}>
-            {profile.bio || "No bio added yet."}
-          </p>
+          <p>{profile.bio || "No bio added yet."}</p>
 
-          <hr style={{ margin: "25px 0" }} />
+          <hr style={{ margin: "25px 0", borderColor: "var(--border)" }} />
 
           <h2>Documents</h2>
 
@@ -111,22 +109,20 @@ export default function FreelancerPublicProfilePage() {
           )}
         </section>
 
-        <section style={card}>
+        <section className="dark-card" style={card}>
           <h2>Reviews</h2>
 
           {reviews.length === 0 && <p>No reviews yet.</p>}
 
           {reviews.map((review) => (
-            <div key={review.id} style={reviewCard}>
+            <div key={review.id} className="dark-card" style={reviewCard}>
               <p style={{ fontSize: 20 }}>
                 {"⭐".repeat(review.rating)}
               </p>
 
               <p>{review.comment || "No comment provided."}</p>
 
-              <small>
-                {new Date(review.created_at).toLocaleDateString()}
-              </small>
+              <small>{new Date(review.created_at).toLocaleDateString()}</small>
             </div>
           ))}
         </section>
@@ -137,7 +133,6 @@ export default function FreelancerPublicProfilePage() {
 
 const hero = {
   background: "linear-gradient(135deg, #0f172a, #2563eb)",
-  color: "white",
   padding: 35,
   borderRadius: 18,
   marginBottom: 30,
@@ -166,17 +161,13 @@ const layout = {
 };
 
 const card = {
-  background: "white",
   padding: 28,
   borderRadius: 18,
-  border: "1px solid #e5e7eb",
   boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
 };
 
 const reviewCard = {
-  background: "#f8fafc",
   padding: 18,
   borderRadius: 14,
-  border: "1px solid #e5e7eb",
   marginBottom: 15,
 };

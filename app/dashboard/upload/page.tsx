@@ -70,12 +70,12 @@ export default function UploadPage() {
 
   return (
     <div>
-      <section style={hero}>
+      <section className="hero-section" style={hero}>
         <h1>Upload Center</h1>
         <p>Upload your CV, portfolio, and profile picture to improve trust.</p>
       </section>
 
-      <div style={card}>
+      <div className="dark-card" style={card}>
         <h2>Upload File</h2>
 
         <label style={label}>File Type</label>
@@ -102,32 +102,27 @@ export default function UploadPage() {
           {uploading ? "Uploading..." : "Upload File"}
         </button>
 
-        {message && <p style={{ marginTop: 18 }}>{message}</p>}
+        {message && <p style={messageBox}>{message}</p>}
 
         {fileUrl && (
-          <a
-            href={fileUrl}
-            target="_blank"
-            rel="noreferrer"
-            style={fileLink}
-          >
+          <a href={fileUrl} target="_blank" rel="noreferrer" style={fileLink}>
             View Uploaded File
           </a>
         )}
       </div>
 
       <section style={infoGrid}>
-        <div style={infoCard}>
+        <div className="dark-card" style={infoCard}>
           <h3>CV</h3>
           <p>Upload your CV so clients can understand your experience.</p>
         </div>
 
-        <div style={infoCard}>
+        <div className="dark-card" style={infoCard}>
           <h3>Portfolio</h3>
           <p>Show previous work samples and proof of your skills.</p>
         </div>
 
-        <div style={infoCard}>
+        <div className="dark-card" style={infoCard}>
           <h3>Profile Picture</h3>
           <p>A clear profile image helps build trust with clients.</p>
         </div>
@@ -138,17 +133,14 @@ export default function UploadPage() {
 
 const hero = {
   background: "linear-gradient(135deg, #0f172a, #2563eb)",
-  color: "white",
   padding: 35,
   borderRadius: 18,
   marginBottom: 30,
 };
 
 const card = {
-  background: "white",
   padding: 30,
   borderRadius: 18,
-  border: "1px solid #e5e7eb",
   boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
   maxWidth: 700,
 };
@@ -164,7 +156,6 @@ const input = {
   padding: 13,
   marginBottom: 16,
   borderRadius: 10,
-  border: "1px solid #cbd5e1",
 };
 
 const primaryBtn = {
@@ -192,8 +183,14 @@ const infoGrid = {
 };
 
 const infoCard = {
-  background: "white",
   padding: 22,
   borderRadius: 16,
-  border: "1px solid #e5e7eb",
+};
+
+const messageBox = {
+  marginTop: 18,
+  background: "#ecfdf5",
+  color: "#166534",
+  padding: 14,
+  borderRadius: 12,
 };

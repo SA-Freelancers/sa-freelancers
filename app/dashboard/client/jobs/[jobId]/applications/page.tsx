@@ -83,15 +83,18 @@ export default function ClientApplicationsPage() {
 
   return (
     <div>
-      <section style={hero}>
+      <section className="hero-section" style={hero}>
         <h1>Job Applications</h1>
-        <p>Review proposals, accept freelancers, message applicants, and manage hiring.</p>
+        <p>
+          Review proposals, accept freelancers, message applicants, and manage
+          hiring.
+        </p>
       </section>
 
       {message && <p style={messageBox}>{message}</p>}
 
       {applications.length === 0 && (
-        <div style={emptyCard}>
+        <div className="dark-card" style={emptyCard}>
           <h2>No applications yet</h2>
           <p>Freelancer proposals will appear here.</p>
         </div>
@@ -99,7 +102,7 @@ export default function ClientApplicationsPage() {
 
       <div style={grid}>
         {applications.map((application) => (
-          <div key={application.id} style={card}>
+          <div key={application.id} className="dark-card" style={card}>
             <span style={statusBadge(application.status)}>
               {application.status || "pending"}
             </span>
@@ -113,10 +116,11 @@ export default function ClientApplicationsPage() {
             </p>
 
             <p>
-              <strong>Proposed Budget:</strong> ZAR {application.proposed_budget}
+              <strong>Proposed Budget:</strong> ZAR{" "}
+              {application.proposed_budget}
             </p>
 
-            <p style={{ color: "#475569" }}>{application.cover_message}</p>
+            <p>{application.cover_message}</p>
 
             <div style={actions}>
               <button
@@ -156,7 +160,6 @@ export default function ClientApplicationsPage() {
 
 const hero = {
   background: "linear-gradient(135deg, #0f172a, #2563eb)",
-  color: "white",
   padding: 35,
   borderRadius: 18,
   marginBottom: 30,
@@ -169,18 +172,14 @@ const grid = {
 };
 
 const card = {
-  background: "white",
   padding: 24,
   borderRadius: 18,
-  border: "1px solid #e5e7eb",
   boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
 };
 
 const emptyCard = {
-  background: "white",
   padding: 30,
   borderRadius: 18,
-  border: "1px solid #e5e7eb",
 };
 
 const messageBox = {

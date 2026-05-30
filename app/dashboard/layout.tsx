@@ -14,24 +14,17 @@ export default function DashboardLayout({
   };
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc" }}>
-      <aside
-        style={{
-          width: 260,
-          background: "#0f172a",
-          color: "white",
-          padding: 24,
-          position: "sticky",
-          top: 0,
-          height: "100vh",
-        }}
-      >
-        <h2 style={{ fontSize: 26, marginBottom: 8 }}>SA Freelancers</h2>
+    <div style={layout}>
+      <aside style={sidebar}>
+        <h2 style={{ color: "white", fontSize: 26, marginBottom: 8 }}>
+          SA Freelancers
+        </h2>
+
         <p style={{ color: "#94a3b8", marginBottom: 30 }}>
           Marketplace Dashboard
         </p>
 
-        <nav style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <nav style={nav}>
           <Link href="/dashboard" style={navLink}>🏠 Dashboard</Link>
           <Link href="/dashboard/jobs" style={navLink}>💼 Jobs</Link>
           <Link href="/dashboard/projects" style={navLink}>📌 Projects</Link>
@@ -47,19 +40,36 @@ export default function DashboardLayout({
         </nav>
       </aside>
 
-      <main style={{ flex: 1, padding: 35 }}>
-        <div
-          style={{
-            maxWidth: 1200,
-            margin: "0 auto",
-          }}
-        >
+      <main style={main}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           {children}
         </div>
       </main>
     </div>
   );
 }
+
+const layout = {
+  display: "flex",
+  minHeight: "100vh",
+  background: "var(--bg)",
+};
+
+const sidebar = {
+  width: 260,
+  background: "#0f172a",
+  color: "white",
+  padding: 24,
+  position: "sticky" as const,
+  top: 0,
+  height: "100vh",
+};
+
+const nav = {
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 12,
+};
 
 const navLink = {
   color: "white",
@@ -68,6 +78,13 @@ const navLink = {
   padding: "12px 14px",
   borderRadius: 10,
   fontWeight: 500,
+};
+
+const main = {
+  flex: 1,
+  padding: 35,
+  background: "var(--bg)",
+  color: "var(--text)",
 };
 
 const logoutBtn = {

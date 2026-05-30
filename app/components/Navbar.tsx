@@ -1,11 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/app/lib/supabase";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+
+    if (savedTheme === "dark") {
+      document.body.classList.add("dark");
+      setDarkMode(true);
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    if (darkMode) {
+      document.body.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+      setDarkMode(false);
+    } else {
+      document.body.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+      setDarkMode(true);
+    }
+  };
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -14,24 +36,55 @@ export default function Navbar() {
 
   return (
     <nav style={nav}>
-      <div style={brandRow}>
+      <div style={topRow}>
         <Link href="/" style={logo}>
           SA Freelancers
         </Link>
 
-        <button onClick={() => setMenuOpen(!menuOpen)} style={menuBtn}>
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          style={menuButton}
+        >
           ☰
         </button>
       </div>
 
       <div style={menuOpen ? mobileLinks : desktopLinks}>
-        <Link href="/search" style={link}>Search</Link>
-        <Link href="/dashboard" style={link}>Dashboard</Link>
-        <Link href="/dashboard/jobs" style={link}>Jobs</Link>
-        <Link href="/login" style={link}>Login</Link>
-        <Link href="/register" style={registerBtn}>Register</Link>
+        <Link href="/" style={link}>
+          Home
+        </Link>
 
-        <button onClick={logout} style={logoutBtn}>
+        <Link href="/search" style={link}>
+          Search
+        </Link>
+
+        <Link href="/dashboard" style={link}>
+          Dashboard
+        </Link>
+
+        <Link href="/dashboard/jobs" style={link}>
+          Jobs
+        </Link>
+
+        <Link href="/login" style={link}>
+          Login
+        </Link>
+
+        <Link href="/register" style={registerBtn}>
+          Register
+        </Link>
+
+        <button
+          onClick={toggleDarkMode}
+          style={darkBtn}
+        >
+          {darkMode ? "☀️ Light" : "🌙 Dark"}
+        </button>
+
+        <button
+          onClick={logout}
+          style={logoutBtn}
+        >
           Logout
         </button>
       </div>
@@ -50,12 +103,12 @@ const nav = {
   boxShadow: "0 4px 15px rgba(15,23,42,0.2)",
 };
 
-const brandRow = {
+const topRow = {
   display: "flex",
-  alignItems: "center",
   justifyContent: "space-between",
+  alignItems: "center",
   width: "100%",
-  maxWidth: 260,
+  maxWidth: 280,
 };
 
 const logo = {
@@ -65,7 +118,7 @@ const logo = {
   fontWeight: "bold",
 };
 
-const menuBtn = {
+const menuButton = {
   background: "transparent",
   border: "none",
   color: "white",
@@ -76,15 +129,15 @@ const menuBtn = {
 const desktopLinks = {
   display: "flex",
   alignItems: "center",
-  gap: 18,
+  gap: 16,
   flexWrap: "wrap" as const,
 };
 
 const mobileLinks = {
   display: "flex",
   flexDirection: "column" as const,
-  gap: 14,
   width: "100%",
+  gap: 14,
   marginTop: 18,
 };
 
@@ -100,6 +153,16 @@ const registerBtn = {
   padding: "10px 14px",
   borderRadius: 10,
   textDecoration: "none",
+  fontWeight: "bold",
+};
+
+const darkBtn = {
+  background: "#334155",
+  color: "white",
+  border: "none",
+  padding: "10px 14px",
+  borderRadius: 10,
+  cursor: "pointer",
   fontWeight: "bold",
 };
 

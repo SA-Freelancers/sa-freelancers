@@ -61,30 +61,26 @@ export default function JobDetailsPage() {
 
   return (
     <div>
-      <section style={hero}>
+      <section className="hero-section" style={hero}>
         <h1>{job.title}</h1>
         <p>{job.category}</p>
       </section>
 
       <div style={layout}>
-        <section style={card}>
+        <section className="dark-card" style={card}>
           <span style={badge}>{job.category || "General"}</span>
 
           <h2>Job Details</h2>
 
-          <p style={{ color: "#475569", lineHeight: 1.7 }}>
-            {job.description}
-          </p>
+          <p>{job.description}</p>
 
           <p>
             <strong>Budget:</strong>{" "}
-            <span style={{ color: "#16a34a", fontWeight: "bold" }}>
-              ZAR {job.budget}
-            </span>
+            <span style={priceText}>ZAR {job.budget}</span>
           </p>
         </section>
 
-        <section style={card}>
+        <section className="dark-card" style={card}>
           <h2>Apply for this Job</h2>
 
           <textarea
@@ -115,7 +111,6 @@ export default function JobDetailsPage() {
 
 const hero = {
   background: "linear-gradient(135deg, #0f172a, #2563eb)",
-  color: "white",
   padding: 35,
   borderRadius: 18,
   marginBottom: 30,
@@ -128,10 +123,8 @@ const layout = {
 };
 
 const card = {
-  background: "white",
   padding: 28,
   borderRadius: 18,
-  border: "1px solid #e5e7eb",
   boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
 };
 
@@ -151,7 +144,6 @@ const input = {
   padding: 13,
   marginBottom: 15,
   borderRadius: 10,
-  border: "1px solid #cbd5e1",
 };
 
 const button = {
@@ -161,6 +153,11 @@ const button = {
   border: "none",
   borderRadius: 10,
   cursor: "pointer",
+  fontWeight: "bold",
+};
+
+const priceText = {
+  color: "#22c55e",
   fontWeight: "bold",
 };
 
