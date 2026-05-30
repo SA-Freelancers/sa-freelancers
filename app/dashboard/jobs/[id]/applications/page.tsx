@@ -1,53 +1,58 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
 import Link from "next/link";
-
 import { useParams } from "next/navigation";
-
 import { supabase } from "@/app/lib/supabase";
+import LoadingSkeleton from "@/app/components/LoadingSkeleton";
+import EmptyState from "@/app/components/EmptyState";
+
+type Application = {
+  id: string;
+  freelancer_id: string;
+  proposed_budget: number;
+  cover_message?: string;
+  status?: string;
+  created_at?: string;
+  profiles?: {
+    full_name?: string;
+    role?: string;
+    category?: string;
+  };
+};
 
 export default function ClientApplicationsPage() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params.jobId as string;
 
-  const [applications,
-    setApplications] =
-    useState<any[]>([]);
-
-  const [loading,
-    setLoading] =
-    useState(true);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadApplications();
   }, []);
 
   const loadApplications = async () => {
-    const { data, error } =
-      await supabase
-        .from("applications")
-        .select(`
-          *,
-          profiles (
-            full_name,
-            role,
-            category
-          )
-        `)
-        .eq("job_id", id)
-        .order("created_at", {
-          ascending: false,
-        });
+    const { data, error } = await supabase
+      .from("applications")
+      .select(`
+        *,
+        profiles (
+          full_name,
+          role,
+          category
+        )
+      `)
+      .eq("job_id", id)
+      .order("created_at", {
+        ascending: false,
+      });
 
     if (error) {
       console.error(error);
     }
 
-    if (data) {
-      setApplications(data);
-    }
-
+    setApplications((data as Application[]) || []);
     setLoading(false);
   };
 
@@ -55,11 +60,10 @@ export default function ClientApplicationsPage() {
     applicationId: string,
     status: string
   ) => {
-    const { error } =
-      await supabase
-        .from("applications")
-        .update({ status })
-        .eq("id", applicationId);
+    const { error } = await supabase
+      .from("applications")
+      .update({ status })
+      .eq("id", applicationId);
 
     if (error) {
       alert(error.message);
@@ -78,214 +82,116 @@ export default function ClientApplicationsPage() {
     );
   };
 
-  if (loading) {
-    return (
-      <p style={{ padding: 20 }}>
-        Loading applications...
-      </p>
-    );
-  }
+  if (loading) return <LoadingSkeleton />;
 
   return (
-    <div
-      style={{
-        maxWidth: 1000,
-        margin: "40px auto",
-      }}
-    >
-      <h1>Applications</h1>
+    <main className="client-applications-page">
+      <section className="client-applications-hero dark-card">
+        <p className="dashboard-badge">Applications</p>
 
-      {applications.length === 0 && (
-        <p>No applications yet.</p>
-      )}
+        <h1>Review freelancer proposals</h1>
 
-      {applications.map(
-        (application) => (
-          <div
-            key={application.id}
-            style={{
-              backgroundColor:
-                "white",
+        <p>
+          Accept or reject proposals safely while keeping communication inside
+          the platform.
+        </p>
+      </section>
 
-              border:
-                "1px solid #ddd",
-
-              borderRadius: 10,
-
-              padding: 20,
-
-              marginBottom: 20,
-            }}
-          >
-            <h2>
-              {
-                application.profiles
-                  ?.full_name
-              }
-            </h2>
-
-            <p>
-              <strong>
-                Role:
-              </strong>{" "}
-              {
-                application.profiles
-                  ?.role
-              }
-            </p>
-
-            <p>
-              <strong>
-                Category:
-              </strong>{" "}
-              {
-                application.profiles
-                  ?.category
-              }
-            </p>
-
-            <p>
-              <strong>
-                Proposed Budget:
-              </strong>{" "}
-              ZAR{" "}
-              {
-                application.proposed_budget
-              }
-            </p>
-
-            <p>
-              <strong>
-                Status:
-              </strong>{" "}
-              {application.status}
-            </p>
-
-            <p>
-              {
-                application.cover_message
-              }
-            </p>
-
+      {applications.length === 0 ? (
+        <EmptyState
+          emoji="📨"
+          title="No applications yet"
+          description="Freelancer proposals will appear here."
+          buttonText="Back to Dashboard"
+          buttonLink="/dashboard"
+        />
+      ) : (
+        <section className="applications-grid">
+          {applications.map((application) => (
             <div
-              style={{
-                marginTop: 20,
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
-              }}
+              key={application.id}
+              className="dark-card application-review-card"
             >
-              <button
-                onClick={() =>
-                  updateStatus(
-                    application.id,
-                    "accepted"
-                  )
-                }
-                style={{
-                  padding:
-                    "10px 14px",
+              <div className="application-top">
+                <div>
+                  <h2>
+                    {application.profiles?.full_name ||
+                      "Unnamed Freelancer"}
+                  </h2>
 
-                  backgroundColor:
-                    "green",
+                  <p className="application-role">
+                    {application.profiles?.role ||
+                      "Professional Freelancer"}
+                  </p>
+                </div>
 
-                  color: "white",
+                <span
+                  className={`application-status ${
+                    application.status || "pending"
+                  }`}
+                >
+                  {application.status || "pending"}
+                </span>
+              </div>
 
-                  border: "none",
+              <div className="application-meta">
+                <span>
+                  Category:{" "}
+                  {application.profiles?.category || "General"}
+                </span>
 
-                  borderRadius: 6,
-                }}
-              >
-                Accept
-              </button>
+                <strong>
+                  ZAR {application.proposed_budget}
+                </strong>
+              </div>
 
-              <button
-                onClick={() =>
-                  updateStatus(
-                    application.id,
-                    "rejected"
-                  )
-                }
-                style={{
-                  padding:
-                    "10px 14px",
+              <div className="application-warning">
+                Contact details should remain private until hiring/payment is
+                completed through the platform.
+              </div>
 
-                  backgroundColor:
-                    "red",
+              <div className="application-message">
+                {application.cover_message ||
+                  "No proposal message provided."}
+              </div>
 
-                  color: "white",
+              <div className="application-actions">
+                <button
+                  onClick={() =>
+                    updateStatus(application.id, "accepted")
+                  }
+                  className="accept-btn"
+                >
+                  Accept
+                </button>
 
-                  border: "none",
+                <button
+                  onClick={() =>
+                    updateStatus(application.id, "rejected")
+                  }
+                  className="reject-btn"
+                >
+                  Reject
+                </button>
 
-                  borderRadius: 6,
-                }}
-              >
-                Reject
-              </button>
+                <Link
+                  href={`/freelancers/${application.freelancer_id}`}
+                  className="view-profile-btn"
+                >
+                  View Profile
+                </Link>
 
-              <Link
-                href={`/dashboard/messages/${application.id}`}
-                style={{
-                  padding:
-                    "10px 14px",
-
-                  backgroundColor:
-                    "#2563eb",
-
-                  color: "white",
-
-                  borderRadius: 6,
-
-                  textDecoration:
-                    "none",
-                }}
-              >
-                Message
-              </Link>
-
-              <Link
-                href={`/dashboard/review/${application.id}`}
-                style={{
-                  padding:
-                    "10px 14px",
-
-                  backgroundColor:
-                    "#7c3aed",
-
-                  color: "white",
-
-                  borderRadius: 6,
-
-                  textDecoration:
-                    "none",
-                }}
-              >
-                Leave Review
-              </Link>
-
-              <Link
-                href={`/freelancers/${application.freelancer_id}`}
-                style={{
-                  padding:
-                    "10px 14px",
-
-                  backgroundColor:
-                    "#111827",
-
-                  color: "white",
-
-                  borderRadius: 6,
-
-                  textDecoration:
-                    "none",
-                }}
-              >
-                View Profile
-              </Link>
+                <Link
+                  href={`/dashboard/review/${application.id}`}
+                  className="review-btn"
+                >
+                  Leave Review
+                </Link>
+              </div>
             </div>
-          </div>
-        )
+          ))}
+        </section>
       )}
-    </div>
+    </main>
   );
 }
