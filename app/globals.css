@@ -147,3 +147,39 @@ body.dark footer {
 
   background-size: 200% 100%;
 }
+.empty-state {
+  padding: 40px;
+  border-radius: 24px;
+  text-align: center;
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+}
+
+.empty-state-icon {
+  font-size: 38px;
+}
+
+.empty-state h2 {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.empty-state p {
+  max-width: 460px;
+  margin: 0;
+  opacity: 0.75;
+  line-height: 1.6;
+}
+
+.empty-state-button {
+  margin-top: 10px;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 18px;
+  font-weight: 800;
+  cursor: pointer;
+  background: #2563eb;
+  color: white;
+}
