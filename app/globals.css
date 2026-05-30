@@ -1614,3 +1614,8 @@ body:not(.dark) .home-hero h1 span {
   align-items: center;
   gap: 10px;
 }
+.project-applications {
+  margin-top: 10px;
+  opacity: 0.72;
+  font-weight: 700;
+}

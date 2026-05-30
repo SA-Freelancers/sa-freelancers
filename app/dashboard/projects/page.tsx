@@ -13,8 +13,10 @@ type Project = {
   budget?: number | string;
   category?: string;
   created_at?: string;
+  applications?: {
+    id: string;
+  }[];
 };
-
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,9 +37,14 @@ export default function ProjectsPage() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from("jobs")
-      .select("*")
+   const { data, error } = await supabase
+  .from("jobs")
+  .select(`
+    *,
+    applications (
+      id
+    )
+  `)
       .eq("client_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -97,6 +104,9 @@ export default function ProjectsPage() {
               <p className="project-budget">
                 ZAR {project.budget || "N/A"}
               </p>
+              <p className="project-applications">
+  {project.applications?.length || 0} proposal(s)
+</p>
 
               <div className="project-progress">
                 <div className="project-progress-bar" />
