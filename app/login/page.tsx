@@ -18,6 +18,12 @@ export default function LoginPage() {
     setLoading(true);
     setMessage("");
 
+    if (!email.trim() || !password.trim()) {
+      setMessage("Please enter your email and password.");
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -34,76 +40,52 @@ export default function LoginPage() {
   };
 
   return (
-    <main style={page}>
-      <div className="dark-card" style={card}>
-        <h1>Welcome Back</h1>
+    <main className="auth-page">
+      <section className="auth-card dark-card">
+        <p className="dashboard-badge">Login</p>
 
-        <p>Login to manage jobs, projects, payments, and messages.</p>
+        <h1>Welcome back</h1>
 
+        <p className="auth-description">
+          Login to manage jobs, projects, proposals, profiles and marketplace
+          activity.
+        </p>
+
+        <label className="form-label">Email Address</label>
         <input
           type="email"
-          placeholder="Email address"
+          placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          style={input}
+          className="form-input"
         />
 
+        <label className="form-label">Password</label>
         <input
           type="password"
-          placeholder="Password"
+          placeholder="Enter your password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={input}
+          className="form-input"
         />
 
-        <button onClick={handleLogin} disabled={loading} style={button}>
+        <button
+          onClick={handleLogin}
+          disabled={loading}
+          className="primary-action-btn auth-submit-btn"
+        >
           {loading ? "Logging in..." : "Login"}
         </button>
 
-        {message && <p style={{ color: "#ef4444" }}>{message}</p>}
+        {message && <p className="auth-error">{message}</p>}
 
-        <p style={{ marginTop: 20 }}>
+        <p className="auth-footer-text">
           No account?{" "}
-          <Link href="/register" style={{ color: "#60a5fa", fontWeight: "bold" }}>
+          <Link href="/register">
             Create one
           </Link>
         </p>
-      </div>
+      </section>
     </main>
   );
 }
-
-const page = {
-  minHeight: "80vh",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: 20,
-};
-
-const card = {
-  width: "100%",
-  maxWidth: 430,
-  padding: 35,
-  borderRadius: 20,
-  boxShadow: "0 15px 35px rgba(15,23,42,0.08)",
-};
-
-const input = {
-  width: "100%",
-  padding: 14,
-  marginTop: 15,
-  borderRadius: 12,
-};
-
-const button = {
-  width: "100%",
-  marginTop: 20,
-  padding: 14,
-  background: "#2563eb",
-  color: "white",
-  border: "none",
-  borderRadius: 12,
-  cursor: "pointer",
-  fontWeight: "bold",
-};

@@ -1658,3 +1658,54 @@ body:not(.dark) .home-hero h1 span {
 .safety-card h2 {
   margin-top: 0;
 }
+.auth-page {
+  min-height: 82vh;
+  display: grid;
+  place-items: center;
+  padding: 30px 20px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+  padding: 38px;
+  border-radius: 28px;
+}
+
+.auth-card h1 {
+  margin: 0;
+  font-size: 2.4rem;
+  font-weight: 950;
+}
+
+.auth-description {
+  margin: 14px 0 26px;
+  opacity: 0.75;
+  line-height: 1.7;
+}
+
+.auth-submit-btn {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.auth-error {
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  font-weight: 800;
+}
+
+.auth-footer-text {
+  margin-top: 22px;
+  text-align: center;
+  opacity: 0.82;
+}
+
+.auth-footer-text a {
+  color: #2563eb;
+  font-weight: 900;
+  text-decoration: none;
+}
