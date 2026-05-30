@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 
 export default function NewJobPage() {
+  const router = useRouter();
+
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [budget, setBudget] = useState("");
@@ -48,23 +50,26 @@ export default function NewJobPage() {
     }
 
     setMessage("Job posted successfully!");
-    setTitle("");
-    setCategory("");
-    setBudget("");
-    setDescription("");
     setPosting(false);
+    router.push("/dashboard/projects");
   };
 
   return (
     <main className="job-page">
       <section className="job-hero dark-card">
         <p className="dashboard-badge">Post Job</p>
+
         <h1>Create a new project</h1>
-        <p>Describe your project clearly so freelancers can send strong proposals.</p>
+
+        <p>
+          Describe your project clearly so freelancers can send strong
+          proposals.
+        </p>
       </section>
 
       <section className="dark-card job-card">
         <label className="form-label">Job Title</label>
+
         <input
           className="form-input"
           placeholder="Example: Build a business website"
@@ -73,6 +78,7 @@ export default function NewJobPage() {
         />
 
         <label className="form-label">Category</label>
+
         <select
           className="form-input"
           value={category}
@@ -89,6 +95,7 @@ export default function NewJobPage() {
         </select>
 
         <label className="form-label">Budget</label>
+
         <input
           className="form-input"
           type="number"
@@ -98,6 +105,7 @@ export default function NewJobPage() {
         />
 
         <label className="form-label">Description</label>
+
         <textarea
           className="form-input proposal-textarea"
           placeholder="Explain what you need, timeline, skills required and expected result..."
