@@ -1595,3 +1595,17 @@ body:not(.dark) .home-hero .home-secondary-btn {
 body:not(.dark) .home-hero h1 span {
   color: #22c55e !important;
 }
+.home-secondary-btn {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+}
+
+.home-primary-btn,
+.home-secondary-btn {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.home-primary-btn:hover,
+.home-secondary-btn:hover {
+  transform: translateY(-2px);
+}
