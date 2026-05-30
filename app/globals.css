@@ -183,3 +183,9 @@ body.dark footer {
   background: #2563eb;
   color: white;
 }
+.empty-state-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
