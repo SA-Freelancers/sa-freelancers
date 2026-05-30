@@ -38,6 +38,28 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="stats-section">
+        <div className="dark-card stats-card">
+          <h3>12K+</h3>
+          <p>Freelancers</p>
+        </div>
+
+        <div className="dark-card stats-card">
+          <h3>4.8★</h3>
+          <p>Platform Rating</p>
+        </div>
+
+        <div className="dark-card stats-card">
+          <h3>8K+</h3>
+          <p>Projects Completed</p>
+        </div>
+
+        <div className="dark-card stats-card">
+          <h3>24/7</h3>
+          <p>Marketplace Access</p>
+        </div>
+      </section>
+
       <section className="home-section">
         <div className="home-section-header">
           <p className="dashboard-badge">Popular Services</p>
@@ -81,6 +103,7 @@ export default function HomePage() {
       <section className="home-cta dark-card">
         <h2>Ready to build your next project?</h2>
         <p>Join South Africa’s growing freelance marketplace today.</p>
+
         <Link href="/register" className="home-primary-btn">
           Create Free Account
         </Link>

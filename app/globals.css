@@ -1007,3 +1007,33 @@ body.dark {
     grid-template-columns: 1fr;
   }
 }
+.stats-section {
+  max-width: 1200px;
+  margin: -60px auto 0;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 22px;
+  position: relative;
+  z-index: 5;
+}
+
+.stats-card {
+  padding: 30px;
+  border-radius: 24px;
+  text-align: center;
+  backdrop-filter: blur(16px);
+}
+
+.stats-card h3 {
+  margin: 0;
+  font-size: 2.7rem;
+  font-weight: 950;
+  color: #2563eb;
+}
+
+.stats-card p {
+  margin-top: 12px;
+  opacity: 0.72;
+  font-weight: 700;
+}
