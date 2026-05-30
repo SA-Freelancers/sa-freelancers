@@ -2,9 +2,19 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 
+const links = [
+  { href: "/", label: "Home" },
+  { href: "/search", label: "Marketplace" },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/dashboard/jobs", label: "Jobs" },
+];
+
 export default function Navbar() {
+  const pathname = usePathname();
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
@@ -73,183 +83,76 @@ export default function Navbar() {
   };
 
   return (
-    <nav style={nav}>
-      <div style={topRow}>
-        <Link href="/" style={logo}>
+    <header className="navbar-wrapper">
+      <nav className="navbar-container">
+        <Link href="/" className="navbar-logo">
           SA Freelancers
         </Link>
 
         <button
+          className="navbar-menu-btn"
           onClick={() => setMenuOpen(!menuOpen)}
-          style={menuButton}
         >
           ☰
         </button>
-      </div>
 
-      <div style={menuOpen ? mobileLinks : desktopLinks}>
-        <Link href="/" style={link}>
-          Home
-        </Link>
-
-        <Link href="/search" style={link}>
-          Search
-        </Link>
-
-        <Link href="/dashboard" style={link}>
-          Dashboard
-        </Link>
-
-        <Link href="/dashboard/jobs" style={link}>
-          Jobs
-        </Link>
-
-        {/* REALTIME NOTIFICATIONS */}
-        <Link
-          href="/dashboard/notifications"
-          style={notificationWrapper}
+        <div
+          className={`navbar-links ${
+            menuOpen ? "navbar-mobile-open" : ""
+          }`}
         >
-          🔔
+          {links.map((link) => {
+            const isActive =
+              pathname === link.href ||
+              (link.href !== "/" && pathname.startsWith(link.href));
 
-          {notificationCount > 0 && (
-            <span style={notificationBadge}>
-              {notificationCount}
-            </span>
-          )}
-        </Link>
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`navbar-link ${isActive ? "active" : ""}`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
 
-        <button
-          onClick={toggleDarkMode}
-          style={darkBtn}
-        >
-          {darkMode ? "☀️ Light" : "🌙 Dark"}
-        </button>
+          <Link
+            href="/dashboard/notifications"
+            className="navbar-notification"
+          >
+            🔔
 
-        <Link href="/login" style={link}>
-          Login
-        </Link>
+            {notificationCount > 0 && (
+              <span className="navbar-notification-badge">
+                {notificationCount}
+              </span>
+            )}
+          </Link>
 
-        <Link href="/register" style={registerBtn}>
-          Register
-        </Link>
+          <button
+            onClick={toggleDarkMode}
+            className="navbar-dark-btn"
+          >
+            {darkMode ? "☀️" : "🌙"}
+          </button>
 
-        <button
-          onClick={logout}
-          style={logoutBtn}
-        >
-          Logout
-        </button>
-      </div>
-    </nav>
+          <Link href="/login" className="navbar-login-btn">
+            Login
+          </Link>
+
+          <Link href="/register" className="navbar-register-btn">
+            Register
+          </Link>
+
+          <button
+            onClick={logout}
+            className="navbar-logout-btn"
+          >
+            Logout
+          </button>
+        </div>
+      </nav>
+    </header>
   );
 }
-
-const nav = {
-  background: "#0f172a",
-  color: "white",
-  padding: "16px 28px",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  flexWrap: "wrap" as const,
-  position: "sticky" as const,
-  top: 0,
-  zIndex: 999,
-  boxShadow: "0 4px 15px rgba(15,23,42,0.2)",
-};
-
-const topRow = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  width: "100%",
-  maxWidth: 280,
-};
-
-const logo = {
-  color: "white",
-  textDecoration: "none",
-  fontSize: 24,
-  fontWeight: "bold",
-};
-
-const menuButton = {
-  background: "transparent",
-  border: "none",
-  color: "white",
-  fontSize: 28,
-  cursor: "pointer",
-};
-
-const desktopLinks = {
-  display: "flex",
-  alignItems: "center",
-  gap: 16,
-  flexWrap: "wrap" as const,
-};
-
-const mobileLinks = {
-  display: "flex",
-  flexDirection: "column" as const,
-  width: "100%",
-  gap: 14,
-  marginTop: 18,
-};
-
-const link = {
-  color: "white",
-  textDecoration: "none",
-  fontWeight: 500,
-};
-
-const registerBtn = {
-  background: "#2563eb",
-  color: "white",
-  padding: "10px 14px",
-  borderRadius: 10,
-  textDecoration: "none",
-  fontWeight: "bold",
-};
-
-const darkBtn = {
-  background: "#334155",
-  color: "white",
-  border: "none",
-  padding: "10px 14px",
-  borderRadius: 10,
-  cursor: "pointer",
-  fontWeight: "bold",
-};
-
-const logoutBtn = {
-  background: "#dc2626",
-  color: "white",
-  border: "none",
-  padding: "10px 14px",
-  borderRadius: 10,
-  cursor: "pointer",
-  fontWeight: "bold",
-};
-
-const notificationWrapper = {
-  position: "relative" as const,
-  fontSize: 24,
-  textDecoration: "none",
-};
-
-const notificationBadge = {
-  position: "absolute" as const,
-  top: -8,
-  right: -10,
-  background: "#ef4444",
-  color: "white",
-  borderRadius: "50%",
-  minWidth: 20,
-  height: 20,
-  fontSize: 12,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontWeight: "bold",
-  padding: "0 5px",
-};
