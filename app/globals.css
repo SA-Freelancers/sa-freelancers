@@ -935,3 +935,12 @@ body.dark footer {
     text-align: center;
   }
 }
+body {
+  margin: 0;
+  background: #f9fafb;
+}
+
+body.dark {
+  background: #020617;
+  color: #f8fafc;
+}
