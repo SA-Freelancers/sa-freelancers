@@ -1585,3 +1585,13 @@ body:not(.dark) .navbar-link,
 body:not(.dark) .navbar-login-btn {
   color: white !important;
 }
+.home-hero .home-secondary-btn,
+body:not(.dark) .home-hero .home-secondary-btn {
+  background: white !important;
+  color: #0f172a !important;
+}
+
+.home-hero h1 span,
+body:not(.dark) .home-hero h1 span {
+  color: #22c55e !important;
+}
