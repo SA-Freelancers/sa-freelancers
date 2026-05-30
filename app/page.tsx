@@ -108,7 +108,7 @@ export default function HomePage() {
 
         <div className="home-grid">
           <div className="dark-card home-card">
-            <h3>No Contact Sharing Before Hiring</h3>
+            <h3>No Off-Platform Contact Before Hiring</h3>
             <p>
               Proposals are checked to discourage phone numbers, WhatsApp and
               email sharing before a client hires.
