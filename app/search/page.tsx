@@ -3,12 +3,29 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/app/lib/supabase";
+import EmptyState from "../components/EmptyState";
+
+type Profile = {
+  id: string;
+  full_name?: string;
+  role?: string;
+  bio?: string;
+  category?: string;
+};
+
+type Job = {
+  id: string;
+  title?: string;
+  description?: string;
+  category?: string;
+  budget?: number | string;
+};
 
 export default function SearchPage() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [freelancers, setFreelancers] = useState<any[]>([]);
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [freelancers, setFreelancers] = useState<Profile[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -32,7 +49,9 @@ export default function SearchPage() {
   };
 
   const saveFreelancer = async (freelancerId: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       setMessage("Please login first.");
@@ -48,7 +67,9 @@ export default function SearchPage() {
   };
 
   const saveJob = async (jobId: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       setMessage("Please login first.");
@@ -64,41 +85,54 @@ export default function SearchPage() {
   };
 
   const filteredFreelancers = freelancers.filter((freelancer) => {
-    const text = `${freelancer.full_name} ${freelancer.role} ${freelancer.bio}`.toLowerCase();
+    const text = `${freelancer.full_name || ""} ${freelancer.role || ""} ${
+      freelancer.bio || ""
+    }`.toLowerCase();
+
     const matchesSearch = text.includes(search.toLowerCase());
-    const matchesCategory = !selectedCategory || freelancer.category === selectedCategory;
+    const matchesCategory =
+      !selectedCategory || freelancer.category === selectedCategory;
+
     return matchesSearch && matchesCategory;
   });
 
   const filteredJobs = jobs.filter((job) => {
-    const text = `${job.title} ${job.description}`.toLowerCase();
+    const text = `${job.title || ""} ${job.description || ""}`.toLowerCase();
+
     const matchesSearch = text.includes(search.toLowerCase());
     const matchesCategory = !selectedCategory || job.category === selectedCategory;
+
     return matchesSearch && matchesCategory;
   });
 
   return (
-    <main style={{ maxWidth: 1300, margin: "40px auto", padding: 20 }}>
-      <section className="hero-section" style={hero}>
-        <h1>Search Marketplace</h1>
-        <p>Find freelancers, jobs, services, skills, and opportunities.</p>
+    <main className="search-page">
+      <section className="search-hero dark-card">
+        <p className="dashboard-badge">Marketplace</p>
+
+        <h1>Find freelancers and opportunities faster</h1>
+
+        <p>
+          Search skilled freelancers, available jobs, services and categories in
+          one clean marketplace.
+        </p>
       </section>
 
-      <section className="dark-card" style={filterCard}>
-        {message && <p>{message}</p>}
+      <section className="dark-card search-filter-card">
+        {message && <p className="search-message">{message}</p>}
 
         <input
           type="text"
           placeholder="Search freelancers, jobs, skills..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={input}
+          className="form-input"
         />
 
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          style={input}
+          className="form-input"
         >
           <option value="">All Categories</option>
           <option value="Web Development">Web Development</option>
@@ -111,120 +145,97 @@ export default function SearchPage() {
         </select>
       </section>
 
-      <section style={{ marginTop: 45 }}>
+      <section className="search-section">
         <h2>Freelancers</h2>
 
-        <div style={grid}>
-          {filteredFreelancers.map((freelancer) => (
-            <div key={freelancer.id} className="dark-card" style={card}>
-              <span style={badge}>{freelancer.category || "Freelancer"}</span>
+        {filteredFreelancers.length === 0 ? (
+          <EmptyState
+            emoji="👤"
+            title="No freelancers found"
+            description="Try another keyword or category."
+          />
+        ) : (
+          <div className="marketplace-grid">
+            {filteredFreelancers.map((freelancer) => (
+              <div key={freelancer.id} className="dark-card marketplace-card">
+                <span className="marketplace-badge">
+                  {freelancer.category || "Freelancer"}
+                </span>
 
-              <h3>{freelancer.full_name || "Unnamed Freelancer"}</h3>
+                <h3>{freelancer.full_name || "Unnamed Freelancer"}</h3>
 
-              <p><strong>Role:</strong> {freelancer.role || "N/A"}</p>
+                <p>
+                  <strong>Role:</strong> {freelancer.role || "N/A"}
+                </p>
 
-              <p>{freelancer.bio?.slice(0, 120) || "No bio yet."}</p>
+                <p>{freelancer.bio?.slice(0, 120) || "No bio yet."}</p>
 
-              <Link href={`/freelancers/${freelancer.id}`} style={blueBtn}>
-                View Profile
-              </Link>
+                <div className="marketplace-actions">
+                  <Link
+                    href={`/freelancers/${freelancer.id}`}
+                    className="primary-action-link"
+                  >
+                    View Profile
+                  </Link>
 
-              <button onClick={() => saveFreelancer(freelancer.id)} style={redBtn}>
-                ❤️ Save
-              </button>
-            </div>
-          ))}
-        </div>
+                  <button
+                    onClick={() => saveFreelancer(freelancer.id)}
+                    className="danger-action-btn"
+                  >
+                    ❤️ Save
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
-      <section style={{ marginTop: 60 }}>
+      <section className="search-section">
         <h2>Jobs</h2>
 
-        <div style={grid}>
-          {filteredJobs.map((job) => (
-            <div key={job.id} className="dark-card" style={card}>
-              <span style={badge}>{job.category || "General"}</span>
+        {filteredJobs.length === 0 ? (
+          <EmptyState
+            emoji="💼"
+            title="No jobs found"
+            description="Try another keyword or category."
+          />
+        ) : (
+          <div className="marketplace-grid">
+            {filteredJobs.map((job) => (
+              <div key={job.id} className="dark-card marketplace-card">
+                <span className="marketplace-badge">
+                  {job.category || "General"}
+                </span>
 
-              <h3>{job.title}</h3>
+                <h3>{job.title || "Untitled Job"}</h3>
 
-              <p>{job.description?.slice(0, 140)}</p>
+                <p>{job.description?.slice(0, 140) || "No description yet."}</p>
 
-              <p><strong>Budget:</strong> ZAR {job.budget}</p>
+                <p>
+                  <strong>Budget:</strong> ZAR {job.budget || "N/A"}
+                </p>
 
-              <Link href={`/dashboard/jobs/${job.id}`} style={blueBtn}>
-                View Job
-              </Link>
+                <div className="marketplace-actions">
+                  <Link
+                    href={`/dashboard/jobs/${job.id}`}
+                    className="primary-action-link"
+                  >
+                    View Job
+                  </Link>
 
-              <button onClick={() => saveJob(job.id)} style={redBtn}>
-                ❤️ Save
-              </button>
-            </div>
-          ))}
-        </div>
+                  <button
+                    onClick={() => saveJob(job.id)}
+                    className="danger-action-btn"
+                  >
+                    ❤️ Save
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </main>
   );
 }
-
-const hero = {
-  background: "linear-gradient(135deg, #0f172a, #2563eb)",
-  padding: 35,
-  borderRadius: 18,
-  marginBottom: 30,
-};
-
-const filterCard = {
-  padding: 25,
-  borderRadius: 18,
-  boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
-};
-
-const input = {
-  width: "100%",
-  padding: 13,
-  marginBottom: 14,
-  borderRadius: 10,
-};
-
-const grid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-  gap: 22,
-};
-
-const card = {
-  padding: 24,
-  borderRadius: 18,
-  boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
-};
-
-const badge = {
-  display: "inline-block",
-  background: "#dbeafe",
-  color: "#1d4ed8",
-  padding: "6px 10px",
-  borderRadius: 20,
-  fontSize: 13,
-  fontWeight: "bold",
-};
-
-const blueBtn = {
-  display: "inline-block",
-  marginTop: 15,
-  marginRight: 10,
-  padding: "10px 14px",
-  background: "#2563eb",
-  color: "white",
-  borderRadius: 10,
-  textDecoration: "none",
-};
-
-const redBtn = {
-  marginTop: 15,
-  padding: "10px 14px",
-  background: "#dc2626",
-  color: "white",
-  border: "none",
-  borderRadius: 10,
-  cursor: "pointer",
-};
