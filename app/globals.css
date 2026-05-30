@@ -669,7 +669,11 @@ body.dark footer {
     linear-gradient(135deg, #0f172a, #1e3a8a);
   color: white;
 }
-
+.home-hero h1,
+.home-hero p,
+.home-hero .dashboard-badge {
+  color: white;
+}
 .home-hero-content {
   max-width: 950px;
 }
@@ -1557,4 +1561,14 @@ body.dark {
   .profile-settings-layout {
     grid-template-columns: 1fr;
   }
+}
+.home-hero,
+.home-hero *,
+body:not(.dark) .home-hero,
+body:not(.dark) .home-hero * {
+  color: white !important;
+}
+
+.home-hero h1 span {
+  color: #22c55e !important;
 }
