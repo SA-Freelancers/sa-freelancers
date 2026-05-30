@@ -1,5 +1,6 @@
 "use client";
 
+import EmptyState from "@/app/components/EmptyState";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -94,11 +95,14 @@ export default function ClientApplicationsPage() {
       {message && <p style={messageBox}>{message}</p>}
 
       {applications.length === 0 && (
-        <div className="dark-card" style={emptyCard}>
-          <h2>No applications yet</h2>
-          <p>Freelancer proposals will appear here.</p>
-        </div>
-      )}
+  <EmptyState
+    emoji="📨"
+    title="No applications yet"
+    description="Freelancer proposals will appear here."
+    buttonText="Back to Jobs"
+    buttonLink="/dashboard/jobs"
+  />
+)}
 
       <div style={grid}>
         {applications.map((application) => (

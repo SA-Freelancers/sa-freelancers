@@ -1,5 +1,6 @@
 "use client";
 
+import EmptyState from "@/app/components/EmptyState";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/app/lib/supabase";
@@ -29,6 +30,12 @@ export default function NotificationsPage() {
       .order("created_at", { ascending: false });
 
     setNotifications(data || []);
+
+    await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("user_id", user.id);
+
     setLoading(false);
   };
 
@@ -42,11 +49,14 @@ export default function NotificationsPage() {
       </section>
 
       {notifications.length === 0 && (
-        <div className="dark-card" style={emptyCard}>
-          <h2>No notifications yet</h2>
-          <p>Your updates will appear here.</p>
-        </div>
-      )}
+  <EmptyState
+    emoji="🔔"
+    title="No notifications yet"
+    description="Your updates and alerts will appear here."
+    buttonText="Go Dashboard"
+    buttonLink="/dashboard"
+  />
+)}
 
       <div style={{ display: "grid", gap: 15 }}>
         {notifications.map((notification) => (
@@ -54,15 +64,14 @@ export default function NotificationsPage() {
             key={notification.id}
             href={notification.link || "/dashboard"}
             className="dark-card"
-            style={card}
+            style={{
+              ...card,
+              opacity: notification.is_read ? 0.75 : 1,
+            }}
           >
             <h3>{notification.title}</h3>
-
             <p>{notification.body}</p>
-
-            <small>
-              {new Date(notification.created_at).toLocaleString()}
-            </small>
+            <small>{new Date(notification.created_at).toLocaleString()}</small>
           </Link>
         ))}
       </div>

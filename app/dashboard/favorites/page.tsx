@@ -1,5 +1,6 @@
 "use client";
 
+import EmptyState from "@/app/components/EmptyState";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/app/lib/supabase";
@@ -64,11 +65,14 @@ export default function FavoritesPage() {
       </section>
 
       {favorites.length === 0 && (
-        <div className="dark-card" style={emptyCard}>
-          <h2>No favorites yet</h2>
-          <p>Save freelancers and jobs from the search page.</p>
-        </div>
-      )}
+  <EmptyState
+    emoji="❤️"
+    title="No favorites yet"
+    description="Save freelancers and jobs from the search page."
+    buttonText="Search Marketplace"
+    buttonLink="/search"
+  />
+)}
 
       <div style={grid}>
         {favorites.map((fav) => (

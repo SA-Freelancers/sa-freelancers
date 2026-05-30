@@ -1,5 +1,6 @@
 "use client";
 
+import LoadingSkeleton from "../components/LoadingSkeleton";
 import Link from "next/link";
 
 export default function DashboardPage() {

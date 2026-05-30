@@ -7,6 +7,7 @@ import { supabase } from "@/app/lib/supabase";
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -15,7 +16,44 @@ export default function Navbar() {
       document.body.classList.add("dark");
       setDarkMode(true);
     }
+
+    loadNotifications();
+
+    const channel = supabase
+      .channel("notifications-channel")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+        },
+        () => {
+          loadNotifications();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
+
+  const loadNotifications = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("is_read", false);
+
+    setNotificationCount(data?.length || 0);
+  };
 
   const toggleDarkMode = () => {
     if (darkMode) {
@@ -66,12 +104,18 @@ export default function Navbar() {
           Jobs
         </Link>
 
-        <Link href="/login" style={link}>
-          Login
-        </Link>
+        {/* REALTIME NOTIFICATIONS */}
+        <Link
+          href="/dashboard/notifications"
+          style={notificationWrapper}
+        >
+          🔔
 
-        <Link href="/register" style={registerBtn}>
-          Register
+          {notificationCount > 0 && (
+            <span style={notificationBadge}>
+              {notificationCount}
+            </span>
+          )}
         </Link>
 
         <button
@@ -80,6 +124,14 @@ export default function Navbar() {
         >
           {darkMode ? "☀️ Light" : "🌙 Dark"}
         </button>
+
+        <Link href="/login" style={link}>
+          Login
+        </Link>
+
+        <Link href="/register" style={registerBtn}>
+          Register
+        </Link>
 
         <button
           onClick={logout}
@@ -100,6 +152,9 @@ const nav = {
   justifyContent: "space-between",
   alignItems: "center",
   flexWrap: "wrap" as const,
+  position: "sticky" as const,
+  top: 0,
+  zIndex: 999,
   boxShadow: "0 4px 15px rgba(15,23,42,0.2)",
 };
 
@@ -174,4 +229,27 @@ const logoutBtn = {
   borderRadius: 10,
   cursor: "pointer",
   fontWeight: "bold",
+};
+
+const notificationWrapper = {
+  position: "relative" as const,
+  fontSize: 24,
+  textDecoration: "none",
+};
+
+const notificationBadge = {
+  position: "absolute" as const,
+  top: -8,
+  right: -10,
+  background: "#ef4444",
+  color: "white",
+  borderRadius: "50%",
+  minWidth: 20,
+  height: 20,
+  fontSize: 12,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontWeight: "bold",
+  padding: "0 5px",
 };

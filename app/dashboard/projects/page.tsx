@@ -1,5 +1,6 @@
 "use client";
 
+import EmptyState from "@/app/components/EmptyState";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/app/lib/supabase";
@@ -78,12 +79,15 @@ export default function ProjectsPage() {
 
       {message && <p>{message}</p>}
 
-      {projects.length === 0 && (
-        <div className="dark-card" style={emptyCard}>
-          <h2>No projects yet</h2>
-          <p>Projects appear after a client accepts a freelancer application.</p>
-        </div>
-      )}
+   {projects.length === 0 && (
+  <EmptyState
+    emoji="📌"
+    title="No projects yet"
+    description="Projects appear after a client accepts a freelancer application."
+    buttonText="Browse Jobs"
+    buttonLink="/dashboard/jobs"
+  />
+)}
 
       <div style={grid}>
         {projects.map((project) => (
