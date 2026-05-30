@@ -2,14 +2,25 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/app/lib/supabase";
+import LoadingSkeleton from "@/app/components/LoadingSkeleton";
+
+type Profile = {
+  avatar_url?: string;
+  cv_url?: string;
+  portfolio_url?: string;
+};
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("");
   const [bio, setBio] = useState("");
   const [category, setCategory] = useState("");
+
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -20,7 +31,10 @@ export default function ProfilePage() {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     const { data } = await supabase
       .from("profiles")
@@ -30,15 +44,30 @@ export default function ProfilePage() {
 
     if (data) {
       setProfile(data);
+
       setFullName(data.full_name || "");
       setRole(data.role || "");
       setBio(data.bio || "");
       setCategory(data.category || "");
     }
+
+    setLoading(false);
   };
 
   const saveProfile = async () => {
     setMessage("");
+
+    if (!fullName.trim()) {
+      setMessage("Please enter your full name.");
+      return;
+    }
+
+    if (!role.trim()) {
+      setMessage("Please enter your professional role.");
+      return;
+    }
+
+    setSaving(true);
 
     const {
       data: { user },
@@ -46,6 +75,7 @@ export default function ProfilePage() {
 
     if (!user) {
       setMessage("Please login first.");
+      setSaving(false);
       return;
     }
 
@@ -61,42 +91,59 @@ export default function ProfilePage() {
 
     if (error) {
       setMessage(error.message);
+      setSaving(false);
       return;
     }
 
     setMessage("Profile updated successfully!");
+    setSaving(false);
+
     loadProfile();
   };
 
+  if (loading) return <LoadingSkeleton />;
+
   return (
-    <div>
-      <section className="hero-section" style={hero}>
-        <h1>My Profile</h1>
-        <p>Update your professional identity, category, bio, and portfolio.</p>
+    <main className="profile-settings-page">
+      <section className="profile-settings-hero dark-card">
+        <p className="dashboard-badge">Profile Settings</p>
+
+        <h1>Build your professional identity</h1>
+
+        <p>
+          Update your freelancer profile, role, bio and category to attract
+          more clients.
+        </p>
       </section>
 
-      <div style={layout}>
-        <section className="dark-card" style={card}>
+      <section className="profile-settings-layout">
+        <div className="dark-card profile-settings-card">
           <h2>Edit Profile</h2>
+
+          <label className="form-label">Full Name</label>
 
           <input
             placeholder="Full name"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            style={input}
+            className="form-input"
           />
+
+          <label className="form-label">Professional Role</label>
 
           <input
             placeholder="Role e.g. Web Developer"
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            style={input}
+            className="form-input"
           />
+
+          <label className="form-label">Category</label>
 
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            style={input}
+            className="form-input"
           >
             <option value="">Select category</option>
             <option value="Web Development">Web Development</option>
@@ -108,37 +155,39 @@ export default function ProfilePage() {
             <option value="Fitting & Turning">Fitting & Turning</option>
           </select>
 
+          <label className="form-label">Professional Bio</label>
+
           <textarea
             placeholder="Write a short professional bio..."
             value={bio}
             onChange={(e) => setBio(e.target.value)}
-            style={{ ...input, minHeight: 130 }}
+            className="form-input profile-textarea"
           />
 
-          <button onClick={saveProfile} style={primaryBtn}>
-            Save Profile
+          <button
+            onClick={saveProfile}
+            disabled={saving}
+            className="primary-action-btn"
+          >
+            {saving ? "Saving..." : "Save Profile"}
           </button>
 
-          {message && <p style={messageBox}>{message}</p>}
-        </section>
+          {message && <p className="upload-message">{message}</p>}
+        </div>
 
-        <section className="dark-card" style={card}>
+        <div className="dark-card profile-preview-card">
           <h2>Profile Preview</h2>
 
           {profile?.avatar_url ? (
             <img
               src={profile.avatar_url}
               alt="Profile"
-              width={120}
-              height={120}
-              style={{
-                borderRadius: "50%",
-                objectFit: "cover",
-                marginBottom: 18,
-              }}
+              className="profile-preview-avatar"
             />
           ) : (
-            <div style={avatarPlaceholder}>👤</div>
+            <div className="profile-preview-placeholder">
+              👤
+            </div>
           )}
 
           <h3>{fullName || "Your Name"}</h3>
@@ -148,88 +197,46 @@ export default function ProfilePage() {
           </p>
 
           <p>
-            <strong>Category:</strong> {category || "Not selected"}
+            <strong>Category:</strong>{" "}
+            {category || "Not selected"}
           </p>
 
-          <p>{bio || "Your bio will appear here."}</p>
+          <p className="profile-preview-bio">
+            {bio || "Your bio will appear here."}
+          </p>
 
-          <hr style={{ margin: "25px 0", borderColor: "var(--border)" }} />
+          <div className="profile-divider" />
 
           <h3>Documents</h3>
 
-          {profile?.cv_url && (
-            <p>
-              <a href={profile.cv_url} target="_blank" rel="noreferrer">
+          <div className="profile-documents">
+            {profile?.cv_url && (
+              <a
+                href={profile.cv_url}
+                target="_blank"
+                rel="noreferrer"
+              >
                 View CV
               </a>
-            </p>
-          )}
+            )}
 
-          {profile?.portfolio_url && (
-            <p>
-              <a href={profile.portfolio_url} target="_blank" rel="noreferrer">
+            {profile?.portfolio_url && (
+              <a
+                href={profile.portfolio_url}
+                target="_blank"
+                rel="noreferrer"
+              >
                 View Portfolio
               </a>
-            </p>
-          )}
-        </section>
-      </div>
-    </div>
+            )}
+
+            {!profile?.cv_url &&
+              !profile?.portfolio_url && (
+                <p>No documents uploaded yet.</p>
+              )}
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
-
-const hero = {
-  background: "linear-gradient(135deg, #0f172a, #2563eb)",
-  padding: 35,
-  borderRadius: 18,
-  marginBottom: 30,
-};
-
-const layout = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-  gap: 25,
-};
-
-const card = {
-  padding: 28,
-  borderRadius: 18,
-  boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
-};
-
-const input = {
-  width: "100%",
-  padding: 13,
-  marginBottom: 14,
-  borderRadius: 10,
-};
-
-const primaryBtn = {
-  padding: "12px 18px",
-  background: "#2563eb",
-  color: "white",
-  border: "none",
-  borderRadius: 10,
-  cursor: "pointer",
-  fontWeight: "bold",
-};
-
-const avatarPlaceholder = {
-  width: 120,
-  height: 120,
-  borderRadius: "50%",
-  background: "#e0f2fe",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: 45,
-  marginBottom: 18,
-};
-
-const messageBox = {
-  marginTop: 18,
-  background: "#ecfdf5",
-  color: "#166534",
-  padding: 14,
-  borderRadius: 12,
-};
