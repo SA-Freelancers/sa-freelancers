@@ -333,3 +333,87 @@ body.dark footer {
   border-radius: 50%;
   background: #2563eb;
 }
+.projects-page {
+  display: grid;
+  gap: 24px;
+}
+
+.projects-header {
+  padding: 36px;
+  border-radius: 28px;
+}
+
+.projects-header h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 900;
+}
+
+.projects-header p {
+  opacity: 0.75;
+  margin-top: 14px;
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 22px;
+}
+
+.project-card {
+  padding: 24px;
+  border-radius: 24px;
+  display: grid;
+  gap: 20px;
+}
+
+.project-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.project-top h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.project-status {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.project-budget {
+  font-size: 1.6rem;
+  font-weight: 900;
+  margin: 0;
+}
+
+.project-progress {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+
+.project-progress-bar {
+  width: 70%;
+  height: 100%;
+  background: #2563eb;
+  border-radius: inherit;
+}
+
+.project-button {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 18px;
+  font-weight: 800;
+  cursor: pointer;
+  background: #2563eb;
+  color: white;
+}
