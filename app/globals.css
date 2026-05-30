@@ -1609,3 +1609,8 @@ body:not(.dark) .home-hero h1 span {
 .home-secondary-btn:hover {
   transform: translateY(-2px);
 }
+.dashboard-sidebar-nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}

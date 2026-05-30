@@ -4,13 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const links = [
-  { href: "/dashboard", label: "Overview" },
-  { href: "/dashboard/projects", label: "Projects" },
-  { href: "/dashboard/favorites", label: "Favorites" },
-  { href: "/dashboard/notifications", label: "Notifications" },
-  { href: "/dashboard/profile", label: "Profile Settings" },
-  { href: "/dashboard/upload", label: "Upload" },
-  { href: "/search", label: "Find Freelancers" },
+  { href: "/dashboard", label: "Overview", icon: "📊" },
+  { href: "/dashboard/projects", label: "Projects", icon: "📁" },
+  { href: "/dashboard/favorites", label: "Favorites", icon: "❤️" },
+  { href: "/dashboard/notifications", label: "Notifications", icon: "🔔" },
+  { href: "/dashboard/profile", label: "Profile Settings", icon: "👤" },
+  { href: "/dashboard/upload", label: "Upload", icon: "⬆️" },
+  { href: "/search", label: "Find Freelancers", icon: "🔍" },
 ];
 
 export default function DashboardSidebar() {
@@ -35,6 +35,7 @@ export default function DashboardSidebar() {
               href={link.href}
               className={isActive ? "active" : ""}
             >
+              <span>{link.icon}</span>
               {link.label}
             </Link>
           );
