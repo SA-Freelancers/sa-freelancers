@@ -3,13 +3,33 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
+import LoadingSkeleton from "@/app/components/LoadingSkeleton";
+import EmptyState from "@/app/components/EmptyState";
+
+type Profile = {
+  id: string;
+  full_name?: string;
+  role?: string;
+  bio?: string;
+  category?: string;
+  avatar_url?: string;
+  cv_url?: string;
+  portfolio_url?: string;
+};
+
+type Review = {
+  id: string;
+  rating: number;
+  comment?: string;
+  created_at: string;
+};
 
 export default function FreelancerPublicProfilePage() {
   const params = useParams();
   const id = params.id as string;
 
-  const [profile, setProfile] = useState<any>(null);
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,9 +54,19 @@ export default function FreelancerPublicProfilePage() {
     setLoading(false);
   };
 
-  if (loading) return <p>Loading profile...</p>;
+  if (loading) return <LoadingSkeleton />;
 
-  if (!profile) return <p>Profile not found.</p>;
+  if (!profile) {
+    return (
+      <main className="profile-page">
+        <EmptyState
+          emoji="👤"
+          title="Profile not found"
+          description="This freelancer profile could not be found."
+        />
+      </main>
+    );
+  }
 
   const averageRating =
     reviews.length > 0
@@ -47,127 +77,96 @@ export default function FreelancerPublicProfilePage() {
       : "No ratings";
 
   return (
-    <main style={{ maxWidth: 1100, margin: "40px auto", padding: 20 }}>
-      <section className="hero-section" style={hero}>
-        <div>
+    <main className="profile-page">
+      <section className="profile-hero dark-card">
+        <div className="profile-avatar-wrap">
           {profile.avatar_url ? (
             <img
               src={profile.avatar_url}
-              alt="Profile"
-              width={140}
-              height={140}
-              style={{
-                borderRadius: "50%",
-                objectFit: "cover",
-                border: "4px solid white",
-              }}
+              alt={profile.full_name || "Freelancer profile"}
+              className="profile-avatar"
             />
           ) : (
-            <div style={avatar}>👤</div>
+            <div className="profile-avatar-placeholder">👤</div>
           )}
         </div>
 
-        <div>
+        <div className="profile-hero-content">
+          <p className="dashboard-badge">
+            {profile.category || "Professional Freelancer"}
+          </p>
+
           <h1>{profile.full_name || "Freelancer"}</h1>
-          <p>{profile.role || "Professional Freelancer"}</p>
-          <p>⭐ {averageRating} ({reviews.length} reviews)</p>
+
+          <p className="profile-role">
+            {profile.role || "Professional Freelancer"}
+          </p>
+
+          <div className="profile-rating">
+            ⭐ {averageRating} ({reviews.length} reviews)
+          </div>
         </div>
       </section>
 
-      <div style={layout}>
-        <section className="dark-card" style={card}>
+      <section className="profile-layout">
+        <div className="dark-card profile-card">
           <h2>About</h2>
 
-          <p>
-            <strong>Category:</strong> {profile.category || "N/A"}
+          <p className="profile-bio">
+            {profile.bio || "No bio added yet."}
           </p>
 
-          <p>{profile.bio || "No bio added yet."}</p>
-
-          <hr style={{ margin: "25px 0", borderColor: "var(--border)" }} />
+          <div className="profile-divider" />
 
           <h2>Documents</h2>
 
-          {profile.cv_url && (
-            <p>
+          <div className="profile-documents">
+            {profile.cv_url && (
               <a href={profile.cv_url} target="_blank" rel="noreferrer">
                 View CV
               </a>
-            </p>
-          )}
+            )}
 
-          {profile.portfolio_url && (
-            <p>
+            {profile.portfolio_url && (
               <a href={profile.portfolio_url} target="_blank" rel="noreferrer">
                 View Portfolio
               </a>
-            </p>
-          )}
+            )}
 
-          {!profile.cv_url && !profile.portfolio_url && (
-            <p>No documents uploaded yet.</p>
-          )}
-        </section>
+            {!profile.cv_url && !profile.portfolio_url && (
+              <p>No documents uploaded yet.</p>
+            )}
+          </div>
+        </div>
 
-        <section className="dark-card" style={card}>
+        <div className="dark-card profile-card">
           <h2>Reviews</h2>
 
-          {reviews.length === 0 && <p>No reviews yet.</p>}
+          {reviews.length === 0 ? (
+            <EmptyState
+              emoji="⭐"
+              title="No reviews yet"
+              description="Client reviews will appear here once this freelancer receives feedback."
+            />
+          ) : (
+            <div className="reviews-list">
+              {reviews.map((review) => (
+                <div key={review.id} className="review-card">
+                  <p className="review-stars">
+                    {"⭐".repeat(review.rating)}
+                  </p>
 
-          {reviews.map((review) => (
-            <div key={review.id} className="dark-card" style={reviewCard}>
-              <p style={{ fontSize: 20 }}>
-                {"⭐".repeat(review.rating)}
-              </p>
+                  <p>{review.comment || "No comment provided."}</p>
 
-              <p>{review.comment || "No comment provided."}</p>
-
-              <small>{new Date(review.created_at).toLocaleDateString()}</small>
+                  <small>
+                    {new Date(review.created_at).toLocaleDateString()}
+                  </small>
+                </div>
+              ))}
             </div>
-          ))}
-        </section>
-      </div>
+          )}
+        </div>
+      </section>
     </main>
   );
 }
-
-const hero = {
-  background: "linear-gradient(135deg, #0f172a, #2563eb)",
-  padding: 35,
-  borderRadius: 18,
-  marginBottom: 30,
-  display: "flex",
-  alignItems: "center",
-  gap: 25,
-  flexWrap: "wrap" as const,
-};
-
-const avatar = {
-  width: 140,
-  height: 140,
-  borderRadius: "50%",
-  background: "white",
-  color: "#2563eb",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: 55,
-};
-
-const layout = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-  gap: 25,
-};
-
-const card = {
-  padding: 28,
-  borderRadius: 18,
-  boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
-};
-
-const reviewCard = {
-  padding: 18,
-  borderRadius: 14,
-  marginBottom: 15,
-};
