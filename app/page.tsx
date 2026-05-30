@@ -100,6 +100,39 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="home-section">
+        <div className="home-section-header">
+          <p className="dashboard-badge">Trust & Safety</p>
+          <h2>Built to keep work inside the platform</h2>
+        </div>
+
+        <div className="home-grid">
+          <div className="dark-card home-card">
+            <h3>No Contact Sharing Before Hiring</h3>
+            <p>
+              Proposals are checked to discourage phone numbers, WhatsApp and
+              email sharing before a client hires.
+            </p>
+          </div>
+
+          <div className="dark-card home-card">
+            <h3>Safer Proposal Flow</h3>
+            <p>
+              Freelancers apply with a budget and cover message while clients
+              review proposals from the dashboard.
+            </p>
+          </div>
+
+          <div className="dark-card home-card">
+            <h3>Platform-Based Trust</h3>
+            <p>
+              Profiles, reviews, uploads, favorites and notifications help users
+              make better hiring decisions.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section className="home-cta dark-card">
         <h2>Ready to build your next project?</h2>
         <p>Join South Africa’s growing freelance marketplace today.</p>
