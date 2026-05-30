@@ -7,10 +7,10 @@ const links = [
   { href: "/", label: "Home" },
   { href: "/search", label: "Marketplace" },
   { href: "/safety", label: "Safety" },
+  { href: "/contact", label: "Support" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/dashboard/jobs", label: "Jobs" },
 ];
-
 export default function Navbar() {
   const pathname = usePathname();
 
