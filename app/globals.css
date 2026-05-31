@@ -2566,3 +2566,27 @@ body {
     padding: 22px;
   }
 }
+.contract-timeline {
+  margin-top: 40px;
+}
+
+.timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.timeline-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #2563eb;
+  margin-top: 6px;
+}

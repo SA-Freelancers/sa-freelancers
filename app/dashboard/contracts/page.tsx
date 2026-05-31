@@ -42,11 +42,19 @@ export default function ContractsPage() {
     setLoading(false);
   };
 
-  const updateContract = async (contractId: string, status: string) => {
-    await supabase.from("contracts").update({ status }).eq("id", contractId);
-    loadContracts();
-  };
+ const updateContract = async (contractId: string, status: string) => {
+  await supabase
+    .from("contracts")
+    .update({ status })
+    .eq("id", contractId);
 
+  await supabase.from("contract_activity").insert({
+    contract_id: contractId,
+    action: `Contract marked as ${status}`,
+  });
+
+  loadContracts();
+};
   if (loading) return <LoadingSkeleton />;
 
   const pendingContracts = contracts.filter((contract) => contract.status === "pending");
