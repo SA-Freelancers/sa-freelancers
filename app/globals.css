@@ -1766,4 +1766,16 @@ body:not(.dark) .home-hero h1 span {
 .quick-action-card p {
   opacity: 0.74;
   line-height: 1.6;
+}.quick-action-card,
+.quick-action-card h3,
+.quick-action-card p {
+  color: inherit;
+}
+
+body:not(.dark) .quick-action-card h3 {
+  color: #0f172a;
+}
+
+body:not(.dark) .quick-action-card p {
+  color: #475569;
 }
