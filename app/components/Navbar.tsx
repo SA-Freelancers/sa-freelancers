@@ -50,6 +50,10 @@ export default function Navbar() {
     };
   }, []);
 
+  const closeMenu = () => {
+    setMenuOpen(false);
+  };
+
   const toggleDarkMode = () => {
     const newMode = !darkMode;
     setDarkMode(newMode);
@@ -64,6 +68,7 @@ export default function Navbar() {
   };
 
   const logout = async () => {
+    closeMenu();
     await supabase.auth.signOut();
     router.push("/login");
   };
@@ -73,7 +78,7 @@ export default function Navbar() {
   return (
     <header className="navbar-wrapper">
       <div className="navbar-container">
-        <Link href="/" className="navbar-logo" onClick={() => setMenuOpen(false)}>
+        <Link href="/" className="navbar-logo" onClick={closeMenu}>
           <span>SA</span> Freelancers
         </Link>
 
@@ -95,7 +100,7 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                onClick={() => setMenuOpen(false)}
+                onClick={closeMenu}
                 className={`navbar-link ${isActive ? "active" : ""}`}
               >
                 {link.label}
@@ -113,12 +118,20 @@ export default function Navbar() {
             </button>
           ) : (
             <>
-              <Link href="/login" className="navbar-login-btn">
+              <Link
+                href="/login"
+                className="navbar-login-btn"
+                onClick={closeMenu}
+              >
                 Login
               </Link>
 
-              <Link href="/register" className="navbar-register-btn">
-                Get Started
+              <Link
+                href="/register"
+                className="navbar-register-btn"
+                onClick={closeMenu}
+              >
+                Create Account
               </Link>
             </>
           )}
