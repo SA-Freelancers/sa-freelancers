@@ -1716,3 +1716,9 @@ body:not(.dark) .home-hero h1 span {
 .auth-page .primary-action-btn:hover {
   transform: translateY(-2px);
 }
+.password-hint {
+  margin-top: 10px;
+  font-size: 0.92rem;
+  opacity: 0.72;
+  line-height: 1.6;
+}

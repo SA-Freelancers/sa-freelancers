@@ -113,7 +113,9 @@ export default function RegisterPage() {
           onChange={(e) => setPassword(e.target.value)}
           className="form-input"
         />
-
+<p className="password-hint">
+  Use at least 6 characters with a strong password for better account security.
+</p>
         <button
           onClick={handleRegister}
           disabled={loading}
