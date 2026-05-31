@@ -207,6 +207,14 @@ export default function DashboardPage() {
           <h3>Manage Projects</h3>
           <p>Track proposals, projects and client activity.</p>
         </Link>
+        <Link
+  href="/dashboard/contracts"
+  className="dark-card quick-action-card"
+>
+  <span>📄</span>
+  <h3>Contracts</h3>
+  <p>Review hiring requests and manage accepted work.</p>
+</Link>
       </section>
 
       <section className="dark-card profile-completion-card">
