@@ -15,6 +15,7 @@ const links = [
   { href: "/search", label: "Find Freelancers", icon: "🔍" },
   { href: "/dashboard/contracts", label: "Contracts", icon: "📄" },
   { href: "/dashboard/client-contracts", label: "Sent Contracts", icon: "📨" },
+  { href: "/dashboard/client-contracts", label: "Sent Contracts", icon: "📨" },
 ];
 
 export default function DashboardSidebar() {
