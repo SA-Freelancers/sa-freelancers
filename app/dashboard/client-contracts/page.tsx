@@ -39,14 +39,16 @@ export default function ClientContractsPage() {
 
     const { data } = await supabase
       .from("contracts")
-      .select(`
+      .select(
+        `
         *,
         profiles (
           full_name,
           role,
           category
         )
-      `)
+      `
+      )
       .eq("client_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -55,6 +57,78 @@ export default function ClientContractsPage() {
   };
 
   if (loading) return <LoadingSkeleton />;
+
+  const pendingContracts = contracts.filter(
+    (contract) => contract.status === "pending"
+  );
+
+  const acceptedContracts = contracts.filter(
+    (contract) => contract.status === "accepted"
+  );
+
+  const rejectedContracts = contracts.filter(
+    (contract) => contract.status === "rejected"
+  );
+
+  const completedContracts = contracts.filter(
+    (contract) => contract.status === "completed"
+  );
+
+  const renderContracts = (
+    items: Contract[],
+    emptyEmoji: string,
+    emptyTitle: string,
+    emptyDescription: string
+  ) => {
+    if (items.length === 0) {
+      return (
+        <EmptyState
+          emoji={emptyEmoji}
+          title={emptyTitle}
+          description={emptyDescription}
+        />
+      );
+    }
+
+    return (
+      <div className="contracts-grid">
+        {items.map((contract) => (
+          <div key={contract.id} className="dark-card contract-card">
+            <div className="contract-top">
+              <h2>{contract.project_title || "Untitled Project"}</h2>
+
+              <span className={`contract-status ${contract.status}`}>
+                {contract.status || "pending"}
+              </span>
+            </div>
+
+            <p>
+              <strong>Freelancer:</strong>{" "}
+              {contract.profiles?.full_name || "Unknown"}
+            </p>
+
+            <p>
+              <strong>Role:</strong> {contract.profiles?.role || "N/A"}
+            </p>
+
+            <p className="contract-budget">
+              Budget: ZAR {contract.budget || 0}
+            </p>
+
+            <p className="contract-description">
+              {contract.project_description || "No description provided."}
+            </p>
+
+            <small>
+              {contract.created_at
+                ? new Date(contract.created_at).toLocaleDateString()
+                : ""}
+            </small>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <main className="contracts-page">
@@ -66,46 +140,45 @@ export default function ClientContractsPage() {
         <p>Track contracts you sent to freelancers.</p>
       </section>
 
-      {contracts.length === 0 ? (
-        <EmptyState
-          emoji="📄"
-          title="No contracts sent yet"
-          description="Hire a freelancer from their profile to create a contract."
-          buttonText="Find Freelancers"
-          buttonLink="/search"
-        />
-      ) : (
-        <div className="contracts-grid">
-          {contracts.map((contract) => (
-            <div key={contract.id} className="dark-card contract-card">
-              <div className="contract-top">
-                <h2>{contract.project_title || "Untitled Project"}</h2>
+      <section>
+        <h2 style={{ marginBottom: 18 }}>Pending Contracts</h2>
+        {renderContracts(
+          pendingContracts,
+          "📭",
+          "No pending contracts",
+          "Pending hiring requests will appear here."
+        )}
+      </section>
 
-                <span className={`contract-status ${contract.status}`}>
-                  {contract.status || "pending"}
-                </span>
-              </div>
+      <section style={{ marginTop: 40 }}>
+        <h2 style={{ marginBottom: 18 }}>Accepted Contracts</h2>
+        {renderContracts(
+          acceptedContracts,
+          "📄",
+          "No accepted contracts",
+          "Accepted freelancer contracts will appear here."
+        )}
+      </section>
 
-              <p>
-                <strong>Freelancer:</strong>{" "}
-                {contract.profiles?.full_name || "Unknown"}
-              </p>
+      <section style={{ marginTop: 40 }}>
+        <h2 style={{ marginBottom: 18 }}>Completed Contracts</h2>
+        {renderContracts(
+          completedContracts,
+          "✅",
+          "No completed contracts",
+          "Completed work will appear here."
+        )}
+      </section>
 
-              <p className="contract-budget">
-                Budget: ZAR {contract.budget || 0}
-              </p>
-
-              <p className="contract-description">
-                {contract.project_description || "No description provided."}
-              </p>
-
-              <small>
-                {new Date(contract.created_at || "").toLocaleDateString()}
-              </small>
-            </div>
-          ))}
-        </div>
-      )}
+      <section style={{ marginTop: 40 }}>
+        <h2 style={{ marginBottom: 18 }}>Rejected Contracts</h2>
+        {renderContracts(
+          rejectedContracts,
+          "❌",
+          "No rejected contracts",
+          "Rejected hiring requests will appear here."
+        )}
+      </section>
     </main>
   );
 }
