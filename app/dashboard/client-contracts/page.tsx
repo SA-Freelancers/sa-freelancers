@@ -124,6 +124,14 @@ export default function ClientContractsPage() {
                 ? new Date(contract.created_at).toLocaleDateString()
                 : ""}
             </small>
+            <div className="contract-actions">
+  <a
+    href={`/dashboard/contracts/${contract.id}`}
+    className="primary-action-link"
+  >
+    View Details
+  </a>
+</div>
           </div>
         ))}
       </div>
