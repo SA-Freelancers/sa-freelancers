@@ -20,6 +20,12 @@ export default function RegisterPage() {
     setLoading(true);
     setMessage("");
 
+    if (!fullName.trim() || !email.trim() || !password.trim()) {
+      setMessage("Please fill in all required fields.");
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -62,92 +68,66 @@ export default function RegisterPage() {
   };
 
   return (
-    <main style={page}>
-      <div className="dark-card" style={card}>
-        <h1>Create Account</h1>
+    <main className="auth-page">
+      <section className="auth-card dark-card">
+        <p className="dashboard-badge">Create Account</p>
 
-        <p>Join SA Freelancers as a client or freelancer.</p>
+        <h1>Join SA Freelancers</h1>
 
+        <p className="auth-description">
+          Create a client or freelancer account and start using the marketplace.
+        </p>
+
+        <label className="form-label">Full Name</label>
         <input
-          placeholder="Full name"
+          placeholder="Your full name"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          style={input}
+          className="form-input"
         />
 
+        <label className="form-label">Account Type</label>
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
-          style={input}
+          className="form-input"
         >
           <option value="freelancer">Freelancer</option>
           <option value="client">Client</option>
         </select>
 
+        <label className="form-label">Email Address</label>
         <input
           type="email"
-          placeholder="Email address"
+          placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          style={input}
+          className="form-input"
         />
 
+        <label className="form-label">Password</label>
         <input
           type="password"
-          placeholder="Password"
+          placeholder="Create a secure password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={input}
+          className="form-input"
         />
 
-        <button onClick={handleRegister} disabled={loading} style={button}>
+        <button
+          onClick={handleRegister}
+          disabled={loading}
+          className="primary-action-btn auth-submit-btn"
+        >
           {loading ? "Creating..." : "Create Account"}
         </button>
 
-        {message && <p style={{ marginTop: 15 }}>{message}</p>}
+        {message && <p className="auth-error">{message}</p>}
 
-        <p style={{ marginTop: 20 }}>
-          Already have an account?{" "}
-          <Link href="/login" style={{ color: "#60a5fa", fontWeight: "bold" }}>
-            Login
-          </Link>
+        <p className="auth-footer-text">
+          Already have an account? <Link href="/login">Login</Link>
         </p>
-      </div>
+      </section>
     </main>
   );
 }
-
-const page = {
-  minHeight: "80vh",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: 20,
-};
-
-const card = {
-  width: "100%",
-  maxWidth: 460,
-  padding: 35,
-  borderRadius: 20,
-  boxShadow: "0 15px 35px rgba(15,23,42,0.08)",
-};
-
-const input = {
-  width: "100%",
-  padding: 14,
-  marginTop: 15,
-  borderRadius: 12,
-};
-
-const button = {
-  width: "100%",
-  marginTop: 20,
-  padding: 14,
-  background: "#16a34a",
-  color: "white",
-  border: "none",
-  borderRadius: 12,
-  cursor: "pointer",
-  fontWeight: "bold",
-};
