@@ -115,6 +115,11 @@ export default function FreelancerPublicProfilePage() {
               </span>
             )}
           </div>
+          <div style={{ marginTop: 20 }}>
+  <a href={`/hire/${profile.id}`} className="primary-action-link">
+    Hire Freelancer
+  </a>
+</div>
 
           <p className="profile-role">
             {profile.role || "Professional Freelancer"}
