@@ -52,7 +52,16 @@ export default function ContractsPage() {
       contract_id: contractId,
       action: `Contract marked as ${status}`,
     });
+const currentContract = contracts.find((contract) => contract.id === contractId);
 
+if (currentContract) {
+  await supabase.from("notifications").insert({
+    title: "Contract Update",
+    body: `${currentContract.project_title || "Your contract"} was marked as ${status}.`,
+    link: `/dashboard/contracts/${contractId}`,
+    is_read: false,
+  });
+}
     loadContracts();
   };
 
