@@ -13,6 +13,7 @@ const links = [
   { href: "/dashboard/profile", label: "Profile Settings", icon: "👤" },
   { href: "/dashboard/upload", label: "Upload", icon: "⬆️" },
   { href: "/search", label: "Find Freelancers", icon: "🔍" },
+  { href: "/dashboard/contracts", label: "Contracts", icon: "📄" },
 ];
 
 export default function DashboardSidebar() {
