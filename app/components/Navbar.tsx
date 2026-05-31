@@ -73,6 +73,24 @@ export default function Navbar() {
     router.push("/login");
   };
 
+  const getInitials = () => {
+    const fullName =
+      user?.user_metadata?.full_name ||
+      user?.email ||
+      "User";
+
+    const names = fullName.trim().split(" ");
+
+    if (names.length === 1) {
+      return names[0].charAt(0).toUpperCase();
+    }
+
+    return (
+      names[0].charAt(0) +
+      names[names.length - 1].charAt(0)
+    ).toUpperCase();
+  };
+
   if (loading) return null;
 
   return (
@@ -112,31 +130,31 @@ export default function Navbar() {
             {darkMode ? "☀️" : "🌙"}
           </button>
 
-         {user ? (
- <div className="navbar-user-menu">
-  <span className="navbar-user">
-    👤 {user.user_metadata?.full_name || user.email}
-  </span>
+          {user ? (
+            <div className="navbar-user-menu">
+              <span className="navbar-user">
+                {getInitials()}
+              </span>
 
-  <div className="navbar-user-dropdown">
-    <Link href="/dashboard" onClick={closeMenu}>
-      Dashboard
-    </Link>
+              <div className="navbar-user-dropdown">
+                <Link href="/dashboard" onClick={closeMenu}>
+                  Dashboard
+                </Link>
 
-    <Link href="/dashboard/profile" onClick={closeMenu}>
-      Profile
-    </Link>
+                <Link href="/dashboard/profile" onClick={closeMenu}>
+                  Profile
+                </Link>
 
-    <Link href="/dashboard/projects" onClick={closeMenu}>
-      Projects
-    </Link>
+                <Link href="/dashboard/projects" onClick={closeMenu}>
+                  Projects
+                </Link>
 
-    <button onClick={logout}>
-      Logout
-    </button>
-  </div>
-</div>
-) : (
+                <button onClick={logout}>
+                  Logout
+                </button>
+              </div>
+            </div>
+          ) : (
             <>
               <Link
                 href="/login"

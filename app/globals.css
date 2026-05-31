@@ -2245,3 +2245,26 @@ body {
     display: flex;
   }
 }
+.navbar-user {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #22c55e);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1rem;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: 0 10px 25px rgba(37,99,235,0.25);
+}
+
+@media (max-width: 900px) {
+  .navbar-user {
+    width: 100%;
+    border-radius: 16px;
+    height: 52px;
+  }
+}
