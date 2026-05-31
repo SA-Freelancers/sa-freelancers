@@ -148,6 +148,9 @@ export default function Navbar() {
                 <Link href="/dashboard/projects" onClick={closeMenu}>
                   Projects
                 </Link>
+                <Link href="/dashboard/contracts" onClick={closeMenu}>
+  Contracts
+</Link>
 
                 <button onClick={logout}>
                   Logout
