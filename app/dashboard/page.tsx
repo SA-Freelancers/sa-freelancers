@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/app/lib/supabase";
 import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 
@@ -18,6 +19,15 @@ type Activity = {
   created_at?: string;
 };
 
+type Profile = {
+  full_name?: string;
+  bio?: string;
+  category?: string;
+  avatar_url?: string;
+  cv_url?: string;
+  portfolio_url?: string;
+};
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats>({
     projects: 0,
@@ -27,11 +37,39 @@ export default function DashboardPage() {
   });
 
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [profileCompletion, setProfileCompletion] = useState(0);
+  const [missingItems, setMissingItems] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadDashboard();
   }, []);
+
+  const calculateProfileCompletion = (profile: Profile) => {
+    const checks = [
+      !!profile.full_name,
+      !!profile.bio,
+      !!profile.category,
+      !!profile.avatar_url,
+      !!profile.cv_url,
+      !!profile.portfolio_url,
+    ];
+
+    const missing = [];
+
+    if (!profile.full_name) missing.push("Full Name");
+    if (!profile.bio) missing.push("Bio");
+    if (!profile.category) missing.push("Category");
+    if (!profile.avatar_url) missing.push("Profile Picture");
+    if (!profile.cv_url) missing.push("CV Upload");
+    if (!profile.portfolio_url) missing.push("Portfolio Upload");
+
+    const completed = checks.filter(Boolean).length;
+    const percentage = Math.round((completed / checks.length) * 100);
+
+    setProfileCompletion(percentage);
+    setMissingItems(missing);
+  };
 
   const loadDashboard = async () => {
     const {
@@ -42,6 +80,14 @@ export default function DashboardPage() {
       setLoading(false);
       return;
     }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    calculateProfileCompletion(profile || {});
 
     const { count: projectsCount } = await supabase
       .from("jobs")
@@ -138,46 +184,65 @@ export default function DashboardPage() {
       </section>
 
       <section className="dashboard-quick-actions">
-        <a href="/dashboard/jobs/new" className="dark-card quick-action-card">
+        <Link
+          href="/dashboard/jobs/new"
+          className="dark-card quick-action-card"
+        >
           <span>➕</span>
-
           <h3>Post Job</h3>
-
           <p>Create a new project and receive freelancer proposals.</p>
-        </a>
+        </Link>
 
-        <a href="/search" className="dark-card quick-action-card">
+        <Link href="/search" className="dark-card quick-action-card">
           <span>🔍</span>
-
           <h3>Find Freelancers</h3>
-
           <p>Browse skilled professionals across categories.</p>
-        </a>
+        </Link>
 
-        <a href="/dashboard/projects" className="dark-card quick-action-card">
+        <Link
+          href="/dashboard/projects"
+          className="dark-card quick-action-card"
+        >
           <span>📁</span>
-
           <h3>Manage Projects</h3>
-
           <p>Track proposals, projects and client activity.</p>
-        </a>
+        </Link>
       </section>
 
       <section className="dark-card profile-completion-card">
-        <div>
+        <div style={{ width: "100%" }}>
           <p className="dashboard-badge">Profile Completion</p>
 
-          <h2>Improve your profile visibility</h2>
+          <div className="profile-progress-top">
+            <h2>{profileCompletion}% Complete</h2>
 
-          <p>
-            Add your bio, category, CV, portfolio and profile picture to build
-            more trust with clients.
-          </p>
+            <Link
+              href="/dashboard/profile"
+              className="primary-action-link"
+            >
+              Complete Profile
+            </Link>
+          </div>
+
+          <div className="profile-progress-bar">
+            <div
+              className="profile-progress-fill"
+              style={{ width: `${profileCompletion}%` }}
+            />
+          </div>
+
+          {missingItems.length > 0 && (
+            <div className="profile-missing-list">
+              <strong>Missing:</strong>
+
+              <div className="profile-tags">
+                {missingItems.map((item) => (
+                  <span key={item}>{item}</span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-
-        <a href="/dashboard/profile" className="primary-action-link">
-          Complete Profile
-        </a>
       </section>
 
       <section className="dashboard-stats">

@@ -2268,3 +2268,44 @@ body {
     height: 52px;
   }
 }
+.profile-progress-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.profile-progress-bar {
+  width: 100%;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  overflow: hidden;
+  margin-top: 22px;
+}
+
+.profile-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb, #22c55e);
+}
+
+.profile-missing-list {
+  margin-top: 22px;
+}
+
+.profile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.profile-tags span {
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(37,99,235,0.12);
+  color: #2563eb;
+  font-weight: 800;
+}
