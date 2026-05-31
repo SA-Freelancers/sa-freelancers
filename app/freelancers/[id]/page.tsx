@@ -15,6 +15,8 @@ type Profile = {
   avatar_url?: string;
   cv_url?: string;
   portfolio_url?: string;
+  verified?: boolean;
+  top_rated?: boolean;
 };
 
 type Review = {
@@ -28,16 +30,7 @@ export default function FreelancerPublicProfilePage() {
   const params = useParams();
   const id = params.id as string;
 
-  const [profile, setProfile] = useState<{
-  full_name?: string;
-  role?: string;
-  category?: string;
-  bio?: string;
-  avatar_url?: string;
-  cv_url?: string;
-  portfolio_url?: string;
-  verified?: boolean;
-} | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -58,8 +51,8 @@ export default function FreelancerPublicProfilePage() {
       .eq("freelancer_id", id)
       .order("created_at", { ascending: false });
 
-    setProfile(profileData);
-    setReviews(reviewData || []);
+    setProfile(profileData as Profile);
+    setReviews((reviewData as Review[]) || []);
     setLoading(false);
   };
 
@@ -105,15 +98,24 @@ export default function FreelancerPublicProfilePage() {
             {profile.category || "Professional Freelancer"}
           </p>
 
-        <h1 className="profile-name">
-  {profile.full_name || "Freelancer"}
+          <h1 className="profile-name">
+            {profile.full_name || "Freelancer"}
+          </h1>
 
-  {profile.verified && (
-    <span className="verified-badge">
-      ✔ Verified
-    </span>
-  )}
-</h1>
+          <div className="marketplace-badges">
+            {profile.verified && (
+              <span className="verified-badge">
+                ✔ Verified
+              </span>
+            )}
+
+            {profile.top_rated && (
+              <span className="top-rated-badge">
+                ★ Top Rated
+              </span>
+            )}
+          </div>
+
           <p className="profile-role">
             {profile.role || "Professional Freelancer"}
           </p>

@@ -12,6 +12,7 @@ type Profile = {
   bio?: string;
   category?: string;
   verified?: boolean;
+  top_rated?: boolean;
 };
 
 type Job = {
@@ -165,13 +166,21 @@ export default function SearchPage() {
 
                 <h3 className="marketplace-user-name">
                   {freelancer.full_name || "Unnamed Freelancer"}
+                </h3>
 
+                <div className="marketplace-badges">
                   {freelancer.verified && (
                     <span className="verified-badge small">
-                      ✔
+                      ✔ Verified
                     </span>
                   )}
-                </h3>
+
+                  {freelancer.top_rated && (
+                    <span className="top-rated-badge">
+                      ★ Top Rated
+                    </span>
+                  )}
+                </div>
 
                 <p>
                   <strong>Role:</strong> {freelancer.role || "N/A"}
