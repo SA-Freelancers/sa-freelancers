@@ -1779,3 +1779,23 @@ body:not(.dark) .quick-action-card h3 {
 body:not(.dark) .quick-action-card p {
   color: #475569;
 }
+.profile-completion-card {
+  padding: 28px;
+  border-radius: 26px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.profile-completion-card h2 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.profile-completion-card p {
+  max-width: 720px;
+  opacity: 0.75;
+  line-height: 1.7;
+}

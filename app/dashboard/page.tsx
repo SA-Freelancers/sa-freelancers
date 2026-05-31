@@ -163,6 +163,23 @@ export default function DashboardPage() {
         </a>
       </section>
 
+      <section className="dark-card profile-completion-card">
+        <div>
+          <p className="dashboard-badge">Profile Completion</p>
+
+          <h2>Improve your profile visibility</h2>
+
+          <p>
+            Add your bio, category, CV, portfolio and profile picture to build
+            more trust with clients.
+          </p>
+        </div>
+
+        <a href="/dashboard/profile" className="primary-action-link">
+          Complete Profile
+        </a>
+      </section>
+
       <section className="dashboard-stats">
         <div className="dark-card stat-card">
           <h3>{stats.projects}</h3>
