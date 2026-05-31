@@ -42,19 +42,20 @@ export default function ContractsPage() {
     setLoading(false);
   };
 
-  const updateContract = async (
-    contractId: string,
-    status: string
-  ) => {
-    await supabase
-      .from("contracts")
-      .update({ status })
-      .eq("id", contractId);
-
+  const updateContract = async (contractId: string, status: string) => {
+    await supabase.from("contracts").update({ status }).eq("id", contractId);
     loadContracts();
   };
 
   if (loading) return <LoadingSkeleton />;
+
+  const pendingContracts = contracts.filter(
+    (contract) => contract.status === "pending"
+  );
+
+  const activeContracts = contracts.filter(
+    (contract) => contract.status === "accepted"
+  );
 
   return (
     <main className="contracts-page">
@@ -63,76 +64,96 @@ export default function ContractsPage() {
 
         <h1>Hiring Requests</h1>
 
-        <p>
-          Accept or reject professional project contracts from clients.
-        </p>
+        <p>Accept or reject professional project contracts from clients.</p>
       </section>
 
-      {contracts.length === 0 ? (
-        <EmptyState
-          emoji="📄"
-          title="No contracts yet"
-          description="Hiring requests from clients will appear here."
-        />
-      ) : (
-        <div className="contracts-grid">
-          {contracts.map((contract) => (
-            <div
-              key={contract.id}
-              className="dark-card contract-card"
-            >
-              <div className="contract-top">
-                <h2>
-                  {contract.project_title || "Untitled Project"}
-                </h2>
+      <section>
+        <h2 style={{ marginBottom: 18 }}>Pending Requests</h2>
 
-                <span
-                  className={`contract-status ${contract.status}`}
-                >
-                  {contract.status}
-                </span>
-              </div>
+        {pendingContracts.length === 0 ? (
+          <EmptyState
+            emoji="📭"
+            title="No pending requests"
+            description="New hiring requests will appear here."
+          />
+        ) : (
+          <div className="contracts-grid">
+            {pendingContracts.map((contract) => (
+              <div key={contract.id} className="dark-card contract-card">
+                <div className="contract-top">
+                  <h2>{contract.project_title || "Untitled Project"}</h2>
 
-              <p className="contract-budget">
-                Budget: ZAR {contract.budget || 0}
-              </p>
+                  <span className={`contract-status ${contract.status}`}>
+                    {contract.status || "pending"}
+                  </span>
+                </div>
 
-              <p className="contract-description">
-                {contract.project_description ||
-                  "No description provided."}
-              </p>
+                <p className="contract-budget">
+                  Budget: ZAR {contract.budget || 0}
+                </p>
 
-              <small>
-                {new Date(
-                  contract.created_at || ""
-                ).toLocaleDateString()}
-              </small>
+                <p className="contract-description">
+                  {contract.project_description || "No description provided."}
+                </p>
 
-              {contract.status === "pending" && (
                 <div className="contract-actions">
                   <button
-                    onClick={() =>
-                      updateContract(contract.id, "accepted")
-                    }
+                    onClick={() => updateContract(contract.id, "accepted")}
                     className="accept-btn"
                   >
                     Accept
                   </button>
 
                   <button
-                    onClick={() =>
-                      updateContract(contract.id, "rejected")
-                    }
+                    onClick={() => updateContract(contract.id, "rejected")}
                     className="reject-btn"
                   >
                     Reject
                   </button>
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section style={{ marginTop: 40 }}>
+        <h2 style={{ marginBottom: 18 }}>Active Contracts</h2>
+
+        {activeContracts.length === 0 ? (
+          <EmptyState
+            emoji="📄"
+            title="No active contracts"
+            description="Accepted contracts will appear here."
+          />
+        ) : (
+          <div className="contracts-grid">
+            {activeContracts.map((contract) => (
+              <div key={contract.id} className="dark-card contract-card">
+                <div className="contract-top">
+                  <h2>{contract.project_title || "Untitled Project"}</h2>
+
+                  <span className="contract-status accepted">Active</span>
+                </div>
+
+                <p className="contract-budget">
+                  Budget: ZAR {contract.budget || 0}
+                </p>
+
+                <p className="contract-description">
+                  {contract.project_description || "No description provided."}
+                </p>
+
+                <small>
+                  {contract.created_at
+                    ? new Date(contract.created_at).toLocaleDateString()
+                    : ""}
+                </small>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </main>
   );
 }
