@@ -2092,3 +2092,46 @@ body {
     width: 100% !important;
   }
 }
+@media (max-width: 768px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .dashboard-sidebar {
+    padding: 16px !important;
+    border-radius: 20px !important;
+  }
+
+  .dashboard-sidebar-nav {
+    grid-template-columns: 1fr 1fr;
+    display: grid;
+  }
+
+  .dashboard-sidebar-nav a {
+    font-size: 0.9rem;
+    padding: 11px 10px !important;
+  }
+
+  .dashboard-hero {
+    padding: 28px 18px !important;
+  }
+
+  .dashboard-hero h1 {
+    font-size: 2.2rem !important;
+  }
+
+  .dashboard-stats,
+  .dashboard-quick-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .profile-completion-card {
+    align-items: stretch;
+  }
+
+  .profile-completion-card .primary-action-link {
+    width: 100%;
+    text-align: center;
+  }
+}
