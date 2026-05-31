@@ -113,15 +113,29 @@ export default function Navbar() {
           </button>
 
          {user ? (
-  <>
-    <span className="navbar-user">
-      {user.user_metadata?.full_name || user.email}
-    </span>
+ <div className="navbar-user-menu">
+  <span className="navbar-user">
+    👤 {user.user_metadata?.full_name || user.email}
+  </span>
 
-    <button onClick={logout} className="navbar-logout-btn">
+  <div className="navbar-user-dropdown">
+    <Link href="/dashboard" onClick={closeMenu}>
+      Dashboard
+    </Link>
+
+    <Link href="/dashboard/profile" onClick={closeMenu}>
+      Profile
+    </Link>
+
+    <Link href="/dashboard/projects" onClick={closeMenu}>
+      Projects
+    </Link>
+
+    <button onClick={logout}>
       Logout
     </button>
-  </>
+  </div>
+</div>
 ) : (
             <>
               <Link

@@ -2192,3 +2192,56 @@ body {
     text-align: center;
   }
 }
+.navbar-user-menu {
+  position: relative;
+}
+
+.navbar-user-dropdown {
+  position: absolute;
+  top: 55px;
+  right: 0;
+  background: #0f172a;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+  padding: 10px;
+  min-width: 220px;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.35);
+}
+
+.navbar-user-menu:hover .navbar-user-dropdown {
+  display: flex;
+}
+
+.navbar-user-dropdown a,
+.navbar-user-dropdown button {
+  background: rgba(255,255,255,0.05);
+  color: white;
+  border: none;
+  text-decoration: none;
+  padding: 12px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  text-align: left;
+}
+
+.navbar-user-dropdown button {
+  background: rgba(239,68,68,0.15);
+  color: #f87171;
+}
+
+@media (max-width: 900px) {
+  .navbar-user-dropdown {
+    position: static;
+    display: flex;
+    margin-top: 10px;
+    width: 100%;
+  }
+
+  .navbar-user-menu:hover .navbar-user-dropdown {
+    display: flex;
+  }
+}
