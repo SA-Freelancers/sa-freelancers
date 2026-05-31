@@ -137,6 +137,32 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      <section className="dashboard-quick-actions">
+        <a href="/dashboard/jobs/new" className="dark-card quick-action-card">
+          <span>➕</span>
+
+          <h3>Post Job</h3>
+
+          <p>Create a new project and receive freelancer proposals.</p>
+        </a>
+
+        <a href="/search" className="dark-card quick-action-card">
+          <span>🔍</span>
+
+          <h3>Find Freelancers</h3>
+
+          <p>Browse skilled professionals across categories.</p>
+        </a>
+
+        <a href="/dashboard/projects" className="dark-card quick-action-card">
+          <span>📁</span>
+
+          <h3>Manage Projects</h3>
+
+          <p>Track proposals, projects and client activity.</p>
+        </a>
+      </section>
+
       <section className="dashboard-stats">
         <div className="dark-card stat-card">
           <h3>{stats.projects}</h3>
