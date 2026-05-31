@@ -7,6 +7,7 @@ import EmptyState from "@/app/components/EmptyState";
 
 type Contract = {
   id: string;
+  client_id?: string;
   project_title?: string;
   project_description?: string;
   budget?: number;
@@ -43,6 +44,10 @@ export default function ContractsPage() {
   };
 
   const updateContract = async (contractId: string, status: string) => {
+    const currentContract = contracts.find(
+      (contract) => contract.id === contractId
+    );
+
     await supabase
       .from("contracts")
       .update({ status })
@@ -52,16 +57,17 @@ export default function ContractsPage() {
       contract_id: contractId,
       action: `Contract marked as ${status}`,
     });
-const currentContract = contracts.find((contract) => contract.id === contractId);
 
-if (currentContract) {
-  await supabase.from("notifications").insert({
-    title: "Contract Update",
-    body: `${currentContract.project_title || "Your contract"} was marked as ${status}.`,
-    link: `/dashboard/contracts/${contractId}`,
-    is_read: false,
-  });
-}
+    if (currentContract?.client_id) {
+      await supabase.from("notifications").insert({
+        user_id: currentContract.client_id,
+        title: "Contract Update",
+        body: `${currentContract.project_title || "Your contract"} was marked as ${status}.`,
+        link: `/dashboard/contracts/${contractId}`,
+        is_read: false,
+      });
+    }
+
     loadContracts();
   };
 
