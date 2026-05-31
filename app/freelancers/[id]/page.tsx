@@ -105,7 +105,7 @@ export default function FreelancerPublicProfilePage() {
             {profile.category || "Professional Freelancer"}
           </p>
 
-          <h1 className="profile-name">
+        <h1 className="profile-name">
   {profile.full_name || "Freelancer"}
 
   {profile.verified && (
