@@ -119,6 +119,12 @@ export default function ContractsPage() {
                 <div className="contract-actions">
                   <button onClick={() => updateContract(contract.id, "completed")} className="accept-btn">
                     Mark Completed
+                    <a
+  href={`/dashboard/contracts/${contract.id}`}
+  className="primary-action-link"
+>
+  View Details
+</a>
                   </button>
                 </div>
               </div>
