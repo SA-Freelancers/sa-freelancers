@@ -2309,3 +2309,30 @@ body {
   color: #2563eb;
   font-weight: 800;
 }
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(37,99,235,0.12);
+  color: #2563eb;
+  font-size: 0.85rem;
+  font-weight: 900;
+  vertical-align: middle;
+}
+
+.verified-badge.small {
+  padding: 4px 8px;
+  margin-left: 8px;
+  font-size: 0.72rem;
+}
+
+.marketplace-user-name,
+.profile-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}

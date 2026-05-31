@@ -11,6 +11,7 @@ type Profile = {
   role?: string;
   bio?: string;
   category?: string;
+  verified?: boolean;
 };
 
 type Job = {
@@ -38,14 +39,14 @@ export default function SearchPage() {
       .select("*")
       .order("created_at", { ascending: false });
 
-    setFreelancers(freelancerData || []);
+    setFreelancers((freelancerData as Profile[]) || []);
 
     const { data: jobsData } = await supabase
       .from("jobs")
       .select("*")
       .order("created_at", { ascending: false });
 
-    setJobs(jobsData || []);
+    setJobs((jobsData as Job[]) || []);
   };
 
   const saveFreelancer = async (freelancerId: string) => {
@@ -162,7 +163,15 @@ export default function SearchPage() {
                   {freelancer.category || "Freelancer"}
                 </span>
 
-                <h3>{freelancer.full_name || "Unnamed Freelancer"}</h3>
+                <h3 className="marketplace-user-name">
+                  {freelancer.full_name || "Unnamed Freelancer"}
+
+                  {freelancer.verified && (
+                    <span className="verified-badge small">
+                      ✔
+                    </span>
+                  )}
+                </h3>
 
                 <p>
                   <strong>Role:</strong> {freelancer.role || "N/A"}

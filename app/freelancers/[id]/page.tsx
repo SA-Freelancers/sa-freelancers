@@ -28,7 +28,16 @@ export default function FreelancerPublicProfilePage() {
   const params = useParams();
   const id = params.id as string;
 
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<{
+  full_name?: string;
+  role?: string;
+  category?: string;
+  bio?: string;
+  avatar_url?: string;
+  cv_url?: string;
+  portfolio_url?: string;
+  verified?: boolean;
+} | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -96,8 +105,15 @@ export default function FreelancerPublicProfilePage() {
             {profile.category || "Professional Freelancer"}
           </p>
 
-          <h1>{profile.full_name || "Freelancer"}</h1>
+          <h1 className="profile-name">
+  {profile.full_name || "Freelancer"}
 
+  {profile.verified && (
+    <span className="verified-badge">
+      ✔ Verified
+    </span>
+  )}
+</h1>
           <p className="profile-role">
             {profile.role || "Professional Freelancer"}
           </p>
