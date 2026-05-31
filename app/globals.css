@@ -1709,3 +1709,10 @@ body:not(.dark) .home-hero h1 span {
   font-weight: 900;
   text-decoration: none;
 }
+.auth-page .primary-action-btn {
+  background: #16a34a;
+}
+
+.auth-page .primary-action-btn:hover {
+  transform: translateY(-2px);
+}
