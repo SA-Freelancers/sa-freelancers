@@ -1722,3 +1722,19 @@ body:not(.dark) .home-hero h1 span {
   opacity: 0.72;
   line-height: 1.6;
 }
+.dashboard-logout-btn {
+  margin-top: 22px;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 16px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  font-weight: 900;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.dashboard-logout-btn:hover {
+  transform: translateY(-2px);
+}

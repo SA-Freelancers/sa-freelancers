@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { supabase } from "@/app/lib/supabase";
 
 const links = [
   { href: "/dashboard", label: "Overview", icon: "📊" },
@@ -13,8 +14,15 @@ const links = [
   { href: "/dashboard/upload", label: "Upload", icon: "⬆️" },
   { href: "/search", label: "Find Freelancers", icon: "🔍" },
 ];
+
 export default function DashboardSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
 
   return (
     <aside className="dashboard-sidebar dark-card">
@@ -27,7 +35,8 @@ export default function DashboardSidebar() {
         {links.map((link) => {
           const isActive =
             pathname === link.href ||
-            (link.href !== "/dashboard" && pathname.startsWith(link.href));
+            (link.href !== "/dashboard" &&
+              pathname.startsWith(link.href));
 
           return (
             <Link
@@ -41,6 +50,13 @@ export default function DashboardSidebar() {
           );
         })}
       </nav>
+
+      <button
+        onClick={handleLogout}
+        className="dashboard-logout-btn"
+      >
+        🚪 Logout
+      </button>
     </aside>
   );
 }
