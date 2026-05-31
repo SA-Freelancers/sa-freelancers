@@ -2135,3 +2135,60 @@ body {
     text-align: center;
   }
 }
+@media (max-width: 768px) {
+  .search-page {
+    margin: 20px auto !important;
+    padding: 14px !important;
+  }
+
+  .search-hero {
+    padding: 28px 18px !important;
+  }
+
+  .search-hero h1 {
+    font-size: 2.1rem !important;
+  }
+
+  .search-filter-card {
+    padding: 18px !important;
+  }
+
+  .marketplace-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .marketplace-card {
+    padding: 20px !important;
+    border-radius: 20px !important;
+  }
+
+  .marketplace-actions {
+    flex-direction: column;
+  }
+
+  .primary-action-link,
+  .danger-action-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+.navbar-user {
+  color: white;
+  font-weight: 900;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.08);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .navbar-user {
+    width: 100%;
+    max-width: 100%;
+    text-align: center;
+  }
+}

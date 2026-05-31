@@ -112,11 +112,17 @@ export default function Navbar() {
             {darkMode ? "☀️" : "🌙"}
           </button>
 
-          {user ? (
-            <button onClick={logout} className="navbar-logout-btn">
-              Logout
-            </button>
-          ) : (
+         {user ? (
+  <>
+    <span className="navbar-user">
+      {user.user_metadata?.full_name || user.email}
+    </span>
+
+    <button onClick={logout} className="navbar-logout-btn">
+      Logout
+    </button>
+  </>
+) : (
             <>
               <Link
                 href="/login"
