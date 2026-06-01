@@ -46,10 +46,10 @@ export default function FreelancerPublicProfilePage() {
       .single();
 
     const { data: reviewData } = await supabase
-      .from("reviews")
-      .select("*")
-      .eq("freelancer_id", id)
-      .order("created_at", { ascending: false });
+  .from("reviews")
+  .select("*")
+  .eq("freelancer_id", id)
+  .order("created_at", { ascending: false });
 
     setProfile(profileData as Profile);
     setReviews((reviewData as Review[]) || []);
