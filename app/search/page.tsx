@@ -17,6 +17,7 @@ type Profile = {
   category?: string;
   verified?: boolean;
   top_rated?: boolean;
+  last_seen?: string;
   reviews?: Review[];
 };
 
@@ -220,13 +221,19 @@ export default function SearchPage() {
                     )}
 
                     {freelancer.top_rated && (
-                      <span className="top-rated-badge">★ Top Rated</span>
+                      <span className="top-rated-badge">
+                        ★ Top Rated
+                      </span>
                     )}
 
                     <span className="rating-badge">
                       ⭐ {displayRating(freelancer.reviews)} ({reviewCount})
                     </span>
                   </div>
+
+                  <p className="last-seen-text">
+                    🟢 Active recently
+                  </p>
 
                   <p>
                     <strong>Role:</strong> {freelancer.role || "N/A"}

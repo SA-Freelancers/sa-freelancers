@@ -35,6 +35,19 @@ export default function LoginPage() {
       return;
     }
 
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      await supabase
+        .from("profiles")
+        .update({
+          last_seen: new Date().toISOString(),
+        })
+        .eq("id", user.id);
+    }
+
     router.push("/dashboard");
     setLoading(false);
   };
@@ -80,10 +93,7 @@ export default function LoginPage() {
         {message && <p className="auth-error">{message}</p>}
 
         <p className="auth-footer-text">
-          No account?{" "}
-          <Link href="/register">
-            Create one
-          </Link>
+          No account? <Link href="/register">Create one</Link>
         </p>
       </section>
     </main>
