@@ -44,7 +44,8 @@ export default function NotificationsPage() {
     await supabase
       .from("notifications")
       .update({ is_read: true })
-      .eq("user_id", user.id);
+      .eq("user_id", user.id)
+      .eq("is_read", false);
 
     setLoading(false);
   };
@@ -58,7 +59,10 @@ export default function NotificationsPage() {
 
         <h1>Your latest updates</h1>
 
-        <p>Stay updated on applications, messages, projects and payments.</p>
+        <p>
+          Stay updated on hiring requests, contract changes, applications,
+          messages, projects and payments.
+        </p>
       </section>
 
       {notifications.length === 0 ? (
