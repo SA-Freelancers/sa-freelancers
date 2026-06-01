@@ -70,7 +70,14 @@ export default function ContractDetailsPage() {
     <main className="contract-details-page">
       <section className="dark-card contract-details-card">
         <p className="dashboard-badge">Contract Details</p>
-
+<div style={{ marginTop: 20 }}>
+  <a
+    href={`/dashboard/contracts/${contract.id}/milestones`}
+    className="primary-action-link"
+  >
+    Open Milestones
+  </a>
+</div>
         <div className="contract-top">
           <h1>{contract.project_title || "Untitled Project"}</h1>
 
