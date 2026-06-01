@@ -215,6 +215,14 @@ export default function DashboardPage() {
   <h3>Contracts</h3>
   <p>Review hiring requests and manage accepted work.</p>
 </Link>
+<Link
+  href="/dashboard/notifications"
+  className="dark-card quick-action-card"
+>
+  <span>🔔</span>
+  <h3>Notifications</h3>
+  <p>Check hiring requests, contract updates and platform alerts.</p>
+</Link>
       </section>
 
       <section className="dark-card profile-completion-card">
