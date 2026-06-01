@@ -90,9 +90,9 @@ export default function DeliveriesPage() {
     }
 
     await supabase.from("contract_activity").insert({
-      contract_id: contractId,
-      action: "Delivery uploaded",
-    });
+  contract_id: contractId,
+  action: `Delivery uploaded: ${file.name}`,
+});
 
     setFile(null);
     setNote("");
