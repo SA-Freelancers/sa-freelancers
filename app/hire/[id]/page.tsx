@@ -86,17 +86,18 @@ export default function HireFreelancerPage() {
     }
 
     await supabase.from("notifications").insert({
-  user_id: freelancerId,
-  title: "New Hiring Request",
-  body: `You received a new hiring request for ${title}.`,
-  link: "/dashboard/contracts",
-  is_read: false,
-});
+      user_id: freelancerId,
+      title: "New Hiring Request",
+      body: `You received a new hiring request for ${title}.`,
+      link: "/dashboard/contracts",
+      is_read: false,
+    });
 
-setMessage("Hiring request sent successfully!");
-setSending(false);
+    setMessage("Hiring request sent successfully!");
+    setSending(false);
+
     setTimeout(() => {
-      router.push("/dashboard");
+      router.push("/dashboard/client-contracts");
     }, 1200);
   };
 
