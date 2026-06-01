@@ -119,33 +119,48 @@ export default function SearchPage() {
     const fifteenMinutes = 1000 * 60 * 15;
 
     return (
-      new Date().getTime() - new Date(lastSeen).getTime() < fifteenMinutes
+      new Date().getTime() -
+        new Date(lastSeen).getTime() <
+      fifteenMinutes
     );
   };
-const getLastSeenText = (lastSeen?: string) => {
-  if (!lastSeen) return "⚪ Offline";
 
-  const diff = new Date().getTime() - new Date(lastSeen).getTime();
-  const minutes = Math.floor(diff / (1000 * 60));
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
+  const getLastSeenText = (lastSeen?: string) => {
+    if (!lastSeen) return "⚪ Offline";
 
-  if (minutes < 15) return "🟢 Online";
-  if (minutes < 60) return `⚪ Active ${minutes} min ago`;
-  if (hours < 24) return `⚪ Active ${hours} hour(s) ago`;
+    const diff =
+      new Date().getTime() -
+      new Date(lastSeen).getTime();
 
-  return `⚪ Active ${days} day(s) ago`;
-};
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (minutes < 15) return "🟢 Online";
+
+    if (minutes < 60) {
+      return `⚪ Active ${minutes} min ago`;
+    }
+
+    if (hours < 24) {
+      return `⚪ Active ${hours} hour(s) ago`;
+    }
+
+    return `⚪ Active ${days} day(s) ago`;
+  };
+
   const filteredFreelancers = freelancers
     .filter((freelancer) => {
       const text = `${freelancer.full_name || ""} ${
         freelancer.role || ""
       } ${freelancer.bio || ""}`.toLowerCase();
 
-      const matchesSearch = text.includes(search.toLowerCase());
+      const matchesSearch =
+        text.includes(search.toLowerCase());
 
       const matchesCategory =
-        !selectedCategory || freelancer.category === selectedCategory;
+        !selectedCategory ||
+        freelancer.category === selectedCategory;
 
       return matchesSearch && matchesCategory;
     })
@@ -158,16 +173,23 @@ const getLastSeenText = (lastSeen?: string) => {
         return Number(b.verified) - Number(a.verified);
       }
 
-      return getAverageRating(b.reviews) - getAverageRating(a.reviews);
+      return (
+        getAverageRating(b.reviews) -
+        getAverageRating(a.reviews)
+      );
     });
 
   const filteredJobs = jobs.filter((job) => {
-    const text = `${job.title || ""} ${job.description || ""}`.toLowerCase();
+    const text = `${job.title || ""} ${
+      job.description || ""
+    }`.toLowerCase();
 
-    const matchesSearch = text.includes(search.toLowerCase());
+    const matchesSearch =
+      text.includes(search.toLowerCase());
 
     const matchesCategory =
-      !selectedCategory || job.category === selectedCategory;
+      !selectedCategory ||
+      job.category === selectedCategory;
 
     return matchesSearch && matchesCategory;
   });
@@ -175,40 +197,77 @@ const getLastSeenText = (lastSeen?: string) => {
   return (
     <main className="search-page">
       <section className="search-hero dark-card">
-        <p className="dashboard-badge">Marketplace</p>
+        <p className="dashboard-badge">
+          Marketplace
+        </p>
 
-        <h1>Find freelancers and opportunities faster</h1>
+        <h1>
+          Find freelancers and opportunities
+          faster
+        </h1>
 
         <p>
-          Search skilled freelancers, available jobs, services and categories in
-          one clean marketplace.
+          Search skilled freelancers,
+          available jobs, services and
+          categories in one clean marketplace.
         </p>
       </section>
 
       <section className="dark-card search-filter-card">
-        {message && <p className="search-message">{message}</p>}
+        {message && (
+          <p className="search-message">
+            {message}
+          </p>
+        )}
 
         <input
           type="text"
           placeholder="Search freelancers, jobs, skills..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) =>
+            setSearch(e.target.value)
+          }
           className="form-input"
         />
 
         <select
           value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
+          onChange={(e) =>
+            setSelectedCategory(e.target.value)
+          }
           className="form-input"
         >
-          <option value="">All Categories</option>
-          <option value="Web Development">Web Development</option>
-          <option value="Graphic Design">Graphic Design</option>
-          <option value="Writing">Writing</option>
-          <option value="Video Editing">Video Editing</option>
-          <option value="Marketing">Marketing</option>
-          <option value="Engineering">Engineering</option>
-          <option value="Fitting & Turning">Fitting & Turning</option>
+          <option value="">
+            All Categories
+          </option>
+
+          <option value="Web Development">
+            Web Development
+          </option>
+
+          <option value="Graphic Design">
+            Graphic Design
+          </option>
+
+          <option value="Writing">
+            Writing
+          </option>
+
+          <option value="Video Editing">
+            Video Editing
+          </option>
+
+          <option value="Marketing">
+            Marketing
+          </option>
+
+          <option value="Engineering">
+            Engineering
+          </option>
+
+          <option value="Fitting & Turning">
+            Fitting & Turning
+          </option>
         </select>
       </section>
 
@@ -223,67 +282,97 @@ const getLastSeenText = (lastSeen?: string) => {
           />
         ) : (
           <div className="marketplace-grid">
-            {filteredFreelancers.map((freelancer) => {
-              const reviewCount = freelancer.reviews?.length || 0;
+            {filteredFreelancers.map(
+              (freelancer) => {
+                const reviewCount =
+                  freelancer.reviews?.length || 0;
 
-              return (
-                <div key={freelancer.id} className="dark-card marketplace-card">
-                  <span className="marketplace-badge">
-                    {freelancer.category || "Freelancer"}
-                  </span>
-
-                  <h3 className="marketplace-user-name">
-                    {freelancer.full_name || "Unnamed Freelancer"}
-                  </h3>
-
-                  <div className="marketplace-badges">
-                    {freelancer.verified && (
-                      <span className="verified-badge small">
-                        ✔ Verified
-                      </span>
-                    )}
-
-                    {freelancer.top_rated && (
-                      <span className="top-rated-badge">★ Top Rated</span>
-                    )}
-
-                    <span className="rating-badge">
-                      ⭐ {displayRating(freelancer.reviews)} ({reviewCount})
-                    </span>
-                  </div>
-
-                  <p
-                    className={`last-seen-text ${
-                      isOnline(freelancer.last_seen) ? "online" : "offline"
-                    }`}
+                return (
+                  <div
+                    key={freelancer.id}
+                    className="dark-card marketplace-card"
                   >
-                    {getLastSeenText(freelancer.last_seen)}
-                  </p>
+                    <span className="marketplace-badge">
+                      {freelancer.category ||
+                        "Freelancer"}
+                    </span>
 
-                  <p>
-                    <strong>Role:</strong> {freelancer.role || "N/A"}
-                  </p>
+                    <h3 className="marketplace-user-name">
+                      {freelancer.full_name ||
+                        "Unnamed Freelancer"}
+                    </h3>
 
-                  <p>{freelancer.bio?.slice(0, 120) || "No bio yet."}</p>
+                    <div className="marketplace-badges">
+                      {freelancer.verified && (
+                        <span className="verified-badge small">
+                          ✔ Verified
+                        </span>
+                      )}
 
-                  <div className="marketplace-actions">
-                    <Link
-                      href={`/freelancers/${freelancer.id}`}
-                      className="primary-action-link"
+                      {freelancer.top_rated && (
+                        <span className="top-rated-badge">
+                          ★ Top Rated
+                        </span>
+                      )}
+
+                      <span className="rating-badge">
+                        ⭐{" "}
+                        {displayRating(
+                          freelancer.reviews
+                        )}{" "}
+                        ({reviewCount})
+                      </span>
+                    </div>
+
+                    <p
+                      className={`last-seen-text ${
+                        isOnline(
+                          freelancer.last_seen
+                        )
+                          ? "online"
+                          : "offline"
+                      }`}
                     >
-                      View Profile
-                    </Link>
+                      {getLastSeenText(
+                        freelancer.last_seen
+                      )}
+                    </p>
 
-                    <button
-                      onClick={() => saveFreelancer(freelancer.id)}
-                      className="danger-action-btn"
-                    >
-                      ❤️ Save
-                    </button>
+                    <p>
+                      <strong>Role:</strong>{" "}
+                      {freelancer.role || "N/A"}
+                    </p>
+
+                    <p>
+                      {freelancer.bio?.slice(
+                        0,
+                        120
+                      ) || "No bio yet."}
+                    </p>
+
+                    <div className="marketplace-actions">
+                      <Link
+                        href={`/freelancers/${freelancer.id}`}
+                        className="primary-action-link"
+                      >
+                        View Profile
+                      </Link>
+
+                      <button
+                        onClick={() =>
+                          saveFreelancer(
+                            freelancer.id
+                          )
+                        }
+                        className="danger-action-btn"
+                      >
+                        ❤️ Save
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              }
+            )}
           </div>
         )}
       </section>
@@ -300,17 +389,28 @@ const getLastSeenText = (lastSeen?: string) => {
         ) : (
           <div className="marketplace-grid">
             {filteredJobs.map((job) => (
-              <div key={job.id} className="dark-card marketplace-card">
+              <div
+                key={job.id}
+                className="dark-card marketplace-card"
+              >
                 <span className="marketplace-badge">
                   {job.category || "General"}
                 </span>
 
-                <h3>{job.title || "Untitled Job"}</h3>
-
-                <p>{job.description?.slice(0, 140) || "No description yet."}</p>
+                <h3>
+                  {job.title || "Untitled Job"}
+                </h3>
 
                 <p>
-                  <strong>Budget:</strong> ZAR {job.budget || "N/A"}
+                  {job.description?.slice(
+                    0,
+                    140
+                  ) || "No description yet."}
+                </p>
+
+                <p>
+                  <strong>Budget:</strong> ZAR{" "}
+                  {job.budget || "N/A"}
                 </p>
 
                 <div className="marketplace-actions">
@@ -322,7 +422,9 @@ const getLastSeenText = (lastSeen?: string) => {
                   </Link>
 
                   <button
-                    onClick={() => saveJob(job.id)}
+                    onClick={() =>
+                      saveJob(job.id)
+                    }
                     className="danger-action-btn"
                   >
                     ❤️ Save
