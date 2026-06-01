@@ -21,6 +21,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [notificationCount, setNotificationCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,22 +34,65 @@ export default function Navbar() {
 
     const getUser = async () => {
       const { data } = await supabase.auth.getUser();
+
       setUser(data.user);
+
+      if (data.user) {
+        loadNotifications(data.user.id);
+      }
+
       setLoading(false);
     };
 
     getUser();
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
+    const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user || null);
+
+        if (session?.user) {
+          loadNotifications(session.user.id);
+        } else {
+          setNotificationCount(0);
+        }
       }
     );
 
+    const channel = supabase
+      .channel("navbar-notifications")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+        },
+        () => {
+          if (user?.id) {
+            loadNotifications(user.id);
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
-      listener.subscription.unsubscribe();
+      authListener.subscription.unsubscribe();
+      supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user?.id]);
+
+  const loadNotifications = async (userId: string) => {
+    const { count } = await supabase
+      .from("notifications")
+      .select("*", {
+        count: "exact",
+        head: true,
+      })
+      .eq("user_id", userId)
+      .eq("is_read", false);
+
+    setNotificationCount(count || 0);
+  };
 
   const closeMenu = () => {
     setMenuOpen(false);
@@ -131,35 +175,48 @@ export default function Navbar() {
           </button>
 
           {user ? (
-            <div className="navbar-user-menu">
-              <span className="navbar-user">
-                {getInitials()}
-              </span>
+            <>
+              <Link
+                href="/dashboard/notifications"
+                onClick={closeMenu}
+                className="navbar-notification"
+              >
+                🔔
+                {notificationCount > 0 && (
+                  <span className="navbar-notification-badge">
+                    {notificationCount}
+                  </span>
+                )}
+              </Link>
 
-              <div className="navbar-user-dropdown">
-                <Link href="/dashboard" onClick={closeMenu}>
-                  Dashboard
-                </Link>
+              <div className="navbar-user-menu">
+                <span className="navbar-user">{getInitials()}</span>
 
-                <Link href="/dashboard/profile" onClick={closeMenu}>
-                  Profile
-                </Link>
+                <div className="navbar-user-dropdown">
+                  <Link href="/dashboard" onClick={closeMenu}>
+                    Dashboard
+                  </Link>
 
-                <Link href="/dashboard/projects" onClick={closeMenu}>
-                  Projects
-                </Link>
-                <Link href="/dashboard/contracts" onClick={closeMenu}>
-  Contracts
-  <Link href="/dashboard/client-contracts" onClick={closeMenu}>
-  Sent Contracts
-</Link>
-</Link>
+                  <Link href="/dashboard/profile" onClick={closeMenu}>
+                    Profile
+                  </Link>
 
-                <button onClick={logout}>
-                  Logout
-                </button>
+                  <Link href="/dashboard/projects" onClick={closeMenu}>
+                    Projects
+                  </Link>
+
+                  <Link href="/dashboard/contracts" onClick={closeMenu}>
+                    Contracts
+                  </Link>
+
+                  <Link href="/dashboard/client-contracts" onClick={closeMenu}>
+                    Sent Contracts
+                  </Link>
+
+                  <button onClick={logout}>Logout</button>
+                </div>
               </div>
-            </div>
+            </>
           ) : (
             <>
               <Link
