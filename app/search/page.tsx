@@ -231,9 +231,23 @@ export default function SearchPage() {
                     </span>
                   </div>
 
-                  <p className="last-seen-text">
-                    🟢 Active recently
-                  </p>
+                  <p
+  className={`last-seen-text ${
+    freelancer.last_seen &&
+    new Date().getTime() -
+      new Date(freelancer.last_seen).getTime() <
+      1000 * 60 * 15
+      ? "online"
+      : "offline"
+  }`}
+>
+  {freelancer.last_seen &&
+  new Date().getTime() -
+    new Date(freelancer.last_seen).getTime() <
+    1000 * 60 * 15
+    ? "🟢 Online"
+    : "⚪ Offline"}
+</p>
 
                   <p>
                     <strong>Role:</strong> {freelancer.role || "N/A"}
