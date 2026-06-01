@@ -106,7 +106,21 @@ export default function ContractDetailsPage() {
             </p>
           </div>
         </div>
+<div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap" }}>
+  <a
+    href={`/dashboard/contracts/${contract.id}/milestones`}
+    className="primary-action-link"
+  >
+    Open Milestones
+  </a>
 
+  <a
+    href={`/dashboard/contracts/${contract.id}/deliveries`}
+    className="primary-action-link"
+  >
+    Open Deliveries
+  </a>
+</div>
         <div className="contract-description-box">
           <h2>Project Description</h2>
 
