@@ -2624,3 +2624,10 @@ body {
 .last-seen-text.offline {
   color: #94a3b8;
 }
+.last-seen-text.online {
+  color: #16a34a;
+}
+
+.last-seen-text.offline {
+  color: #94a3b8;
+}

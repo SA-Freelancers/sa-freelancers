@@ -113,6 +113,16 @@ export default function SearchPage() {
     return getAverageRating(reviews).toFixed(1);
   };
 
+  const isOnline = (lastSeen?: string) => {
+    if (!lastSeen) return false;
+
+    const fifteenMinutes = 1000 * 60 * 15;
+
+    return (
+      new Date().getTime() - new Date(lastSeen).getTime() < fifteenMinutes
+    );
+  };
+
   const filteredFreelancers = freelancers
     .filter((freelancer) => {
       const text = `${freelancer.full_name || ""} ${
@@ -221,9 +231,7 @@ export default function SearchPage() {
                     )}
 
                     {freelancer.top_rated && (
-                      <span className="top-rated-badge">
-                        ★ Top Rated
-                      </span>
+                      <span className="top-rated-badge">★ Top Rated</span>
                     )}
 
                     <span className="rating-badge">
@@ -232,22 +240,14 @@ export default function SearchPage() {
                   </div>
 
                   <p
-  className={`last-seen-text ${
-    freelancer.last_seen &&
-    new Date().getTime() -
-      new Date(freelancer.last_seen).getTime() <
-      1000 * 60 * 15
-      ? "online"
-      : "offline"
-  }`}
->
-  {freelancer.last_seen &&
-  new Date().getTime() -
-    new Date(freelancer.last_seen).getTime() <
-    1000 * 60 * 15
-    ? "🟢 Online"
-    : "⚪ Offline"}
-</p>
+                    className={`last-seen-text ${
+                      isOnline(freelancer.last_seen) ? "online" : "offline"
+                    }`}
+                  >
+                    {isOnline(freelancer.last_seen)
+                      ? "🟢 Online"
+                      : "⚪ Offline"}
+                  </p>
 
                   <p>
                     <strong>Role:</strong> {freelancer.role || "N/A"}
