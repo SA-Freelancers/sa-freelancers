@@ -70,20 +70,30 @@ export default function HireFreelancerPage() {
       return;
     }
 
-    const { error } = await supabase.from("contracts").insert({
-      client_id: user.id,
-      freelancer_id: freelancerId,
-      project_title: title,
-      project_description: description,
-      budget: Number(budget),
-      status: "pending",
-    });
+    const { data: contractData, error } = await supabase
+  .from("contracts")
+  .insert({
+    client_id: user.id,
+    freelancer_id: freelancerId,
+    project_title: title,
+    project_description: description,
+    budget: Number(budget),
+    status: "pending",
+  })
+  .select()
+  .single();
 
     if (error) {
       setMessage(error.message);
       setSending(false);
       return;
     }
+    if (contractData?.id) {
+  await supabase.from("contract_activity").insert({
+    contract_id: contractData.id,
+    action: "Hiring request created",
+  });
+}
 
     await supabase.from("notifications").insert({
       user_id: freelancerId,
