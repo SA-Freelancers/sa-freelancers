@@ -41,7 +41,7 @@ export default function MilestonesPage() {
   };
 
   const createMilestone = async () => {
-    if (!title || !amount) return;
+    if (!title.trim() || !amount) return;
 
     await supabase.from("milestones").insert({
       contract_id: contractId,
@@ -51,6 +51,11 @@ export default function MilestonesPage() {
       status: "pending",
     });
 
+    await supabase.from("contract_activity").insert({
+      contract_id: contractId,
+      action: `Milestone created: ${title}`,
+    });
+
     setTitle("");
     setDescription("");
     setAmount("");
@@ -58,14 +63,18 @@ export default function MilestonesPage() {
     loadMilestones();
   };
 
-  const updateMilestone = async (
-    milestoneId: string,
-    status: string
-  ) => {
+  const updateMilestone = async (milestoneId: string, status: string) => {
+    const milestone = milestones.find((item) => item.id === milestoneId);
+
     await supabase
       .from("milestones")
       .update({ status })
       .eq("id", milestoneId);
+
+    await supabase.from("contract_activity").insert({
+      contract_id: contractId,
+      action: `Milestone "${milestone?.title || "Untitled"}" marked as ${status}`,
+    });
 
     loadMilestones();
   };
@@ -79,9 +88,7 @@ export default function MilestonesPage() {
 
         <h1>Project Milestones</h1>
 
-        <p>
-          Break projects into professional milestone payments and stages.
-        </p>
+        <p>Break projects into professional milestone payments and stages.</p>
       </section>
 
       <section className="dark-card hire-card">
@@ -110,10 +117,7 @@ export default function MilestonesPage() {
           className="form-input"
         />
 
-        <button
-          onClick={createMilestone}
-          className="primary-action-btn"
-        >
+        <button onClick={createMilestone} className="primary-action-btn">
           Create Milestone
         </button>
       </section>
@@ -128,23 +132,16 @@ export default function MilestonesPage() {
         ) : (
           <div className="contracts-grid">
             {milestones.map((milestone) => (
-              <div
-                key={milestone.id}
-                className="dark-card contract-card"
-              >
+              <div key={milestone.id} className="dark-card contract-card">
                 <div className="contract-top">
                   <h2>{milestone.title}</h2>
 
-                  <span
-                    className={`contract-status ${milestone.status}`}
-                  >
+                  <span className={`contract-status ${milestone.status}`}>
                     {milestone.status}
                   </span>
                 </div>
 
-                <p className="contract-budget">
-                  ZAR {milestone.amount || 0}
-                </p>
+                <p className="contract-budget">ZAR {milestone.amount || 0}</p>
 
                 <p className="contract-description">
                   {milestone.description || "No description"}
@@ -152,18 +149,14 @@ export default function MilestonesPage() {
 
                 <div className="contract-actions">
                   <button
-                    onClick={() =>
-                      updateMilestone(milestone.id, "approved")
-                    }
+                    onClick={() => updateMilestone(milestone.id, "approved")}
                     className="accept-btn"
                   >
                     Approve
                   </button>
 
                   <button
-                    onClick={() =>
-                      updateMilestone(milestone.id, "completed")
-                    }
+                    onClick={() => updateMilestone(milestone.id, "completed")}
                     className="primary-action-btn"
                   >
                     Complete
