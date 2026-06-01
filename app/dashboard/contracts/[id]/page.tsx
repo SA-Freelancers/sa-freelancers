@@ -121,6 +121,12 @@ export default function ContractDetailsPage() {
     Open Deliveries
   </a>
 </div>
+<a
+  href={`/dashboard/contracts/${contract.id}/review`}
+  className="primary-action-link"
+>
+  Leave Review
+</a>
         <div className="contract-description-box">
           <h2>Project Description</h2>
 
