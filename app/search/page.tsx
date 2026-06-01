@@ -122,7 +122,20 @@ export default function SearchPage() {
       new Date().getTime() - new Date(lastSeen).getTime() < fifteenMinutes
     );
   };
+const getLastSeenText = (lastSeen?: string) => {
+  if (!lastSeen) return "⚪ Offline";
 
+  const diff = new Date().getTime() - new Date(lastSeen).getTime();
+  const minutes = Math.floor(diff / (1000 * 60));
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (minutes < 15) return "🟢 Online";
+  if (minutes < 60) return `⚪ Active ${minutes} min ago`;
+  if (hours < 24) return `⚪ Active ${hours} hour(s) ago`;
+
+  return `⚪ Active ${days} day(s) ago`;
+};
   const filteredFreelancers = freelancers
     .filter((freelancer) => {
       const text = `${freelancer.full_name || ""} ${
@@ -244,9 +257,7 @@ export default function SearchPage() {
                       isOnline(freelancer.last_seen) ? "online" : "offline"
                     }`}
                   >
-                    {isOnline(freelancer.last_seen)
-                      ? "🟢 Online"
-                      : "⚪ Offline"}
+                    {getLastSeenText(freelancer.last_seen)}
                   </p>
 
                   <p>
