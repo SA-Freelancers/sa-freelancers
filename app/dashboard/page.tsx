@@ -80,6 +80,12 @@ export default function DashboardPage() {
       setLoading(false);
       return;
     }
+    await supabase
+  .from("profiles")
+  .update({
+    last_seen: new Date().toISOString(),
+  })
+  .eq("id", user.id);
 
     const { data: profile } = await supabase
       .from("profiles")
