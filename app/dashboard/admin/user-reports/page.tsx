@@ -11,6 +11,7 @@ type Report = {
   reporter_user_id?: string;
   reason?: string;
   details?: string;
+  status?: string;
   created_at?: string;
 };
 
@@ -18,6 +19,7 @@ export default function AdminUserReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     loadReports();
@@ -55,6 +57,28 @@ export default function AdminUserReportsPage() {
     setLoading(false);
   };
 
+  const markReviewed = async (reportId: string) => {
+    const { error } = await supabase
+      .from("reports")
+      .update({ status: "reviewed" })
+      .eq("id", reportId);
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setMessage("Report marked as reviewed.");
+
+    setReports((prev) =>
+      prev.map((report) =>
+        report.id === reportId
+          ? { ...report, status: "reviewed" }
+          : report
+      )
+    );
+  };
+
   if (loading) return <LoadingSkeleton />;
 
   if (!isAdmin) {
@@ -69,6 +93,77 @@ export default function AdminUserReportsPage() {
     );
   }
 
+  const openReports = reports.filter((report) => report.status !== "reviewed");
+  const reviewedReports = reports.filter(
+    (report) => report.status === "reviewed"
+  );
+
+  const renderReports = (items: Report[]) => {
+    if (items.length === 0) {
+      return (
+        <EmptyState
+          emoji="🚩"
+          title="No reports here"
+          description="Reports will appear here when available."
+        />
+      );
+    }
+
+    return (
+      <section className="contracts-grid">
+        {items.map((report) => (
+          <div key={report.id} className="dark-card contract-card">
+            <div className="marketplace-badges">
+              <span className="reject-btn">
+                🚩 {report.reason || "User Report"}
+              </span>
+
+              <span
+                className={
+                  report.status === "reviewed"
+                    ? "verified-badge"
+                    : "top-rated-badge"
+                }
+              >
+                {report.status === "reviewed" ? "Reviewed" : "Open"}
+              </span>
+            </div>
+
+            <p>
+              <strong>Reported User:</strong>{" "}
+              {report.reported_user_id || "N/A"}
+            </p>
+
+            <p>
+              <strong>Reporter:</strong> {report.reporter_user_id || "N/A"}
+            </p>
+
+            <p className="contract-description">
+              {report.details || "No details provided."}
+            </p>
+
+            <small>
+              {report.created_at
+                ? new Date(report.created_at).toLocaleString()
+                : ""}
+            </small>
+
+            {report.status !== "reviewed" && (
+              <div className="contract-actions">
+                <button
+                  onClick={() => markReviewed(report.id)}
+                  className="accept-btn"
+                >
+                  Mark Reviewed
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+      </section>
+    );
+  };
+
   return (
     <main className="contracts-page">
       <section className="contracts-header dark-card">
@@ -79,45 +174,17 @@ export default function AdminUserReportsPage() {
         <p>Review reports submitted by clients and freelancers.</p>
       </section>
 
-      {reports.length === 0 ? (
-        <EmptyState
-          emoji="🚩"
-          title="No user reports"
-          description="Submitted user reports will appear here."
-        />
-      ) : (
-        <section className="contracts-grid">
-          {reports.map((report) => (
-            <div key={report.id} className="dark-card contract-card">
-              <div className="marketplace-badges">
-  <span className="reject-btn">
-    🚩 {report.reason || "User Report"}
-  </span>
-</div>
+      {message && <p className="upload-message">{message}</p>}
 
-              <p>
-                <strong>Reported User:</strong>{" "}
-                {report.reported_user_id || "N/A"}
-              </p>
+      <section>
+        <h2 style={{ marginBottom: 18 }}>Open Reports</h2>
+        {renderReports(openReports)}
+      </section>
 
-              <p>
-                <strong>Reporter:</strong>{" "}
-                {report.reporter_user_id || "N/A"}
-              </p>
-
-              <p className="contract-description">
-                {report.details || "No details provided."}
-              </p>
-
-              <small>
-                {report.created_at
-                  ? new Date(report.created_at).toLocaleString()
-                  : ""}
-              </small>
-            </div>
-          ))}
-        </section>
-      )}
+      <section style={{ marginTop: 40 }}>
+        <h2 style={{ marginBottom: 18 }}>Reviewed Reports</h2>
+        {renderReports(reviewedReports)}
+      </section>
     </main>
   );
 }
