@@ -35,6 +35,7 @@ export default function AdminDashboardPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [message, setMessage] = useState("");
   const [userSearch, setUserSearch] = useState("");
+  const [jobSearch, setJobSearch] = useState("");
 
   useEffect(() => {
     loadAdminData();
@@ -200,7 +201,15 @@ export default function AdminDashboardPage() {
 
       <section>
         <h2 style={{ marginBottom: 18 }}>Users & Freelancer Badges</h2>
-
+<div className="dark-card search-filter-card">
+  <input
+    type="text"
+    placeholder="Search jobs by title or category..."
+    value={jobSearch}
+    onChange={(e) => setJobSearch(e.target.value)}
+    className="form-input"
+  />
+</div>
         {users.length === 0 ? (
           <EmptyState
             emoji="👤"
@@ -326,7 +335,13 @@ export default function AdminDashboardPage() {
           />
         ) : (
           <div className="contracts-grid">
-            {jobs.map((job) => (
+            {jobs
+  .filter((job) => {
+    const text = `${job.title || ""} ${job.category || ""}`.toLowerCase();
+
+    return text.includes(jobSearch.toLowerCase());
+  })
+  .map((job) => (
               <div key={job.id} className="dark-card contract-card">
                 <h2>{job.title || "Untitled Job"}</h2>
 
