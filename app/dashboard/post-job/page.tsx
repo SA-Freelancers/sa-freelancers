@@ -15,6 +15,17 @@ export default function PostJobPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  const containsUnsafeContact = (text: string) => {
+  const lower = text.toLowerCase();
+
+  return (
+    lower.includes("whatsapp") ||
+    lower.includes("@gmail.com") ||
+    lower.includes("@outlook.com") ||
+    lower.includes("@yahoo.com") ||
+    /\d{10,}/.test(lower)
+  );
+};
   const handlePostJob = async () => {
     setLoading(true);
     setMessage("");
@@ -29,7 +40,17 @@ export default function PostJobPage() {
       setLoading(false);
       return;
     }
+if (
+  containsUnsafeContact(title) ||
+  containsUnsafeContact(description)
+) {
+  setMessage(
+    "Please keep communication inside the platform. Phone numbers, emails and WhatsApp are not allowed."
+  );
 
+  setLoading(false);
+  return;
+}
     // INSERT JOB
     const { error } = await supabase.from("jobs").insert({
       client_id: user.id,
