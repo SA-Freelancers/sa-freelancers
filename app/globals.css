@@ -2638,3 +2638,31 @@ body {
 .last-seen-text.offline {
   color: #94a3b8;
 }
+/* Admin card button layout fix */
+.contract-card .contract-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.contract-card .contract-actions button,
+.contract-card .contract-actions a {
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+  font-size: 0.88rem;
+  padding: 12px 10px;
+  white-space: normal;
+  line-height: 1.25;
+}
+
+.contract-card {
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .contract-card .contract-actions {
+    grid-template-columns: 1fr;
+  }
+}
