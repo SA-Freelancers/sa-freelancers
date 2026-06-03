@@ -116,9 +116,15 @@ export default function FreelancerPublicProfilePage() {
             )}
           </div>
           <div style={{ marginTop: 20 }}>
+  <div style={{ marginTop: 20, display: "flex", gap: 12, flexWrap: "wrap" }}>
   <a href={`/hire/${profile.id}`} className="primary-action-link">
     Hire Freelancer
   </a>
+
+  <a href={`/freelancers/${profile.id}/report`} className="reject-btn">
+    Report User
+  </a>
+</div>
 </div>
 <a
   href={`/freelancers/${profile.id}/report`}
