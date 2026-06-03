@@ -253,7 +253,50 @@ export default function AdminDashboardPage() {
           </div>
         )}
       </section>
+<section style={{ marginTop: 40 }}>
+  <h2 style={{ marginBottom: 18 }}>
+    Recent Platform Activity
+  </h2>
 
+  <div className="contracts-grid">
+    <div className="dark-card contract-card">
+      <h3>👥 Users Registered</h3>
+
+      <p>
+        Track how many freelancers and clients are joining
+        the platform.
+      </p>
+
+      <p className="contract-budget">
+        {users.length} Users
+      </p>
+    </div>
+
+    <div className="dark-card contract-card">
+      <h3>💼 Jobs Posted</h3>
+
+      <p>
+        Monitor marketplace activity and new project demand.
+      </p>
+
+      <p className="contract-budget">
+        {jobs.length} Jobs
+      </p>
+    </div>
+
+    <div className="dark-card contract-card">
+      <h3>📨 Applications</h3>
+
+      <p>
+        View freelancer application growth across projects.
+      </p>
+
+      <p className="contract-budget">
+        {applications.length} Applications
+      </p>
+    </div>
+  </div>
+</section>
       <section style={{ marginTop: 40 }}>
         <h2 style={{ marginBottom: 18 }}>Jobs</h2>
 
