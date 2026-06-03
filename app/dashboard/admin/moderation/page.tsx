@@ -16,12 +16,35 @@ type Log = {
 export default function ModerationLogsPage() {
   const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     loadLogs();
   }, []);
 
   const loadLogs = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.is_admin) {
+      setLoading(false);
+      return;
+    }
+
+    setIsAdmin(true);
+
     const { data } = await supabase
       .from("moderation_logs")
       .select("*")
@@ -33,11 +56,25 @@ export default function ModerationLogsPage() {
 
   if (loading) return <LoadingSkeleton />;
 
+  if (!isAdmin) {
+    return (
+      <main className="contracts-page">
+        <section className="dark-card contract-card">
+          <p className="dashboard-badge">Admin Moderation</p>
+          <h1>Access denied</h1>
+          <p>You are not allowed to view moderation logs.</p>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="contracts-page">
       <section className="contracts-header dark-card">
         <p className="dashboard-badge">Admin Moderation</p>
+
         <h1>Blocked Contact Attempts</h1>
+
         <p>Review proposals or messages blocked for unsafe contact sharing.</p>
       </section>
 
@@ -52,8 +89,15 @@ export default function ModerationLogsPage() {
           {logs.map((log) => (
             <div key={log.id} className="dark-card contract-card">
               <h2>{log.reason || "Moderation Log"}</h2>
-              <p><strong>Source:</strong> {log.source || "N/A"}</p>
-              <p className="contract-description">{log.content || "No content."}</p>
+
+              <p>
+                <strong>Source:</strong> {log.source || "N/A"}
+              </p>
+
+              <p className="contract-description">
+                {log.content || "No content."}
+              </p>
+
               <small>
                 {log.created_at
                   ? new Date(log.created_at).toLocaleString()
