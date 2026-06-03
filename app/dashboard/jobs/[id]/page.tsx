@@ -86,7 +86,17 @@ export default function JobDetailsPage() {
       setSubmitting(false);
       return;
     }
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("suspended")
+  .eq("id", user.id)
+  .single();
 
+if (profile?.suspended) {
+  setMessage("Your account has been suspended. You cannot apply for jobs.");
+  setSubmitting(false);
+  return;
+}
     const { error } = await supabase.from("applications").insert({
       job_id: id,
       freelancer_id: user.id,
