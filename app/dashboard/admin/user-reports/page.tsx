@@ -89,7 +89,11 @@ export default function AdminUserReportsPage() {
         <section className="contracts-grid">
           {reports.map((report) => (
             <div key={report.id} className="dark-card contract-card">
-              <h2>{report.reason || "User Report"}</h2>
+              <div className="marketplace-badges">
+  <span className="reject-btn">
+    🚩 {report.reason || "User Report"}
+  </span>
+</div>
 
               <p>
                 <strong>Reported User:</strong>{" "}

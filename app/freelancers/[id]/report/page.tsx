@@ -47,7 +47,12 @@ export default function ReportUserPage() {
       setLoading(false);
       return;
     }
-
+await supabase.from("notifications").insert({
+  title: "New user report submitted",
+  body: `A user was reported for: ${reason}`,
+  user_id: null,
+  link: "/dashboard/admin/user-reports",
+});
     setMessage("Report submitted successfully.");
 
     setTimeout(() => {
