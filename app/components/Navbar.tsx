@@ -212,7 +212,9 @@ export default function Navbar() {
                   <Link href="/dashboard/client-contracts" onClick={closeMenu}>
                     Sent Contracts
                   </Link>
-
+<Link href="/dashboard/admin" onClick={closeMenu}>
+  Admin
+</Link>
                   <button onClick={logout}>Logout</button>
                 </div>
               </div>
