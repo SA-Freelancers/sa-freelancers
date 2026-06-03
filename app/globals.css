@@ -2831,3 +2831,8 @@ body {
   color: #dbe4ee;
   line-height: 1.7;
 }
+.reject-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

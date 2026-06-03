@@ -14,6 +14,7 @@ type Profile = {
   is_admin?: boolean;
   verified?: boolean;
   top_rated?: boolean;
+  suspended?: boolean;
 };
 
 type Job = {
@@ -290,8 +291,16 @@ const deleteUser = async (userId: string) => {
                   )}
 
                   {user.top_rated && (
-                    <span className="top-rated-badge">★ Top Rated</span>
-                  )}
+  <span className="top-rated-badge">
+    ★ Top Rated
+  </span>
+)}
+
+{user.suspended && (
+  <span className="reject-btn">
+    ⛔ Suspended
+  </span>
+)}
                 </div>
 
                 <div className="contract-actions">
