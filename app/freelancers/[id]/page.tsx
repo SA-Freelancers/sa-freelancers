@@ -120,7 +120,12 @@ export default function FreelancerPublicProfilePage() {
     Hire Freelancer
   </a>
 </div>
-
+<a
+  href={`/freelancers/${profile.id}/report`}
+  className="reject-btn"
+>
+  Report User
+</a>
           <p className="profile-role">
             {profile.role || "Professional Freelancer"}
           </p>
