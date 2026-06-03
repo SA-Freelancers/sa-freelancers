@@ -15,7 +15,7 @@ type Job = {
 };
 
 const blockedContactPattern =
-  /(\bwhatsapp\b|\bemail\b|\bgmail\b|\byahoo\b|\boutlook\b|@|\+?\d[\d\s-]{7,}\d)/i;
+  /(\bwhatsapp\b|\btelegram\b|\bcall me\b|\btext me\b|\bemail\b|\bgmail\b|\byahoo\b|\boutlook\b|\bicloud\b|@|\+?\d[\d\s-]{7,}\d|facebook|instagram|tiktok|discord|skype)/i;
 
 export default function JobDetailsPage() {
   const params = useParams();
@@ -146,10 +146,10 @@ export default function JobDetailsPage() {
           <h2>Apply safely</h2>
 
           <p className="job-warning">
-            Do not include phone numbers, WhatsApp, email addresses or external
-            contact details before the client hires you.
-          </p>
-
+  🔒 For your safety and platform protection, external contact details
+  including WhatsApp numbers, emails, social media usernames and phone
+  numbers are not allowed before hiring.
+</p>
           <label className="form-label">Your Proposal</label>
           <textarea
             placeholder="Explain your experience, timeline, and how you will solve the client’s problem..."
