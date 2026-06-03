@@ -2,13 +2,38 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/app/lib/supabase";
+import LoadingSkeleton from "@/app/components/LoadingSkeleton";
+import EmptyState from "@/app/components/EmptyState";
+
+type Profile = {
+  id: string;
+  full_name?: string;
+  email?: string;
+  role?: string;
+  category?: string;
+  is_admin?: boolean;
+  verified?: boolean;
+  top_rated?: boolean;
+};
+
+type Job = {
+  id: string;
+  title?: string;
+  category?: string;
+  budget?: number | string;
+};
+
+type Application = {
+  id: string;
+};
 
 export default function AdminDashboardPage() {
-  const [users, setUsers] = useState<any[]>([]);
-  const [jobs, setJobs] = useState<any[]>([]);
-  const [applications, setApplications] = useState<any[]>([]);
+  const [users, setUsers] = useState<Profile[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     loadAdminData();
@@ -52,9 +77,9 @@ export default function AdminDashboardPage() {
       .select("*")
       .order("created_at", { ascending: false });
 
-    setUsers(usersData || []);
-    setJobs(jobsData || []);
-    setApplications(applicationsData || []);
+    setUsers((usersData as Profile[]) || []);
+    setJobs((jobsData as Job[]) || []);
+    setApplications((applicationsData as Application[]) || []);
     setLoading(false);
   };
 
@@ -65,133 +90,188 @@ export default function AdminDashboardPage() {
     const { error } = await supabase.from("jobs").delete().eq("id", jobId);
 
     if (error) {
-      alert(error.message);
+      setMessage(error.message);
       return;
     }
 
     setJobs((prev) => prev.filter((job) => job.id !== jobId));
+    setMessage("Job deleted successfully.");
   };
 
-  if (loading) return <p>Loading admin dashboard...</p>;
+  const updateProfileBadge = async (
+    profileId: string,
+    field: "verified" | "top_rated",
+    value: boolean
+  ) => {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ [field]: value })
+      .eq("id", profileId);
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setMessage("User badge updated successfully.");
+
+    setUsers((prev) =>
+      prev.map((user) =>
+        user.id === profileId
+          ? {
+              ...user,
+              [field]: value,
+            }
+          : user
+      )
+    );
+  };
+
+  if (loading) return <LoadingSkeleton />;
 
   if (!isAdmin) {
     return (
-      <div className="dark-card" style={card}>
-        <h1>Access denied</h1>
-        <p>You are not an admin.</p>
-      </div>
+      <main className="contracts-page">
+        <section className="dark-card contract-card">
+          <p className="dashboard-badge">Admin</p>
+          <h1>Access denied</h1>
+          <p>You are not allowed to access this page.</p>
+        </section>
+      </main>
     );
   }
 
   return (
-    <div>
-      <section className="hero-section" style={hero}>
+    <main className="contracts-page">
+      <section className="contracts-header dark-card">
+        <p className="dashboard-badge">Admin</p>
+
         <h1>Admin Dashboard</h1>
-        <p>Monitor users, jobs, applications, and platform activity.</p>
+
+        <p>Monitor users, jobs, applications and freelancer badges.</p>
       </section>
 
-      <div style={statsGrid}>
-        <div className="dark-card" style={statCard}>
-          <h3>Total Users</h3>
-          <p style={bigNumber}>{users.length}</p>
+      {message && <p className="upload-message">{message}</p>}
+
+      <section className="dashboard-stats">
+        <div className="dark-card stat-card">
+          <h3>{users.length}</h3>
+          <p>Total Users</p>
         </div>
 
-        <div className="dark-card" style={statCard}>
-          <h3>Total Jobs</h3>
-          <p style={bigNumber}>{jobs.length}</p>
+        <div className="dark-card stat-card">
+          <h3>{jobs.length}</h3>
+          <p>Total Jobs</p>
         </div>
 
-        <div className="dark-card" style={statCard}>
-          <h3>Applications</h3>
-          <p style={bigNumber}>{applications.length}</p>
+        <div className="dark-card stat-card">
+          <h3>{applications.length}</h3>
+          <p>Applications</p>
         </div>
-      </div>
+      </section>
 
-      <section style={section}>
-        <h2>Users</h2>
+      <section>
+        <h2 style={{ marginBottom: 18 }}>Users & Freelancer Badges</h2>
 
-        {users.map((user) => (
-          <div key={user.id} className="dark-card" style={listItem}>
-            <div>
-              <strong>{user.full_name || "No name"}</strong>
-              <p>{user.email || "No email"}</p>
-              <p>
-                {user.role || "No role"} {user.is_admin ? "• Admin" : ""}
-              </p>
-            </div>
+        {users.length === 0 ? (
+          <EmptyState
+            emoji="👤"
+            title="No users found"
+            description="Registered users will appear here."
+          />
+        ) : (
+          <div className="contracts-grid">
+            {users.map((user) => (
+              <div key={user.id} className="dark-card contract-card">
+                <h2>{user.full_name || "Unnamed User"}</h2>
+
+                <p>
+                  <strong>Email:</strong> {user.email || "N/A"}
+                </p>
+
+                <p>
+                  <strong>Role:</strong> {user.role || "N/A"}
+                </p>
+
+                <p>
+                  <strong>Category:</strong> {user.category || "N/A"}
+                </p>
+
+                <div className="marketplace-badges">
+                  {user.is_admin && (
+                    <span className="verified-badge">🛡️ Admin</span>
+                  )}
+
+                  {user.verified && (
+                    <span className="verified-badge">✔ Verified</span>
+                  )}
+
+                  {user.top_rated && (
+                    <span className="top-rated-badge">★ Top Rated</span>
+                  )}
+                </div>
+
+                <div className="contract-actions">
+                  <button
+                    onClick={() =>
+                      updateProfileBadge(user.id, "verified", !user.verified)
+                    }
+                    className="accept-btn"
+                  >
+                    {user.verified ? "Remove Verified" : "Mark Verified"}
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      updateProfileBadge(user.id, "top_rated", !user.top_rated)
+                    }
+                    className="primary-action-btn"
+                  >
+                    {user.top_rated ? "Remove Top Rated" : "Mark Top Rated"}
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </section>
 
-      <section style={section}>
-        <h2>Jobs</h2>
+      <section style={{ marginTop: 40 }}>
+        <h2 style={{ marginBottom: 18 }}>Jobs</h2>
 
-        {jobs.map((job) => (
-          <div key={job.id} className="dark-card" style={listItem}>
-            <div>
-              <strong>{job.title}</strong>
-              <p>{job.category || "No category"}</p>
-              <p>ZAR {job.budget}</p>
-            </div>
+        {jobs.length === 0 ? (
+          <EmptyState
+            emoji="💼"
+            title="No jobs found"
+            description="Posted jobs will appear here."
+          />
+        ) : (
+          <div className="contracts-grid">
+            {jobs.map((job) => (
+              <div key={job.id} className="dark-card contract-card">
+                <h2>{job.title || "Untitled Job"}</h2>
 
-            <button onClick={() => deleteJob(job.id)} style={dangerBtn}>
-              Delete Job
-            </button>
+                <p>
+                  <strong>Category:</strong> {job.category || "N/A"}
+                </p>
+
+                <p>
+                  <strong>Budget:</strong> ZAR {job.budget || "N/A"}
+                </p>
+
+                <div className="contract-actions">
+                  <button
+                    onClick={() => deleteJob(job.id)}
+                    className="reject-btn"
+                  >
+                    Delete Job
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </section>
-    </div>
+    </main>
   );
 }
-
-const hero = {
-  background: "linear-gradient(135deg, #0f172a, #7c3aed)",
-  padding: 35,
-  borderRadius: 18,
-  marginBottom: 30,
-};
-
-const statsGrid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-  gap: 22,
-};
-
-const statCard = {
-  padding: 25,
-  borderRadius: 18,
-  boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
-};
-
-const bigNumber = {
-  fontSize: 42,
-  fontWeight: "bold",
-  color: "#60a5fa",
-};
-
-const section = {
-  marginTop: 40,
-};
-
-const listItem = {
-  padding: 18,
-  borderRadius: 16,
-  marginBottom: 12,
-  display: "flex",
-  justifyContent: "space-between",
-  gap: 15,
-};
-
-const dangerBtn = {
-  background: "#dc2626",
-  color: "white",
-  border: "none",
-  borderRadius: 10,
-  padding: "10px 14px",
-  cursor: "pointer",
-};
-
-const card = {
-  padding: 30,
-  borderRadius: 18,
-};
