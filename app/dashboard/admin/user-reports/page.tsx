@@ -97,6 +97,9 @@ export default function AdminUserReportsPage() {
   const reviewedReports = reports.filter(
     (report) => report.status === "reviewed"
   );
+  const totalReports = reports.length;
+const openReportsCount = openReports.length;
+const reviewedReportsCount = reviewedReports.length;
 
   const renderReports = (items: Report[]) => {
     if (items.length === 0) {
@@ -175,6 +178,22 @@ export default function AdminUserReportsPage() {
       </section>
 
       {message && <p className="upload-message">{message}</p>}
+      <section className="dashboard-stats">
+  <div className="dark-card stat-card">
+    <h3>{totalReports}</h3>
+    <p>Total Reports</p>
+  </div>
+
+  <div className="dark-card stat-card">
+    <h3>{openReportsCount}</h3>
+    <p>Open Reports</p>
+  </div>
+
+  <div className="dark-card stat-card">
+    <h3>{reviewedReportsCount}</h3>
+    <p>Reviewed Reports</p>
+  </div>
+</section>
 
       <section>
         <h2 style={{ marginBottom: 18 }}>Open Reports</h2>
