@@ -56,7 +56,27 @@ export default function AdminUserReportsPage() {
     setReports((data as Report[]) || []);
     setLoading(false);
   };
+const suspendUser = async (userId?: string) => {
+  if (!userId) {
+    setMessage("No reported user found.");
+    return;
+  }
 
+  const confirmSuspend = confirm("Suspend this user?");
+  if (!confirmSuspend) return;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ suspended: true })
+    .eq("id", userId);
+
+  if (error) {
+    setMessage(error.message);
+    return;
+  }
+
+  setMessage("User suspended successfully.");
+};
   const markReviewed = async (reportId: string) => {
     const { error } = await supabase
       .from("reports")
@@ -159,6 +179,12 @@ const reviewedReportsCount = reviewedReports.length;
                 >
                   Mark Reviewed
                 </button>
+                <button
+  onClick={() => suspendUser(report.reported_user_id)}
+  className="reject-btn"
+>
+  Suspend User
+</button>
               </div>
             )}
           </div>
