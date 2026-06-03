@@ -34,6 +34,7 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [message, setMessage] = useState("");
+  const [userSearch, setUserSearch] = useState("");
 
   useEffect(() => {
     loadAdminData();
@@ -152,6 +153,15 @@ export default function AdminDashboardPage() {
       </section>
 
       {message && <p className="upload-message">{message}</p>}
+      <div className="dark-card search-filter-card">
+  <input
+    type="text"
+    placeholder="Search users by name, email or role..."
+    value={userSearch}
+    onChange={(e) => setUserSearch(e.target.value)}
+    className="form-input"
+  />
+</div>
 <section className="dashboard-quick-actions">
   <div className="dark-card quick-action-card">
     <span>🛡️</span>
@@ -199,7 +209,15 @@ export default function AdminDashboardPage() {
           />
         ) : (
           <div className="contracts-grid">
-            {users.map((user) => (
+            {users
+  .filter((user) => {
+    const text = `${user.full_name || ""} ${
+      user.email || ""
+    } ${user.role || ""}`.toLowerCase();
+
+    return text.includes(userSearch.toLowerCase());
+  })
+  .map((user) => (
               <div key={user.id} className="dark-card contract-card">
                 <h2>{user.full_name || "Unnamed User"}</h2>
 
