@@ -17,6 +17,7 @@ const links = [
   { href: "/dashboard/client-contracts", label: "Sent Contracts", icon: "📨" },
   { href: "/dashboard/client-contracts", label: "Sent Contracts", icon: "📨" },
   { href: "/dashboard/admin/reports", label: "Reports", icon: "🚩" },
+  { href: "/dashboard/admin/moderation", label: "Moderation", icon: "🛡️" },
 ];
 
 export default function DashboardSidebar() {
