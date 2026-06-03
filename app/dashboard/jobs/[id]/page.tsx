@@ -57,11 +57,23 @@ export default function JobDetailsPage() {
     }
 
     if (blockedContactPattern.test(proposal)) {
-      setMessage(
-        "Please do not share phone numbers, WhatsApp, email addresses, or contact details before hiring."
-      );
-      return;
-    }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  await supabase.from("moderation_logs").insert({
+    user_id: user?.id || null,
+    source: "job_application",
+    content: proposal,
+    reason: "Blocked contact details in proposal",
+  });
+
+  setMessage(
+    "Please do not share phone numbers, WhatsApp, email addresses, social media, or contact details before hiring."
+  );
+
+  return;
+}
 
     setSubmitting(true);
 
