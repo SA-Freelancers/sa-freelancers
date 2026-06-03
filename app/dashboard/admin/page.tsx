@@ -211,6 +211,14 @@ const deleteUser = async (userId: string) => {
   <h3>Reports & Moderation</h3>
   <p>Review unsafe jobs, suspicious users and platform reports.</p>
 </a>
+<a
+  href="/dashboard/admin/user-reports"
+  className="dark-card quick-action-card"
+>
+  <span>🚩</span>
+  <h3>User Reports</h3>
+  <p>Review reports submitted by clients and freelancers.</p>
+</a>
 </section>
       <section className="dashboard-stats">
         <div className="dark-card stat-card">
