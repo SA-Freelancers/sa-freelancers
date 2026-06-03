@@ -152,7 +152,25 @@ export default function AdminDashboardPage() {
       </section>
 
       {message && <p className="upload-message">{message}</p>}
+<section className="dashboard-quick-actions">
+  <div className="dark-card quick-action-card">
+    <span>🛡️</span>
+    <h3>Verification Control</h3>
+    <p>Manage verified and top-rated freelancer badges.</p>
+  </div>
 
+  <div className="dark-card quick-action-card">
+    <span>💼</span>
+    <h3>Job Moderation</h3>
+    <p>Review and remove inappropriate jobs.</p>
+  </div>
+
+  <div className="dark-card quick-action-card">
+    <span>📊</span>
+    <h3>Platform Analytics</h3>
+    <p>Monitor users, projects and marketplace growth.</p>
+  </div>
+</section>
       <section className="dashboard-stats">
         <div className="dark-card stat-card">
           <h3>{users.length}</h3>
