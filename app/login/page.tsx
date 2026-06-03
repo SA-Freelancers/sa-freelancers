@@ -40,13 +40,26 @@ export default function LoginPage() {
     } = await supabase.auth.getUser();
 
     if (user) {
-      await supabase
-        .from("profiles")
-        .update({
-          last_seen: new Date().toISOString(),
-        })
-        .eq("id", user.id);
-    }
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("suspended")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.suspended) {
+    await supabase.auth.signOut();
+    setMessage("Your account has been suspended. Please contact support.");
+    setLoading(false);
+    return;
+  }
+
+  await supabase
+    .from("profiles")
+    .update({
+      last_seen: new Date().toISOString(),
+    })
+    .eq("id", user.id);
+}
 
     router.push("/dashboard");
     setLoading(false);
