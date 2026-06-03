@@ -17,6 +17,7 @@ type Profile = {
   category?: string;
   verified?: boolean;
   top_rated?: boolean;
+  suspended?: boolean;
   last_seen?: string;
   reviews?: Review[];
 };
@@ -162,7 +163,7 @@ export default function SearchPage() {
         !selectedCategory ||
         freelancer.category === selectedCategory;
 
-      return matchesSearch && matchesCategory;
+      return matchesSearch && matchesCategory && !freelancer.suspended;
     })
     .sort((a, b) => {
       if (b.top_rated !== a.top_rated) {
