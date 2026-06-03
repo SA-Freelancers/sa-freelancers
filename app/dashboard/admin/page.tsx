@@ -125,7 +125,7 @@ const deleteUser = async (userId: string) => {
 
   const updateProfileBadge = async (
     profileId: string,
-    field: "verified" | "top_rated" | "is_admin",
+    field: "verified" | "top_rated" | "is_admin" | "suspended",
     value: boolean
   ) => {
     const { error } = await supabase
@@ -333,6 +333,18 @@ const deleteUser = async (userId: string) => {
   className="primary-action-btn"
 >
   {user.is_admin ? "Remove Admin" : "Make Admin"}
+</button>
+<button
+  onClick={() =>
+    updateProfileBadge(
+      user.id,
+      "suspended",
+      !user.suspended
+    )
+  }
+  className={user.suspended ? "accept-btn" : "reject-btn"}
+>
+  {user.suspended ? "Unsuspend User" : "Suspend User"}
 </button>
                   <button
   onClick={() => deleteUser(user.id)}
