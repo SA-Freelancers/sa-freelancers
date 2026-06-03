@@ -84,7 +84,29 @@ export default function AdminDashboardPage() {
     setApplications((applicationsData as Application[]) || []);
     setLoading(false);
   };
+const deleteUser = async (userId: string) => {
+  const confirmDelete = confirm(
+    "Delete this user profile?"
+  );
 
+  if (!confirmDelete) return;
+
+  const { error } = await supabase
+    .from("profiles")
+    .delete()
+    .eq("id", userId);
+
+  if (error) {
+    setMessage(error.message);
+    return;
+  }
+
+  setUsers((prev) =>
+    prev.filter((user) => user.id !== userId)
+  );
+
+  setMessage("User deleted successfully.");
+};
   const deleteJob = async (jobId: string) => {
     const confirmDelete = confirm("Delete this job?");
     if (!confirmDelete) return;
@@ -257,6 +279,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div className="contract-actions">
+                  
                   <button
                     onClick={() =>
                       updateProfileBadge(user.id, "verified", !user.verified)
@@ -274,6 +297,12 @@ export default function AdminDashboardPage() {
                   >
                     {user.top_rated ? "Remove Top Rated" : "Mark Top Rated"}
                   </button>
+                  <button
+  onClick={() => deleteUser(user.id)}
+  className="reject-btn"
+>
+  Delete User
+</button>
                 </div>
               </div>
             ))}
