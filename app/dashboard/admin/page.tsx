@@ -237,7 +237,18 @@ const deleteUser = async (userId: string) => {
           <p>Applications</p>
         </div>
       </section>
+<div className="dark-card stat-card">
+  <h3>
+    {Math.round(
+      ((jobs.length + applications.length) /
+        Math.max(users.length, 1)) *
+        10
+    )}
+    %
+  </h3>
 
+  <p>Platform Activity</p>
+</div>
       <section>
         <h2 style={{ marginBottom: 18 }}>Users & Freelancer Badges</h2>
 <div className="dark-card search-filter-card">

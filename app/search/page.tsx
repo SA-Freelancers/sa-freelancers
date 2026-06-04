@@ -238,37 +238,55 @@ export default function SearchPage() {
           }
           className="form-input"
         >
-          <option value="">
-            All Categories
-          </option>
+          <option value="">All Categories</option>
 
-          <option value="Web Development">
-            Web Development
-          </option>
+<option value="Web Development">
+  Web Development
+</option>
 
-          <option value="Graphic Design">
-            Graphic Design
-          </option>
+<option value="Mobile Development">
+  Mobile Development
+</option>
 
-          <option value="Writing">
-            Writing
-          </option>
+<option value="Graphic Design">
+  Graphic Design
+</option>
 
-          <option value="Video Editing">
-            Video Editing
-          </option>
+<option value="UI/UX Design">
+  UI/UX Design
+</option>
 
-          <option value="Marketing">
-            Marketing
-          </option>
+<option value="Writing">
+  Writing
+</option>
 
-          <option value="Engineering">
-            Engineering
-          </option>
+<option value="Video Editing">
+  Video Editing
+</option>
 
-          <option value="Fitting & Turning">
-            Fitting & Turning
-          </option>
+<option value="Digital Marketing">
+  Digital Marketing
+</option>
+
+<option value="Engineering">
+  Engineering
+</option>
+
+<option value="CAD Drafting">
+  CAD Drafting
+</option>
+
+<option value="Fitting & Turning">
+  Fitting & Turning
+</option>
+
+<option value="Data Entry">
+  Data Entry
+</option>
+
+<option value="Virtual Assistant">
+  Virtual Assistant
+</option>
         </select>
       </section>
 
