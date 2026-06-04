@@ -7,7 +7,7 @@ import { supabase } from "@/app/lib/supabase";
 const links = [
   { href: "/dashboard", label: "Overview", icon: "📊" },
   { href: "/dashboard/projects", label: "Projects", icon: "📁" },
-  { href: "/dashboard/jobs/new", label: "Post Job", icon: "➕" },
+  { href: "/dashboard/post-job", label: "Post Job", icon: "➕" },
   { href: "/dashboard/favorites", label: "Favorites", icon: "❤️" },
   { href: "/dashboard/notifications", label: "Notifications", icon: "🔔" },
   { href: "/dashboard/profile", label: "Profile Settings", icon: "👤" },
