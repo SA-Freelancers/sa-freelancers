@@ -160,13 +160,62 @@ export default function PostJobPage() {
         />
 
         <label className="form-label">Category</label>
-        <input
-          type="text"
-          placeholder="Example: Web Development"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className="form-input"
-        />
+
+<select
+  value={category}
+  onChange={(e) => setCategory(e.target.value)}
+  className="form-input"
+>
+  <option value="">Select Category</option>
+
+  <option value="Web Development">
+    Web Development
+  </option>
+
+  <option value="Mobile Development">
+    Mobile Development
+  </option>
+
+  <option value="Graphic Design">
+    Graphic Design
+  </option>
+
+  <option value="UI/UX Design">
+    UI/UX Design
+  </option>
+
+  <option value="Writing">
+    Writing
+  </option>
+
+  <option value="Video Editing">
+    Video Editing
+  </option>
+
+  <option value="Digital Marketing">
+    Digital Marketing
+  </option>
+
+  <option value="Engineering">
+    Engineering
+  </option>
+
+  <option value="CAD Drafting">
+    CAD Drafting
+  </option>
+
+  <option value="Fitting & Turning">
+    Fitting & Turning
+  </option>
+
+  <option value="Data Entry">
+    Data Entry
+  </option>
+
+  <option value="Virtual Assistant">
+    Virtual Assistant
+  </option>
+</select>
 
         <button
           onClick={handlePostJob}
