@@ -25,7 +25,24 @@ export default function RegisterPage() {
       setLoading(false);
       return;
     }
+if (password.length < 8) {
+  setMessage(
+    "Password must be at least 8 characters long."
+  );
+  setLoading(false);
+  return;
+}
 
+const hasUppercase = /[A-Z]/.test(password);
+const hasNumber = /\d/.test(password);
+
+if (!hasUppercase || !hasNumber) {
+  setMessage(
+    "Password must contain at least one uppercase letter and one number."
+  );
+  setLoading(false);
+  return;
+}
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -116,7 +133,7 @@ export default function RegisterPage() {
           className="form-input"
         />
 <p className="password-hint">
-  Use at least 6 characters with a strong password for better account security.
+  Use at least 8 characters, including one uppercase letter and one number.
 </p>
         <button
           onClick={handleRegister}
