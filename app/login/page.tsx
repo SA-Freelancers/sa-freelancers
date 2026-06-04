@@ -104,7 +104,9 @@ export default function LoginPage() {
         </button>
 
         {message && <p className="auth-error">{message}</p>}
-
+<p className="auth-footer-text">
+  <Link href="/forgot-password">Forgot Password?</Link>
+</p>
         <p className="auth-footer-text">
           No account? <Link href="/register">Create one</Link>
         </p>
