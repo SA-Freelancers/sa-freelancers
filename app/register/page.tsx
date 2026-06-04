@@ -58,7 +58,9 @@ export default function RegisterPage() {
       return;
     }
 
-    setMessage("Account created successfully!");
+    setMessage(
+  "Account created successfully! Please check your email and verify your account before logging in."
+);
 
     setTimeout(() => {
       router.push("/login");
