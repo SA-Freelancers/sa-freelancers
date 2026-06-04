@@ -191,7 +191,7 @@ export default function DashboardPage() {
 
       <section className="dashboard-quick-actions">
         <Link
-          href="/dashboard/jobs/new"
+          href="/dashboard/post-job"
           className="dark-card quick-action-card"
         >
           <span>➕</span>
