@@ -19,7 +19,7 @@ const blockedContactPattern =
 
 export default function JobDetailsPage() {
   const params = useParams();
-  const id = params.jobId as string;
+  const id = params.id as string;
 
   const [job, setJob] = useState<Job | null>(null);
   const [proposal, setProposal] = useState("");
