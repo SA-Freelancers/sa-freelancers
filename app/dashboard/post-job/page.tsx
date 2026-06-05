@@ -91,13 +91,12 @@ export default function PostJobPage() {
     }
 
     const { error } = await supabase.from("jobs").insert({
-      client_id: user.id,
-      title,
-      description,
-      budget: Number(budget),
-      category,
-      status: "open",
-    });
+  client_id: user.id,
+  title,
+  description,
+  budget: Number(budget),
+  category,
+});
 
     if (error) {
       setMessage(error.message);
