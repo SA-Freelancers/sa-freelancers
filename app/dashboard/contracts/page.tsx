@@ -43,33 +43,60 @@ export default function ContractsPage() {
     setLoading(false);
   };
 
-  const updateContract = async (contractId: string, status: string) => {
-    const currentContract = contracts.find(
-      (contract) => contract.id === contractId
+  const updateContract = async (
+  contractId: string,
+  status: string
+) => {
+  const currentContract = contracts.find(
+    (contract) => contract.id === contractId
+  );
+
+  if (!currentContract) {
+    return;
+  }
+
+  // Final decision protection
+  if (
+    currentContract.status !== "pending" &&
+    status !== "completed"
+  ) {
+    return;
+  }
+
+  const { error } = await supabase
+    .from("contracts")
+    .update({ status })
+    .eq("id", contractId)
+    .eq(
+      "status",
+      status === "completed"
+        ? "accepted"
+        : "pending"
     );
 
-    await supabase
-      .from("contracts")
-      .update({ status })
-      .eq("id", contractId);
+  if (error) {
+    return;
+  }
 
-    await supabase.from("contract_activity").insert({
-      contract_id: contractId,
-      action: `Contract marked as ${status}`,
+  await supabase.from("contract_activity").insert({
+    contract_id: contractId,
+    action: `Contract marked as ${status}`,
+  });
+
+  if (currentContract.client_id) {
+    await supabase.from("notifications").insert({
+      user_id: currentContract.client_id,
+      title: "Contract Update",
+      body: `${
+        currentContract.project_title || "Your contract"
+      } was marked as ${status}.`,
+      link: `/dashboard/contracts/${contractId}`,
+      is_read: false,
     });
+  }
 
-    if (currentContract?.client_id) {
-      await supabase.from("notifications").insert({
-        user_id: currentContract.client_id,
-        title: "Contract Update",
-        body: `${currentContract.project_title || "Your contract"} was marked as ${status}.`,
-        link: `/dashboard/contracts/${contractId}`,
-        is_read: false,
-      });
-    }
-
-    loadContracts();
-  };
+  loadContracts();
+};
 
   if (loading) return <LoadingSkeleton />;
 
