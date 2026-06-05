@@ -21,6 +21,8 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [user, setUser] = useState<any>(null);
+const [role, setRole] = useState("");
+const [isAdmin, setIsAdmin] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -37,9 +39,18 @@ export default function Navbar() {
 
       setUser(data.user);
 
-      if (data.user) {
-        loadNotifications(data.user.id);
-      }
+if (data.user) {
+  loadNotifications(data.user.id);
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, is_admin")
+    .eq("id", data.user.id)
+    .single();
+
+  setRole(profile?.role || "");
+  setIsAdmin(profile?.is_admin || false);
+}
 
       setLoading(false);
     };
@@ -201,20 +212,59 @@ export default function Navbar() {
                     Profile
                   </Link>
 
-                  <Link href="/dashboard/projects" onClick={closeMenu}>
-                    Projects
-                  </Link>
+                  {role === "freelancer" && (
+  <>
+    <Link href="/search" onClick={closeMenu}>
+      Marketplace
+    </Link>
 
-                  <Link href="/dashboard/contracts" onClick={closeMenu}>
-                    Contracts
-                  </Link>
+    <Link href="/dashboard/contracts" onClick={closeMenu}>
+      Contracts
+    </Link>
 
-                  <Link href="/dashboard/client-contracts" onClick={closeMenu}>
-                    Sent Contracts
-                  </Link>
-<Link href="/dashboard/admin" onClick={closeMenu}>
-  Admin
-</Link>
+    <Link href="/dashboard/projects" onClick={closeMenu}>
+      Projects
+    </Link>
+  </>
+)}
+
+{role === "client" && (
+  <>
+    <Link href="/dashboard/post-job" onClick={closeMenu}>
+      Post Job
+    </Link>
+
+    <Link href="/dashboard/jobs" onClick={closeMenu}>
+      My Jobs
+    </Link>
+
+    <Link href="/dashboard/client-contracts" onClick={closeMenu}>
+      Sent Contracts
+    </Link>
+  </>
+)}
+
+{isAdmin && (
+  <>
+    <Link href="/dashboard/admin" onClick={closeMenu}>
+      Admin
+    </Link>
+
+    <Link
+      href="/dashboard/admin/moderation"
+      onClick={closeMenu}
+    >
+      Moderation
+    </Link>
+
+    <Link
+      href="/dashboard/admin/user-reports"
+      onClick={closeMenu}
+    >
+      User Reports
+    </Link>
+  </>
+)}
                   <button onClick={logout}>Logout</button>
                 </div>
               </div>
