@@ -3,13 +3,23 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/app/lib/supabase";
+import LoadingSkeleton from "@/app/components/LoadingSkeleton";
+import EmptyState from "@/app/components/EmptyState";
+
+type Job = {
+  id: string;
+  title?: string;
+  description?: string;
+  category?: string;
+  budget?: number | string;
+  client_id?: string;
+  created_at?: string;
+};
 
 export default function JobsPage() {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [budget, setBudget] = useState("");
-  const [category, setCategory] = useState("");
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [allowed, setAllowed] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -17,15 +27,7 @@ export default function JobsPage() {
   }, []);
 
   const loadJobs = async () => {
-    const { data } = await supabase
-      .from("jobs")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    setJobs(data || []);
-  };
-
-  const createJob = async () => {
+    setLoading(true);
     setMessage("");
 
     const {
@@ -33,210 +35,122 @@ export default function JobsPage() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      setMessage("Please login first.");
+      setAllowed(false);
+      setLoading(false);
       return;
     }
 
-    const { error } = await supabase.from("jobs").insert({
-      client_id: user.id,
-      title,
-      description,
-      budget: Number(budget),
-      category,
-    });
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.role !== "client") {
+      setAllowed(false);
+      setLoading(false);
+      return;
+    }
+
+    setAllowed(true);
+
+    const { data, error } = await supabase
+      .from("jobs")
+      .select("*")
+      .eq("client_id", user.id)
+      .order("created_at", { ascending: false });
 
     if (error) {
       setMessage(error.message);
+      setLoading(false);
       return;
     }
 
-    setMessage("Job created successfully!");
-    setTitle("");
-    setDescription("");
-    setBudget("");
-    setCategory("");
-    loadJobs();
+    setJobs((data as Job[]) || []);
+    setLoading(false);
   };
 
+  if (loading) return <LoadingSkeleton />;
+
+  if (!allowed) {
+    return (
+      <main className="contracts-page">
+        <section className="dark-card contract-card">
+          <p className="dashboard-badge">Client Area</p>
+          <h1>Access Restricted</h1>
+          <p>Only clients can access the Jobs Dashboard.</p>
+        </section>
+      </main>
+    );
+  }
+
   return (
-    <div>
-      <section className="hero-section" style={hero}>
-        <h1>Jobs Marketplace</h1>
+    <main className="contracts-page">
+      <section className="contracts-header dark-card">
+        <p className="dashboard-badge">Client Jobs</p>
+
+        <h1>My Posted Jobs</h1>
 
         <p>
-          Create jobs, browse opportunities, and connect with freelancers.
+          Manage jobs you created and review freelancer applications.
         </p>
+
+        <div style={{ marginTop: 20 }}>
+          <Link href="/dashboard/post-job" className="primary-action-link">
+            Post New Job
+          </Link>
+        </div>
       </section>
 
-      <div className="dark-card" style={formCard}>
-        <h2>Post a New Job</h2>
+      {message && <p className="upload-message">{message}</p>}
 
-        <input
-          placeholder="Job title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          style={input}
+      {jobs.length === 0 ? (
+        <EmptyState
+          emoji="💼"
+          title="No jobs posted yet"
+          description="Create your first job to start receiving freelancer proposals."
+          buttonText="Post Job"
+          buttonLink="/dashboard/post-job"
         />
+      ) : (
+        <section className="contracts-grid">
+          {jobs.map((job) => (
+            <div key={job.id} className="dark-card contract-card">
+              <div className="contract-top">
+                <h2>{job.title || "Untitled Job"}</h2>
 
-        <textarea
-          placeholder="Job description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          style={{
-            ...input,
-            minHeight: 120,
-          }}
-        />
+                <span className="marketplace-badge">
+                  {job.category || "General"}
+                </span>
+              </div>
 
-        <input
-          type="number"
-          placeholder="Budget in ZAR"
-          value={budget}
-          onChange={(e) => setBudget(e.target.value)}
-          style={input}
-        />
+              <p className="contract-description">
+                {job.description?.slice(0, 160) || "No description provided."}
+              </p>
 
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          style={input}
-        >
-          <option value="">Select category</option>
-          <option value="Web Development">Web Development</option>
-          <option value="Graphic Design">Graphic Design</option>
-          <option value="Writing">Writing</option>
-          <option value="Video Editing">Video Editing</option>
-          <option value="Marketing">Marketing</option>
-          <option value="Engineering">Engineering</option>
-        </select>
+              <p className="contract-budget">
+                Budget: ZAR {job.budget || "N/A"}
+              </p>
 
-        <button onClick={createJob} style={primaryBtn}>
-          Create Job
-        </button>
+              <div className="contract-actions">
+                <Link
+                  href={`/dashboard/jobs/${job.id}`}
+                  className="primary-action-link"
+                >
+                  View Job
+                </Link>
 
-        {message && (
-          <p style={{ marginTop: 15 }}>
-            {message}
-          </p>
-        )}
-      </div>
-
-      <h2 style={{ marginTop: 40 }}>
-        Available Jobs
-      </h2>
-
-      <div style={grid}>
-        {jobs.map((job) => (
-          <div
-            key={job.id}
-            className="dark-card"
-            style={card}
-          >
-            <span style={badge}>
-              {job.category || "General"}
-            </span>
-
-            <h3>{job.title}</h3>
-
-            <p>
-              {job.description?.slice(0, 140)}
-            </p>
-
-            <p>
-              <strong>Budget:</strong> ZAR {job.budget}
-            </p>
-
-            <Link
-              href={`/dashboard/jobs/${job.id}`}
-              style={linkBtn}
-            >
-              View Job
-            </Link>
-
-            <Link
-              href={`/dashboard/client/jobs/${job.id}/applications`}
-              style={outlineBtn}
-            >
-              Applications
-            </Link>
-          </div>
-        ))}
-      </div>
-    </div>
+                <Link
+                  href={`/dashboard/client/jobs/${job.id}/applications`}
+                  className="primary-action-link"
+                >
+                  Applications
+                </Link>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+    </main>
   );
 }
-
-const hero = {
-  background: "linear-gradient(135deg, #0f172a, #2563eb)",
-  padding: 35,
-  borderRadius: 18,
-  marginBottom: 30,
-};
-
-const formCard = {
-  padding: 25,
-  borderRadius: 18,
-  boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
-};
-
-const input = {
-  width: "100%",
-  padding: 13,
-  marginBottom: 14,
-  borderRadius: 10,
-};
-
-const primaryBtn = {
-  padding: "12px 18px",
-  background: "#2563eb",
-  color: "white",
-  border: "none",
-  borderRadius: 10,
-  cursor: "pointer",
-  fontWeight: "bold",
-};
-
-const grid = {
-  display: "grid",
-  gridTemplateColumns:
-    "repeat(auto-fit, minmax(280px, 1fr))",
-  gap: 22,
-};
-
-const card = {
-  padding: 24,
-  borderRadius: 18,
-  boxShadow:
-    "0 10px 25px rgba(15,23,42,0.06)",
-};
-
-const badge = {
-  display: "inline-block",
-  background: "#dbeafe",
-  color: "#1d4ed8",
-  padding: "6px 10px",
-  borderRadius: 20,
-  fontSize: 13,
-  fontWeight: "bold",
-};
-
-const linkBtn = {
-  display: "inline-block",
-  marginTop: 15,
-  marginRight: 10,
-  padding: "10px 14px",
-  background: "#2563eb",
-  color: "white",
-  borderRadius: 10,
-  textDecoration: "none",
-};
-
-const outlineBtn = {
-  display: "inline-block",
-  marginTop: 15,
-  padding: "10px 14px",
-  background: "#475569",
-  color: "white",
-  borderRadius: 10,
-  textDecoration: "none",
-};
