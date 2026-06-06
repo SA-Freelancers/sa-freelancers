@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { supabase } from "@/app/lib/supabase";
 
 const services = [
   "Web Development",
@@ -10,6 +14,84 @@ const services = [
 ];
 
 export default function HomePage() {
+  const [userRole, setUserRole] = useState("");
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    loadUserRole();
+  }, []);
+
+  const loadUserRole = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setLoggedIn(false);
+      return;
+    }
+
+    setLoggedIn(true);
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    setUserRole(profile?.role || "");
+  };
+
+  const renderHeroButtons = () => {
+    if (!loggedIn) {
+      return (
+        <>
+          <Link href="/register" className="home-primary-btn">
+            Get Started
+          </Link>
+
+          <Link href="/login" className="home-secondary-btn">
+            Login
+          </Link>
+        </>
+      );
+    }
+
+    if (userRole === "client") {
+      return (
+        <>
+          <Link href="/dashboard/post-job" className="home-primary-btn">
+            Post Job
+          </Link>
+
+          <Link href="/dashboard/jobs" className="home-secondary-btn">
+            My Jobs
+          </Link>
+        </>
+      );
+    }
+
+    if (userRole === "freelancer") {
+      return (
+        <>
+          <Link href="/search" className="home-primary-btn">
+            Marketplace
+          </Link>
+
+          <Link href="/dashboard/contracts" className="home-secondary-btn">
+            Contracts
+          </Link>
+        </>
+      );
+    }
+
+    return (
+      <Link href="/dashboard" className="home-primary-btn">
+        Dashboard
+      </Link>
+    );
+  };
+
   return (
     <main className="home-page">
       <section className="home-hero">
@@ -26,15 +108,7 @@ export default function HomePage() {
             and grow your business on one professional platform.
           </p>
 
-          <div className="home-actions">
-            <Link href="/register" className="home-primary-btn">
-              Get Started
-            </Link>
-
-            <Link href="/search" className="home-secondary-btn">
-              Search Marketplace
-            </Link>
-          </div>
+          <div className="home-actions">{renderHeroButtons()}</div>
         </div>
       </section>
 
@@ -133,14 +207,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="home-cta dark-card">
-        <h2>Ready to build your next project?</h2>
-        <p>Join South Africa’s growing freelance marketplace today.</p>
+      {!loggedIn && (
+        <section className="home-cta dark-card">
+          <h2>Ready to build your next project?</h2>
+          <p>Join South Africa’s growing freelance marketplace today.</p>
 
-        <Link href="/register" className="home-primary-btn">
-          Create Free Account
-        </Link>
-      </section>
+          <Link href="/register" className="home-primary-btn">
+            Create Free Account
+          </Link>
+        </section>
+      )}
     </main>
   );
 }
