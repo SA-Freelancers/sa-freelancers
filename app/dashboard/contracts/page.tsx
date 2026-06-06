@@ -17,7 +17,8 @@ type Contract = {
 
 export default function ContractsPage() {
   const [contracts, setContracts] = useState<Contract[]>([]);
-  const [loading, setLoading] = useState(true);
+const [loading, setLoading] = useState(true);
+const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
     loadContracts();
@@ -32,7 +33,19 @@ export default function ContractsPage() {
       setLoading(false);
       return;
     }
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("role")
+  .eq("id", user.id)
+  .single();
 
+if (profile?.role !== "freelancer") {
+  setAllowed(false);
+  setLoading(false);
+  return;
+}
+
+setAllowed(true);
     const { data } = await supabase
       .from("contracts")
       .select("*")
@@ -99,6 +112,22 @@ export default function ContractsPage() {
 };
 
   if (loading) return <LoadingSkeleton />;
+
+if (!allowed) {
+  return (
+    <main className="contracts-page">
+      <section className="dark-card contract-card">
+        <p className="dashboard-badge">Freelancer Area</p>
+
+        <h1>Access Restricted</h1>
+
+        <p>
+          Only freelancers can access the Contracts Dashboard.
+        </p>
+      </section>
+    </main>
+  );
+}
 
   const pendingContracts = contracts.filter(
     (contract) => contract.status === "pending"
