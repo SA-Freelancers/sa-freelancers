@@ -2888,3 +2888,22 @@ body {
     border-radius: 22px;
   }
 }
+.navbar-user-menu {
+  position: relative;
+}
+
+.navbar-user-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0;
+  z-index: 9999;
+}
+
+.navbar-user-menu:hover .navbar-user-dropdown,
+.navbar-user-dropdown:hover {
+  display: flex;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}

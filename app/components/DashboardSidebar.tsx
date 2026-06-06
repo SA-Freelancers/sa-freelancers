@@ -15,7 +15,6 @@ const links = [
   { href: "/search", label: "Find Freelancers", icon: "🔍" },
   { href: "/dashboard/contracts", label: "Contracts", icon: "📄" },
   { href: "/dashboard/client-contracts", label: "Sent Contracts", icon: "📨" },
-  { href: "/dashboard/client-contracts", label: "Sent Contracts", icon: "📨" },
   { href: "/dashboard/admin/reports", label: "Reports", icon: "🚩" },
   { href: "/dashboard/admin/moderation", label: "Moderation", icon: "🛡️" },
   { href: "/dashboard/admin/user-reports", label: "User Reports", icon: "🚩" },
