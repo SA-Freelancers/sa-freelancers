@@ -5,15 +5,6 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 
-const links = [
-  { href: "/", label: "Home" },
-  { href: "/search", label: "Marketplace" },
-  { href: "/safety", label: "Safety" },
-  { href: "/contact", label: "Support" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/dashboard/jobs", label: "Jobs" },
-];
-
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -21,8 +12,8 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [user, setUser] = useState<any>(null);
-const [role, setRole] = useState("");
-const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -34,80 +25,63 @@ const [isAdmin, setIsAdmin] = useState(false);
       setDarkMode(true);
     }
 
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
-
-      setUser(data.user);
-
-if (data.user) {
-  loadNotifications(data.user.id);
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, is_admin")
-    .eq("id", data.user.id)
-    .single();
-
-  setRole(profile?.role || "");
-  setIsAdmin(profile?.is_admin || false);
-}
-
-      setLoading(false);
-    };
-
     getUser();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
         setUser(session?.user || null);
 
         if (session?.user) {
+          await loadProfile(session.user.id);
           loadNotifications(session.user.id);
         } else {
+          setRole("");
+          setIsAdmin(false);
           setNotificationCount(0);
         }
       }
     );
 
-    const channel = supabase
-      .channel("navbar-notifications")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "notifications",
-        },
-        () => {
-          if (user?.id) {
-            loadNotifications(user.id);
-          }
-        }
-      )
-      .subscribe();
-
     return () => {
       authListener.subscription.unsubscribe();
-      supabase.removeChannel(channel);
     };
-  }, [user?.id]);
+  }, []);
+
+  const getUser = async () => {
+    const { data } = await supabase.auth.getUser();
+
+    setUser(data.user);
+
+    if (data.user) {
+      await loadProfile(data.user.id);
+      loadNotifications(data.user.id);
+    }
+
+    setLoading(false);
+  };
+
+  const loadProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("role, is_admin")
+      .eq("id", userId)
+      .single();
+
+    setRole(data?.role || "");
+    setIsAdmin(data?.is_admin || false);
+  };
 
   const loadNotifications = async (userId: string) => {
     const { count } = await supabase
       .from("notifications")
-      .select("*", {
-        count: "exact",
-        head: true,
-      })
+      .select("*", { count: "exact", head: true })
       .eq("user_id", userId)
       .eq("is_read", false);
 
     setNotificationCount(count || 0);
   };
 
-  const closeMenu = () => {
-    setMenuOpen(false);
-  };
+  const closeMenu = () => setMenuOpen(false);
 
   const toggleDarkMode = () => {
     const newMode = !darkMode;
@@ -129,21 +103,12 @@ if (data.user) {
   };
 
   const getInitials = () => {
-    const fullName =
-      user?.user_metadata?.full_name ||
-      user?.email ||
-      "User";
-
+    const fullName = user?.user_metadata?.full_name || user?.email || "User";
     const names = fullName.trim().split(" ");
 
-    if (names.length === 1) {
-      return names[0].charAt(0).toUpperCase();
-    }
+    if (names.length === 1) return names[0].charAt(0).toUpperCase();
 
-    return (
-      names[0].charAt(0) +
-      names[names.length - 1].charAt(0)
-    ).toUpperCase();
+    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
   };
 
   if (loading) return null;
@@ -164,22 +129,29 @@ if (data.user) {
         </button>
 
         <nav className={`navbar-links ${menuOpen ? "navbar-mobile-open" : ""}`}>
-          {links.map((link) => {
-            const isActive =
-              pathname === link.href ||
-              (link.href !== "/" && pathname.startsWith(link.href));
+          <Link href="/" onClick={closeMenu} className={`navbar-link ${pathname === "/" ? "active" : ""}`}>
+            Home
+          </Link>
 
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={closeMenu}
-                className={`navbar-link ${isActive ? "active" : ""}`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
+          <Link href="/safety" onClick={closeMenu} className={`navbar-link ${pathname.startsWith("/safety") ? "active" : ""}`}>
+            Safety
+          </Link>
+
+          <Link href="/contact" onClick={closeMenu} className={`navbar-link ${pathname.startsWith("/contact") ? "active" : ""}`}>
+            Support
+          </Link>
+
+          {user && role === "freelancer" && (
+            <Link href="/search" onClick={closeMenu} className={`navbar-link ${pathname.startsWith("/search") ? "active" : ""}`}>
+              Marketplace
+            </Link>
+          )}
+
+          {user && role === "client" && (
+            <Link href="/dashboard/post-job" onClick={closeMenu} className="navbar-link">
+              Post Job
+            </Link>
+          )}
 
           <button onClick={toggleDarkMode} className="navbar-dark-btn">
             {darkMode ? "☀️" : "🌙"}
@@ -187,16 +159,10 @@ if (data.user) {
 
           {user ? (
             <>
-              <Link
-                href="/dashboard/notifications"
-                onClick={closeMenu}
-                className="navbar-notification"
-              >
+              <Link href="/dashboard/notifications" onClick={closeMenu} className="navbar-notification">
                 🔔
                 {notificationCount > 0 && (
-                  <span className="navbar-notification-badge">
-                    {notificationCount}
-                  </span>
+                  <span className="navbar-notification-badge">{notificationCount}</span>
                 )}
               </Link>
 
@@ -213,77 +179,64 @@ if (data.user) {
                   </Link>
 
                   {role === "freelancer" && (
-  <>
-    <Link href="/search" onClick={closeMenu}>
-      Marketplace
-    </Link>
+                    <>
+                      <Link href="/search" onClick={closeMenu}>
+                        Marketplace
+                      </Link>
 
-    <Link href="/dashboard/contracts" onClick={closeMenu}>
-      Contracts
-    </Link>
+                      <Link href="/dashboard/contracts" onClick={closeMenu}>
+                        Contracts
+                      </Link>
 
-    <Link href="/dashboard/projects" onClick={closeMenu}>
-      Projects
-    </Link>
-  </>
-)}
+                      <Link href="/dashboard/projects" onClick={closeMenu}>
+                        Projects
+                      </Link>
+                    </>
+                  )}
 
-{role === "client" && (
-  <>
-    <Link href="/dashboard/post-job" onClick={closeMenu}>
-      Post Job
-    </Link>
+                  {role === "client" && (
+                    <>
+                      <Link href="/dashboard/post-job" onClick={closeMenu}>
+                        Post Job
+                      </Link>
 
-    <Link href="/dashboard/jobs" onClick={closeMenu}>
-      My Jobs
-    </Link>
+                      <Link href="/dashboard/jobs" onClick={closeMenu}>
+                        My Jobs
+                      </Link>
 
-    <Link href="/dashboard/client-contracts" onClick={closeMenu}>
-      Sent Contracts
-    </Link>
-  </>
-)}
+                      <Link href="/dashboard/client-contracts" onClick={closeMenu}>
+                        Sent Contracts
+                      </Link>
+                    </>
+                  )}
 
-{isAdmin && (
-  <>
-    <Link href="/dashboard/admin" onClick={closeMenu}>
-      Admin
-    </Link>
+                  {isAdmin && (
+                    <>
+                      <Link href="/dashboard/admin" onClick={closeMenu}>
+                        Admin
+                      </Link>
 
-    <Link
-      href="/dashboard/admin/moderation"
-      onClick={closeMenu}
-    >
-      Moderation
-    </Link>
+                      <Link href="/dashboard/admin/moderation" onClick={closeMenu}>
+                        Moderation
+                      </Link>
 
-    <Link
-      href="/dashboard/admin/user-reports"
-      onClick={closeMenu}
-    >
-      User Reports
-    </Link>
-  </>
-)}
+                      <Link href="/dashboard/admin/user-reports" onClick={closeMenu}>
+                        User Reports
+                      </Link>
+                    </>
+                  )}
+
                   <button onClick={logout}>Logout</button>
                 </div>
               </div>
             </>
           ) : (
             <>
-              <Link
-                href="/login"
-                className="navbar-login-btn"
-                onClick={closeMenu}
-              >
+              <Link href="/login" className="navbar-login-btn" onClick={closeMenu}>
                 Login
               </Link>
 
-              <Link
-                href="/register"
-                className="navbar-register-btn"
-                onClick={closeMenu}
-              >
+              <Link href="/register" className="navbar-register-btn" onClick={closeMenu}>
                 Create Account
               </Link>
             </>
