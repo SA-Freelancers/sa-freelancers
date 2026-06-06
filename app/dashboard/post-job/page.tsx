@@ -73,7 +73,17 @@ export default function PostJobPage() {
       setLoading(false);
       return;
     }
+const { data: roleProfile } = await supabase
+  .from("profiles")
+  .select("role")
+  .eq("id", user.id)
+  .single();
 
+if (roleProfile?.role !== "client") {
+  setMessage("Only clients can post jobs.");
+  setLoading(false);
+  return;
+}
     if (containsUnsafeContact(title) || containsUnsafeContact(description)) {
       await supabase.from("moderation_logs").insert({
         user_id: user.id,
