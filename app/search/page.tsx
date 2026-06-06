@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/app/lib/supabase";
 import EmptyState from "../components/EmptyState";
+import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 
 type Review = {
   rating?: number;
@@ -36,10 +37,40 @@ export default function SearchPage() {
   const [freelancers, setFreelancers] = useState<Profile[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
-    loadData();
+    checkAccess();
   }, []);
+
+  const checkAccess = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setAllowed(false);
+      setLoading(false);
+      return;
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.role !== "freelancer") {
+      setAllowed(false);
+      setLoading(false);
+      return;
+    }
+
+    setAllowed(true);
+    await loadData();
+    setLoading(false);
+  };
 
   const loadData = async () => {
     const { data: freelancerData } = await supabase
@@ -156,8 +187,7 @@ export default function SearchPage() {
         freelancer.role || ""
       } ${freelancer.bio || ""}`.toLowerCase();
 
-      const matchesSearch =
-        text.includes(search.toLowerCase());
+      const matchesSearch = text.includes(search.toLowerCase());
 
       const matchesCategory =
         !selectedCategory ||
@@ -174,10 +204,7 @@ export default function SearchPage() {
         return Number(b.verified) - Number(a.verified);
       }
 
-      return (
-        getAverageRating(b.reviews) -
-        getAverageRating(a.reviews)
-      );
+      return getAverageRating(b.reviews) - getAverageRating(a.reviews);
     });
 
   const filteredJobs = jobs.filter((job) => {
@@ -185,8 +212,7 @@ export default function SearchPage() {
       job.description || ""
     }`.toLowerCase();
 
-    const matchesSearch =
-      text.includes(search.toLowerCase());
+    const matchesSearch = text.includes(search.toLowerCase());
 
     const matchesCategory =
       !selectedCategory ||
@@ -195,98 +221,62 @@ export default function SearchPage() {
     return matchesSearch && matchesCategory;
   });
 
+  if (loading) return <LoadingSkeleton />;
+
+  if (!allowed) {
+    return (
+      <main className="contracts-page">
+        <section className="dark-card contract-card">
+          <p className="dashboard-badge">Freelancer Area</p>
+          <h1>Access Restricted</h1>
+          <p>Only freelancers can access the Marketplace.</p>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="search-page">
       <section className="search-hero dark-card">
-        <p className="dashboard-badge">
-          Marketplace
-        </p>
+        <p className="dashboard-badge">Marketplace</p>
 
-        <h1>
-          Find freelancers and opportunities
-          faster
-        </h1>
+        <h1>Find freelancers and opportunities faster</h1>
 
         <p>
-          Search skilled freelancers,
-          available jobs, services and
-          categories in one clean marketplace.
+          Search skilled freelancers, available jobs, services and categories in
+          one clean marketplace.
         </p>
       </section>
 
       <section className="dark-card search-filter-card">
-        {message && (
-          <p className="search-message">
-            {message}
-          </p>
-        )}
+        {message && <p className="search-message">{message}</p>}
 
         <input
           type="text"
           placeholder="Search freelancers, jobs, skills..."
           value={search}
-          onChange={(e) =>
-            setSearch(e.target.value)
-          }
+          onChange={(e) => setSearch(e.target.value)}
           className="form-input"
         />
 
         <select
           value={selectedCategory}
-          onChange={(e) =>
-            setSelectedCategory(e.target.value)
-          }
+          onChange={(e) => setSelectedCategory(e.target.value)}
           className="form-input"
         >
           <option value="">All Categories</option>
-
-<option value="Web Development">
-  Web Development
-</option>
-
-<option value="Mobile Development">
-  Mobile Development
-</option>
-
-<option value="Graphic Design">
-  Graphic Design
-</option>
-
-<option value="UI/UX Design">
-  UI/UX Design
-</option>
-
-<option value="Writing">
-  Writing
-</option>
-
-<option value="Video Editing">
-  Video Editing
-</option>
-
-<option value="Digital Marketing">
-  Digital Marketing
-</option>
-
-<option value="Engineering">
-  Engineering
-</option>
-
-<option value="CAD Drafting">
-  CAD Drafting
-</option>
-
-<option value="Fitting & Turning">
-  Fitting & Turning
-</option>
-
-<option value="Data Entry">
-  Data Entry
-</option>
-
-<option value="Virtual Assistant">
-  Virtual Assistant
-</option>
+          <option value="Web Development">Web Development</option>
+          <option value="Mobile Development">Mobile Development</option>
+          <option value="Graphic Design">Graphic Design</option>
+          <option value="UI/UX Design">UI/UX Design</option>
+          <option value="Writing">Writing</option>
+          <option value="Video Editing">Video Editing</option>
+          <option value="Digital Marketing">Digital Marketing</option>
+          <option value="Engineering">Engineering</option>
+          <option value="CAD Drafting">CAD Drafting</option>
+          <option value="Fitting & Turning">Fitting & Turning</option>
+          <option value="Data Entry">Data Entry</option>
+          <option value="Virtual Assistant">Virtual Assistant</option>
         </select>
       </section>
 
@@ -301,97 +291,65 @@ export default function SearchPage() {
           />
         ) : (
           <div className="marketplace-grid">
-            {filteredFreelancers.map(
-              (freelancer) => {
-                const reviewCount =
-                  freelancer.reviews?.length || 0;
+            {filteredFreelancers.map((freelancer) => {
+              const reviewCount = freelancer.reviews?.length || 0;
 
-                return (
-                  <div
-                    key={freelancer.id}
-                    className="dark-card marketplace-card"
-                  >
-                    <span className="marketplace-badge">
-                      {freelancer.category ||
-                        "Freelancer"}
+              return (
+                <div key={freelancer.id} className="dark-card marketplace-card">
+                  <span className="marketplace-badge">
+                    {freelancer.category || "Freelancer"}
+                  </span>
+
+                  <h3 className="marketplace-user-name">
+                    {freelancer.full_name || "Unnamed Freelancer"}
+                  </h3>
+
+                  <div className="marketplace-badges">
+                    {freelancer.verified && (
+                      <span className="verified-badge small">✔ Verified</span>
+                    )}
+
+                    {freelancer.top_rated && (
+                      <span className="top-rated-badge">★ Top Rated</span>
+                    )}
+
+                    <span className="rating-badge">
+                      ⭐ {displayRating(freelancer.reviews)} ({reviewCount})
                     </span>
-
-                    <h3 className="marketplace-user-name">
-                      {freelancer.full_name ||
-                        "Unnamed Freelancer"}
-                    </h3>
-
-                    <div className="marketplace-badges">
-                      {freelancer.verified && (
-                        <span className="verified-badge small">
-                          ✔ Verified
-                        </span>
-                      )}
-
-                      {freelancer.top_rated && (
-                        <span className="top-rated-badge">
-                          ★ Top Rated
-                        </span>
-                      )}
-
-                      <span className="rating-badge">
-                        ⭐{" "}
-                        {displayRating(
-                          freelancer.reviews
-                        )}{" "}
-                        ({reviewCount})
-                      </span>
-                    </div>
-
-                    <p
-                      className={`last-seen-text ${
-                        isOnline(
-                          freelancer.last_seen
-                        )
-                          ? "online"
-                          : "offline"
-                      }`}
-                    >
-                      {getLastSeenText(
-                        freelancer.last_seen
-                      )}
-                    </p>
-
-                    <p>
-                      <strong>Role:</strong>{" "}
-                      {freelancer.role || "N/A"}
-                    </p>
-
-                    <p>
-                      {freelancer.bio?.slice(
-                        0,
-                        120
-                      ) || "No bio yet."}
-                    </p>
-
-                    <div className="marketplace-actions">
-                      <Link
-                        href={`/freelancers/${freelancer.id}`}
-                        className="primary-action-link"
-                      >
-                        View Profile
-                      </Link>
-
-                      <button
-                        onClick={() =>
-                          saveFreelancer(
-                            freelancer.id
-                          )
-                        }
-                        className="danger-action-btn"
-                      >
-                        ❤️ Save
-                      </button>
-                    </div>
                   </div>
-                );
-              }
-            )}
+
+                  <p
+                    className={`last-seen-text ${
+                      isOnline(freelancer.last_seen) ? "online" : "offline"
+                    }`}
+                  >
+                    {getLastSeenText(freelancer.last_seen)}
+                  </p>
+
+                  <p>
+                    <strong>Role:</strong> {freelancer.role || "N/A"}
+                  </p>
+
+                  <p>{freelancer.bio?.slice(0, 120) || "No bio yet."}</p>
+
+                  <div className="marketplace-actions">
+                    <Link
+                      href={`/freelancers/${freelancer.id}`}
+                      className="primary-action-link"
+                    >
+                      View Profile
+                    </Link>
+
+                    <button
+                      onClick={() => saveFreelancer(freelancer.id)}
+                      className="danger-action-btn"
+                    >
+                      ❤️ Save
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
@@ -408,28 +366,17 @@ export default function SearchPage() {
         ) : (
           <div className="marketplace-grid">
             {filteredJobs.map((job) => (
-              <div
-                key={job.id}
-                className="dark-card marketplace-card"
-              >
+              <div key={job.id} className="dark-card marketplace-card">
                 <span className="marketplace-badge">
                   {job.category || "General"}
                 </span>
 
-                <h3>
-                  {job.title || "Untitled Job"}
-                </h3>
+                <h3>{job.title || "Untitled Job"}</h3>
+
+                <p>{job.description?.slice(0, 140) || "No description yet."}</p>
 
                 <p>
-                  {job.description?.slice(
-                    0,
-                    140
-                  ) || "No description yet."}
-                </p>
-
-                <p>
-                  <strong>Budget:</strong> ZAR{" "}
-                  {job.budget || "N/A"}
+                  <strong>Budget:</strong> ZAR {job.budget || "N/A"}
                 </p>
 
                 <div className="marketplace-actions">
@@ -441,9 +388,7 @@ export default function SearchPage() {
                   </Link>
 
                   <button
-                    onClick={() =>
-                      saveJob(job.id)
-                    }
+                    onClick={() => saveJob(job.id)}
                     className="danger-action-btn"
                   >
                     ❤️ Save
