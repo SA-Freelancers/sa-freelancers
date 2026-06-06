@@ -25,6 +25,7 @@ export default function JobDetailsPage() {
   const [proposal, setProposal] = useState("");
   const [price, setPrice] = useState("");
   const [message, setMessage] = useState("");
+  const [userRole, setUserRole] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -33,6 +34,20 @@ export default function JobDetailsPage() {
   }, [id]);
 
   const loadJob = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      setUserRole(profile?.role || "");
+    }
+
     const { data } = await supabase
       .from("jobs")
       .select("*")
@@ -46,6 +61,11 @@ export default function JobDetailsPage() {
   const applyForJob = async () => {
     setMessage("");
 
+    if (userRole !== "freelancer") {
+      setMessage("Only freelancers can apply for jobs.");
+      return;
+    }
+
     if (!proposal.trim()) {
       setMessage("Please write a short proposal first.");
       return;
@@ -57,23 +77,23 @@ export default function JobDetailsPage() {
     }
 
     if (blockedContactPattern.test(proposal)) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-  await supabase.from("moderation_logs").insert({
-    user_id: user?.id || null,
-    source: "job_application",
-    content: proposal,
-    reason: "Blocked contact details in proposal",
-  });
+      await supabase.from("moderation_logs").insert({
+        user_id: user?.id || null,
+        source: "job_application",
+        content: proposal,
+        reason: "Blocked contact details in proposal",
+      });
 
-  setMessage(
-    "Please do not share phone numbers, WhatsApp, email addresses, social media, or contact details before hiring."
-  );
+      setMessage(
+        "Please do not share phone numbers, WhatsApp, email addresses, social media, or contact details before hiring."
+      );
 
-  return;
-}
+      return;
+    }
 
     setSubmitting(true);
 
@@ -86,17 +106,19 @@ export default function JobDetailsPage() {
       setSubmitting(false);
       return;
     }
-const { data: profile } = await supabase
-  .from("profiles")
-  .select("suspended")
-  .eq("id", user.id)
-  .single();
 
-if (profile?.suspended) {
-  setMessage("Your account has been suspended. You cannot apply for jobs.");
-  setSubmitting(false);
-  return;
-}
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("suspended")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.suspended) {
+      setMessage("Your account has been suspended. You cannot apply for jobs.");
+      setSubmitting(false);
+      return;
+    }
+
     const { error } = await supabase.from("applications").insert({
       job_id: id,
       freelancer_id: user.id,
@@ -141,16 +163,14 @@ if (profile?.suspended) {
         <h1>{job.title || "Untitled Job"}</h1>
 
         <p>
-          Review the project details and submit a professional proposal without
-          sharing outside contact details.
+          Review the project details and manage this job safely inside the
+          platform.
         </p>
       </section>
 
       <section className="job-layout">
         <div className="dark-card job-card">
-          <span className="marketplace-badge">
-            {job.category || "General"}
-          </span>
+          <span className="marketplace-badge">{job.category || "General"}</span>
 
           <h2>Job Details</h2>
 
@@ -164,41 +184,51 @@ if (profile?.suspended) {
           </div>
         </div>
 
-        <div className="dark-card job-card">
-          <h2>Apply safely</h2>
+        {userRole === "freelancer" && (
+          <div className="dark-card job-card">
+            <h2>Apply safely</h2>
 
-          <p className="job-warning">
-  🔒 For your safety and platform protection, external contact details
-  including WhatsApp numbers, emails, social media usernames and phone
-  numbers are not allowed before hiring.
-</p>
-          <label className="form-label">Your Proposal</label>
-          <textarea
-            placeholder="Explain your experience, timeline, and how you will solve the client’s problem..."
-            value={proposal}
-            onChange={(e) => setProposal(e.target.value)}
-            className="form-input proposal-textarea"
-          />
+            <p className="job-warning">
+              🔒 For your safety and platform protection, external contact
+              details including WhatsApp numbers, emails, social media usernames
+              and phone numbers are not allowed before hiring.
+            </p>
 
-          <label className="form-label">Your Proposed Price</label>
-          <input
-            type="number"
-            placeholder="Example: 2500"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            className="form-input"
-          />
+            <label className="form-label">Your Proposal</label>
+            <textarea
+              placeholder="Explain your experience, timeline, and how you will solve the client’s problem..."
+              value={proposal}
+              onChange={(e) => setProposal(e.target.value)}
+              className="form-input proposal-textarea"
+            />
 
-          <button
-            onClick={applyForJob}
-            disabled={submitting}
-            className="primary-action-btn"
-          >
-            {submitting ? "Submitting..." : "Submit Application"}
-          </button>
+            <label className="form-label">Your Proposed Price</label>
+            <input
+              type="number"
+              placeholder="Example: 2500"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="form-input"
+            />
 
-          {message && <p className="upload-message">{message}</p>}
-        </div>
+            <button
+              onClick={applyForJob}
+              disabled={submitting}
+              className="primary-action-btn"
+            >
+              {submitting ? "Submitting..." : "Submit Application"}
+            </button>
+
+            {message && <p className="upload-message">{message}</p>}
+          </div>
+        )}
+
+        {userRole === "client" && (
+          <div className="dark-card job-card">
+            <h2>Client View</h2>
+            <p>This is your client view. Only freelancers can apply for jobs.</p>
+          </div>
+        )}
       </section>
     </main>
   );
