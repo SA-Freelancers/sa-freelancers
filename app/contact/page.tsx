@@ -53,10 +53,9 @@ export default function ContactPage() {
         <h2>Continue exploring opportunities</h2>
 
         <p>Browse freelancers and projects across the marketplace.</p>
-
-        <Link href="/search" className="home-primary-btn">
-          Search Marketplace
-        </Link>
+<Link href="/dashboard" className="home-primary-btn">
+  Go to Dashboard
+</Link>
       </section>
     </main>
   );

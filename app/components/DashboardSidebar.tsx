@@ -18,7 +18,6 @@ const clientLinks: SidebarLink[] = [
   { href: "/dashboard/client-contracts", label: "Sent Contracts", icon: "📨" },
   { href: "/dashboard/notifications", label: "Notifications", icon: "🔔" },
   { href: "/dashboard/profile", label: "Profile Settings", icon: "👤" },
-  { href: "/dashboard/upload", label: "Upload", icon: "⬆️" },
 ];
 
 const freelancerLinks: SidebarLink[] = [
