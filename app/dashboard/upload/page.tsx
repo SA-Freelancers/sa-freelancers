@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/app/lib/supabase";
+import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -9,6 +10,38 @@ export default function UploadPage() {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
   const [fileUrl, setFileUrl] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    checkAccess();
+  }, []);
+
+  const checkAccess = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.role !== "freelancer") {
+      setAllowed(false);
+      setLoading(false);
+      return;
+    }
+
+    setAllowed(true);
+    setLoading(false);
+  };
 
   const handleUpload = async () => {
     if (!file) {
@@ -25,6 +58,18 @@ export default function UploadPage() {
 
     if (!user) {
       setMessage("Please login first.");
+      setUploading(false);
+      return;
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.role !== "freelancer") {
+      setMessage("Only freelancers can upload CV, portfolio and profile files.");
       setUploading(false);
       return;
     }
@@ -67,6 +112,20 @@ export default function UploadPage() {
     setMessage("File uploaded and saved successfully!");
     setUploading(false);
   };
+
+  if (loading) return <LoadingSkeleton />;
+
+  if (!allowed) {
+    return (
+      <main className="contracts-page">
+        <section className="dark-card contract-card">
+          <p className="dashboard-badge">Freelancer Area</p>
+          <h1>Access Restricted</h1>
+          <p>Only freelancers can upload CV, portfolio and profile files.</p>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <div className="upload-page">
