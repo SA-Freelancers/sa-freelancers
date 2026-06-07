@@ -51,30 +51,37 @@ export default function DashboardPage() {
   }, []);
 
   const calculateProfileCompletion = (profile: Profile) => {
-    const checks = [
-      !!profile.full_name,
-      !!profile.bio,
-      !!profile.category,
-      !!profile.avatar_url,
-      !!profile.cv_url,
-      !!profile.portfolio_url,
-    ];
+  const isClient = profile.role === "client";
 
-    const missing = [];
+  const checks = isClient
+    ? [!!profile.full_name, !!profile.bio]
+    : [
+        !!profile.full_name,
+        !!profile.bio,
+        !!profile.category,
+        !!profile.avatar_url,
+        !!profile.cv_url,
+        !!profile.portfolio_url,
+      ];
 
-    if (!profile.full_name) missing.push("Full Name");
-    if (!profile.bio) missing.push("Bio");
+  const missing = [];
+
+  if (!profile.full_name) missing.push("Full Name");
+  if (!profile.bio) missing.push(isClient ? "Client Bio" : "Bio");
+
+  if (!isClient) {
     if (!profile.category) missing.push("Category");
     if (!profile.avatar_url) missing.push("Profile Picture");
     if (!profile.cv_url) missing.push("CV Upload");
     if (!profile.portfolio_url) missing.push("Portfolio Upload");
+  }
 
-    const completed = checks.filter(Boolean).length;
-    const percentage = Math.round((completed / checks.length) * 100);
+  const completed = checks.filter(Boolean).length;
+  const percentage = Math.round((completed / checks.length) * 100);
 
-    setProfileCompletion(percentage);
-    setMissingItems(missing);
-  };
+  setProfileCompletion(percentage);
+  setMissingItems(missing);
+};
 
   const loadDashboard = async () => {
     const {
