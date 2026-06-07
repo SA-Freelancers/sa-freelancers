@@ -8,18 +8,19 @@ import EmptyState from "@/app/components/EmptyState";
 
 type Project = {
   id: string;
-  title?: string;
+  job_id?: string;
+  application_id?: string;
+  client_id?: string;
+  freelancer_id?: string;
   status?: string;
-  budget?: number | string;
-  category?: string;
+  payment_status?: string;
   created_at?: string;
-  applications?: {
-    id: string;
-  }[];
 };
+
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [allowed, setAllowed] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -27,24 +28,36 @@ export default function ProjectsPage() {
   }, []);
 
   const loadProjects = async () => {
+    setLoading(true);
+    setMessage("");
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
     if (!user) {
-      setMessage("Please login first.");
+      setAllowed(false);
       setLoading(false);
       return;
     }
 
-   const { data, error } = await supabase
-  .from("jobs")
-  .select(`
-    *,
-    applications (
-      id
-    )
-  `)
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.role !== "client") {
+      setAllowed(false);
+      setLoading(false);
+      return;
+    }
+
+    setAllowed(true);
+
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
       .eq("client_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -60,64 +73,103 @@ export default function ProjectsPage() {
 
   if (loading) return <LoadingSkeleton />;
 
+  if (!allowed) {
+    return (
+      <main className="contracts-page">
+        <section className="dark-card contract-card">
+          <p className="dashboard-badge">Client Area</p>
+          <h1>Access Restricted</h1>
+          <p>Only clients can access project management.</p>
+        </section>
+      </main>
+    );
+  }
+
   return (
-    <main className="projects-page">
-      <section className="projects-header dark-card">
-        <div>
-          <p className="dashboard-badge">Projects</p>
+    <main className="contracts-page">
+      <section className="contracts-header dark-card">
+        <p className="dashboard-badge">Projects</p>
 
-          <h1>Your Active Projects</h1>
+        <h1>Your Active Projects</h1>
 
-          <p>Track progress, proposals and freelancer work.</p>
+        <p>
+          Track hired freelancers, project progress and payment status from your
+          client workspace.
+        </p>
+
+        <div style={{ marginTop: 20 }}>
+          <Link href="/dashboard/post-job" className="primary-action-link">
+            Post New Job
+          </Link>
         </div>
-
-        <Link href="/dashboard/jobs/new" className="primary-action-link">
-          Post New Job
-        </Link>
       </section>
 
-      {message && <p className="search-message">{message}</p>}
+      {message && <p className="upload-message">{message}</p>}
 
       {projects.length === 0 ? (
         <EmptyState
           emoji="📁"
           title="No projects yet"
-          description="Post your first job and start receiving freelancer proposals."
-          buttonText="Post a Job"
-          buttonLink="/dashboard/jobs/new"
+          description="Projects will appear here after you hire freelancers."
+          buttonText="Post New Job"
+          buttonLink="/dashboard/post-job"
         />
       ) : (
-        <section className="projects-grid">
+        <section className="contracts-grid">
           {projects.map((project) => (
-            <div key={project.id} className="dark-card project-card">
-              <div className="project-top">
-                <div>
-                  <h2>{project.title || "Untitled Project"}</h2>
-                  <p>{project.category || "General"}</p>
-                </div>
+            <div key={project.id} className="dark-card contract-card">
+              <div className="contract-top">
+                <h2>Project</h2>
 
-                <span className="project-status">
-                  {project.status || "Open"}
+                <span className={`contract-status ${project.status || "active"}`}>
+                  {project.status || "active"}
                 </span>
               </div>
 
-              <p className="project-budget">
-                ZAR {project.budget || "N/A"}
+              <p>
+                <strong>Job ID:</strong>
+                <br />
+                {project.job_id || "N/A"}
               </p>
-              <p className="project-applications">
-  {project.applications?.length || 0} proposal(s)
-</p>
 
-              <div className="project-progress">
-                <div className="project-progress-bar" />
+              <p>
+                <strong>Freelancer ID:</strong>
+                <br />
+                {project.freelancer_id || "N/A"}
+              </p>
+
+              <p className="contract-budget">
+                Payment Status: {project.payment_status || "unpaid"}
+              </p>
+
+              <div className="contract-actions">
+                {project.job_id && (
+                  <Link
+                    href={`/dashboard/jobs/${project.job_id}`}
+                    className="primary-action-link"
+                  >
+                    View Job
+                  </Link>
+                )}
+
+                {project.application_id && (
+                  <Link
+                    href={`/dashboard/messages/${project.application_id}`}
+                    className="primary-action-link"
+                  >
+                    Message Freelancer
+                  </Link>
+                )}
+
+                {project.freelancer_id && (
+                  <Link
+                    href={`/freelancers/${project.freelancer_id}`}
+                    className="primary-action-link"
+                  >
+                    View Freelancer
+                  </Link>
+                )}
               </div>
-
-              <Link
-                href={`/dashboard/client/jobs/${project.id}/applications`}
-                className="project-button"
-              >
-                View Applications
-              </Link>
             </div>
           ))}
         </section>
