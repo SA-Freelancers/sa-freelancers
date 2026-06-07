@@ -15,6 +15,7 @@ const clientLinks: SidebarLink[] = [
   { href: "/dashboard", label: "Overview", icon: "📊" },
   { href: "/dashboard/post-job", label: "Post Job", icon: "➕" },
   { href: "/dashboard/jobs", label: "My Jobs", icon: "💼" },
+  { href: "/dashboard/projects", label: "Projects", icon: "📁" },
   { href: "/dashboard/client-contracts", label: "Sent Contracts", icon: "📨" },
   { href: "/dashboard/notifications", label: "Notifications", icon: "🔔" },
   { href: "/dashboard/profile", label: "Profile Settings", icon: "👤" },
@@ -23,7 +24,6 @@ const clientLinks: SidebarLink[] = [
 const freelancerLinks: SidebarLink[] = [
   { href: "/dashboard", label: "Overview", icon: "📊" },
   { href: "/search", label: "Marketplace", icon: "🔍" },
-  { href: "/dashboard/projects", label: "Projects", icon: "📁" },
   { href: "/dashboard/contracts", label: "Contracts", icon: "📄" },
   { href: "/dashboard/favorites", label: "Favorites", icon: "❤️" },
   { href: "/dashboard/notifications", label: "Notifications", icon: "🔔" },
