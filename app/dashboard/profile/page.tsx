@@ -8,6 +8,10 @@ type Profile = {
   avatar_url?: string;
   cv_url?: string;
   portfolio_url?: string;
+  role?: string;
+  full_name?: string;
+  bio?: string;
+  category?: string;
 };
 
 export default function ProfilePage() {
@@ -44,7 +48,6 @@ export default function ProfilePage() {
 
     if (data) {
       setProfile(data);
-
       setFullName(data.full_name || "");
       setRole(data.role || "");
       setBio(data.bio || "");
@@ -62,11 +65,6 @@ export default function ProfilePage() {
       return;
     }
 
-    if (!role.trim()) {
-      setMessage("Please enter your professional role.");
-      return;
-    }
-
     setSaving(true);
 
     const {
@@ -79,14 +77,21 @@ export default function ProfilePage() {
       return;
     }
 
+    const updateData =
+      role === "freelancer"
+        ? {
+            full_name: fullName,
+            bio,
+            category,
+          }
+        : {
+            full_name: fullName,
+            bio,
+          };
+
     const { error } = await supabase
       .from("profiles")
-      .update({
-        full_name: fullName,
-        role,
-        bio,
-        category,
-      })
+      .update(updateData)
       .eq("id", user.id);
 
     if (error) {
@@ -97,22 +102,29 @@ export default function ProfilePage() {
 
     setMessage("Profile updated successfully!");
     setSaving(false);
-
     loadProfile();
   };
 
   if (loading) return <LoadingSkeleton />;
+
+  const isFreelancer = role === "freelancer";
+  const isClient = role === "client";
 
   return (
     <main className="profile-settings-page">
       <section className="profile-settings-hero dark-card">
         <p className="dashboard-badge">Profile Settings</p>
 
-        <h1>Build your professional identity</h1>
+        <h1>
+          {isFreelancer
+            ? "Build your professional freelancer profile"
+            : "Manage your client profile"}
+        </h1>
 
         <p>
-          Update your freelancer profile, role, bio and category to attract
-          more clients.
+          {isFreelancer
+            ? "Update your skills, bio, category and documents to attract more clients."
+            : "Update your client information so freelancers understand who they are working with."}
         </p>
       </section>
 
@@ -129,40 +141,46 @@ export default function ProfilePage() {
             className="form-input"
           />
 
-          <label className="form-label">Professional Role</label>
-
-          <input
-            placeholder="Role e.g. Web Developer"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="form-input"
-          />
-
-          <label className="form-label">Category</label>
-
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="form-input"
-          >
-            <option value="">Select category</option>
-            <option value="Web Development">Web Development</option>
-            <option value="Graphic Design">Graphic Design</option>
-            <option value="Writing">Writing</option>
-            <option value="Video Editing">Video Editing</option>
-            <option value="Marketing">Marketing</option>
-            <option value="Engineering">Engineering</option>
-            <option value="Fitting & Turning">Fitting & Turning</option>
-          </select>
-
-          <label className="form-label">Professional Bio</label>
+          <label className="form-label">
+            {isFreelancer ? "Professional Bio" : "Client / Business Bio"}
+          </label>
 
           <textarea
-            placeholder="Write a short professional bio..."
+            placeholder={
+              isFreelancer
+                ? "Write a short professional bio..."
+                : "Tell freelancers about your business or the type of projects you post..."
+            }
             value={bio}
             onChange={(e) => setBio(e.target.value)}
             className="form-input profile-textarea"
           />
+
+          {isFreelancer && (
+            <>
+              <label className="form-label">Category</label>
+
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="form-input"
+              >
+                <option value="">Select category</option>
+                <option value="Web Development">Web Development</option>
+                <option value="Mobile Development">Mobile Development</option>
+                <option value="Graphic Design">Graphic Design</option>
+                <option value="UI/UX Design">UI/UX Design</option>
+                <option value="Writing">Writing</option>
+                <option value="Video Editing">Video Editing</option>
+                <option value="Digital Marketing">Digital Marketing</option>
+                <option value="Engineering">Engineering</option>
+                <option value="CAD Drafting">CAD Drafting</option>
+                <option value="Fitting & Turning">Fitting & Turning</option>
+                <option value="Data Entry">Data Entry</option>
+                <option value="Virtual Assistant">Virtual Assistant</option>
+              </select>
+            </>
+          )}
 
           <button
             onClick={saveProfile}
@@ -176,65 +194,77 @@ export default function ProfilePage() {
         </div>
 
         <div className="dark-card profile-preview-card">
-          <h2>Profile Preview</h2>
+          <h2>{isFreelancer ? "Freelancer Preview" : "Client Preview"}</h2>
 
-          {profile?.avatar_url ? (
+          {profile?.avatar_url && isFreelancer ? (
             <img
               src={profile.avatar_url}
               alt="Profile"
               className="profile-preview-avatar"
             />
           ) : (
-            <div className="profile-preview-placeholder">
-              👤
-            </div>
+            <div className="profile-preview-placeholder">👤</div>
           )}
 
           <h3>{fullName || "Your Name"}</h3>
 
           <p>
-            <strong>Role:</strong> {role || "Not added"}
+            <strong>Account Type:</strong>{" "}
+            {isClient ? "Client" : isFreelancer ? "Freelancer" : "User"}
           </p>
 
-          <p>
-            <strong>Category:</strong>{" "}
-            {category || "Not selected"}
-          </p>
+          {isFreelancer && (
+            <p>
+              <strong>Category:</strong> {category || "Not selected"}
+            </p>
+          )}
 
           <p className="profile-preview-bio">
             {bio || "Your bio will appear here."}
           </p>
 
-          <div className="profile-divider" />
+          {isFreelancer && (
+            <>
+              <div className="profile-divider" />
 
-          <h3>Documents</h3>
+              <h3>Documents</h3>
 
-          <div className="profile-documents">
-            {profile?.cv_url && (
-              <a
-                href={profile.cv_url}
-                target="_blank"
-                rel="noreferrer"
-              >
-                View CV
-              </a>
-            )}
+              <div className="profile-documents">
+                {profile?.cv_url && (
+                  <a href={profile.cv_url} target="_blank" rel="noreferrer">
+                    View CV
+                  </a>
+                )}
 
-            {profile?.portfolio_url && (
-              <a
-                href={profile.portfolio_url}
-                target="_blank"
-                rel="noreferrer"
-              >
-                View Portfolio
-              </a>
-            )}
+                {profile?.portfolio_url && (
+                  <a
+                    href={profile.portfolio_url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    View Portfolio
+                  </a>
+                )}
 
-            {!profile?.cv_url &&
-              !profile?.portfolio_url && (
-                <p>No documents uploaded yet.</p>
-              )}
-          </div>
+                {!profile?.cv_url && !profile?.portfolio_url && (
+                  <p>No documents uploaded yet.</p>
+                )}
+              </div>
+            </>
+          )}
+
+          {isClient && (
+            <>
+              <div className="profile-divider" />
+
+              <h3>Client Account</h3>
+
+              <p>
+                You can post jobs, review proposals, hire freelancers and manage
+                contracts from your dashboard.
+              </p>
+            </>
+          )}
         </div>
       </section>
     </main>
