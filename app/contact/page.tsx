@@ -4,58 +4,55 @@ export default function ContactPage() {
   return (
     <main className="safety-page">
       <section className="safety-hero dark-card">
-        <p className="dashboard-badge">Support</p>
+        <p className="dashboard-badge">Contact Support</p>
 
-        <h1>Need help?</h1>
+        <h1>How can we help?</h1>
 
         <p>
-          Contact the SA Freelancers support team for assistance with projects,
-          proposals, profiles and platform safety.
+          Contact SA Freelancers for account support, payment questions,
+          reporting issues or marketplace help.
         </p>
       </section>
 
       <section className="safety-grid">
         <div className="dark-card safety-card">
-          <h2>Account Support</h2>
+          <h2>Support Email</h2>
+          <p>support@safreelancers.co.za</p>
+        </div>
 
+        <div className="dark-card safety-card">
+          <h2>Response Time</h2>
+          <p>We aim to respond within 24 to 48 hours.</p>
+        </div>
+
+        <div className="dark-card safety-card">
+          <h2>Report Abuse</h2>
           <p>
-            Get help with login issues, dashboard access and account management.
+            Use the report button on profiles to report suspicious or unsafe
+            behaviour.
           </p>
         </div>
 
         <div className="dark-card safety-card">
-          <h2>Project Assistance</h2>
-
+          <h2>Account Help</h2>
           <p>
-            Need help posting jobs, reviewing proposals or managing projects?
-          </p>
-        </div>
-
-        <div className="dark-card safety-card">
-          <h2>Trust & Safety</h2>
-
-          <p>
-            Report suspicious behaviour, outside contact requests or unsafe
-            platform activity.
-          </p>
-        </div>
-
-        <div className="dark-card safety-card">
-          <h2>Platform Feedback</h2>
-
-          <p>
-            Share ideas and feedback to help improve SA Freelancers.
+            For suspended accounts, login problems or payment issues, contact
+            support with your account email.
           </p>
         </div>
       </section>
 
       <section className="home-cta dark-card">
-        <h2>Continue exploring opportunities</h2>
+        <h2>Need help with your account?</h2>
 
-        <p>Browse freelancers and projects across the marketplace.</p>
-<Link href="/dashboard" className="home-primary-btn">
-  Go to Dashboard
-</Link>
+        <p>
+          Include your registered email address and a clear description of the
+          issue when contacting support.
+        </p>
+
+        <Link href="/login" className="home-primary-btn">
+          Back to Login
+        </Link>
       </section>
     </main>
   );
