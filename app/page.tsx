@@ -1,5 +1,6 @@
 "use client";
 
+import LatestJobs from "@/app/components/LatestJobs";
 import FeaturedFreelancers from "@/app/components/FeaturedFreelancers";
 import PlatformStats from "@/app/components/PlatformStats";
 import Link from "next/link";
@@ -116,6 +117,7 @@ export default function HomePage() {
 
       <PlatformStats />
       <FeaturedFreelancers />
+      <LatestJobs />
 
       <section className="home-section">
         <div className="home-section-header">
