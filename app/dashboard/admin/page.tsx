@@ -102,6 +102,52 @@ export default function AdminPage() {
           <p>Contracts</p>
         </div>
       </section>
+      <section className="dashboard-quick-actions">
+  <a href="/dashboard/admin/users" className="dark-card quick-action-card">
+    <span>👥</span>
+    <h3>Manage Users</h3>
+    <p>View, suspend and unsuspend platform users.</p>
+  </a>
+
+  <a href="/dashboard/admin/reports" className="dark-card quick-action-card">
+    <span>🚩</span>
+    <h3>Review Reports</h3>
+    <p>Resolve or dismiss reports submitted by users.</p>
+  </a>
+
+  <a href="/dashboard/admin/moderation" className="dark-card quick-action-card">
+    <span>🛡️</span>
+    <h3>Moderation Center</h3>
+    <p>Review suspicious activity and safety issues.</p>
+  </a>
+</section>
+<section className="dark-card dashboard-activity">
+  <h2>Admin Tasks</h2>
+
+  <div className="activity-item">
+    <div className="activity-dot" />
+    <div>
+      <strong>User Management</strong>
+      <p>Review new registrations and account status.</p>
+    </div>
+  </div>
+
+  <div className="activity-item">
+    <div className="activity-dot" />
+    <div>
+      <strong>Reports Queue</strong>
+      <p>Check reported users and project disputes.</p>
+    </div>
+  </div>
+
+  <div className="activity-item">
+    <div className="activity-dot" />
+    <div>
+      <strong>Platform Monitoring</strong>
+      <p>Monitor jobs, applications and contracts.</p>
+    </div>
+  </div>
+</section>
     </main>
   );
 }
