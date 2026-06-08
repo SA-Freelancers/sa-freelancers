@@ -113,22 +113,6 @@ setAllowed(true);
 
   if (loading) return <LoadingSkeleton />;
 
-if (!allowed) {
-  return (
-    <main className="contracts-page">
-      <section className="dark-card contract-card">
-        <p className="dashboard-badge">Freelancer Area</p>
-
-        <h1>Access Restricted</h1>
-
-        <p>
-          Only freelancers can access the Contracts Dashboard.
-        </p>
-      </section>
-    </main>
-  );
-}
-
   const pendingContracts = contracts.filter(
     (contract) => contract.status === "pending"
   );
@@ -291,12 +275,6 @@ if (!allowed) {
                     View Details
                   </a>
                 </div>
-                <a
-  href={`/dashboard/review/${contract.id}`}
-  className="primary-action-link"
->
-  Leave Review
-</a>
               </div>
             ))}
           </div>
