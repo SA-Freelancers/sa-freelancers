@@ -28,12 +28,13 @@ export default function Footer() {
 
             <Link href="/login">Login</Link>
             <Link href="/register">Register</Link>
-            <Link href="/dashboard/upload">Upload</Link>
+            <Link href="/register">Become a Freelancer</Link>
           </div>
 
           <div>
             <h3>Resources</h3>
 
+            <Link href="/about">About Us</Link>
             <Link href="/safety">Trust & Safety</Link>
             <Link href="/privacy">Privacy Policy</Link>
             <Link href="/terms">Terms of Service</Link>
