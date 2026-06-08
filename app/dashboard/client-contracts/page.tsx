@@ -7,6 +7,7 @@ import EmptyState from "@/app/components/EmptyState";
 
 type Contract = {
   id: string;
+  application_id?: string;
   project_title?: string;
   project_description?: string;
   budget?: number;
@@ -21,8 +22,9 @@ type Contract = {
 
 export default function ClientContractsPage() {
   const [contracts, setContracts] = useState<Contract[]>([]);
-const [loading, setLoading] = useState(true);
-const [allowed, setAllowed] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [allowed, setAllowed] = useState(false);
+
   useEffect(() => {
     loadContracts();
   }, []);
@@ -36,19 +38,21 @@ const [allowed, setAllowed] = useState(false);
       setLoading(false);
       return;
     }
-const { data: profile } = await supabase
-  .from("profiles")
-  .select("role")
-  .eq("id", user.id)
-  .single();
 
-if (profile?.role !== "client") {
-  setAllowed(false);
-  setLoading(false);
-  return;
-}
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
 
-setAllowed(true);
+    if (profile?.role !== "client") {
+      setAllowed(false);
+      setLoading(false);
+      return;
+    }
+
+    setAllowed(true);
+
     const { data } = await supabase
       .from("contracts")
       .select(
@@ -69,17 +73,19 @@ setAllowed(true);
   };
 
   if (loading) return <LoadingSkeleton />;
-if (!allowed) {
-  return (
-    <main className="contracts-page">
-      <section className="dark-card contract-card">
-        <p className="dashboard-badge">Client Area</p>
-        <h1>Access Restricted</h1>
-        <p>Only clients can access Sent Contracts.</p>
-      </section>
-    </main>
-  );
-}
+
+  if (!allowed) {
+    return (
+      <main className="contracts-page">
+        <section className="dark-card contract-card">
+          <p className="dashboard-badge">Client Area</p>
+          <h1>Access Restricted</h1>
+          <p>Only clients can access Sent Contracts.</p>
+        </section>
+      </main>
+    );
+  }
+
   const pendingContracts = contracts.filter(
     (contract) => contract.status === "pending"
   );
@@ -100,7 +106,8 @@ if (!allowed) {
     items: Contract[],
     emptyEmoji: string,
     emptyTitle: string,
-    emptyDescription: string
+    emptyDescription: string,
+    showReviewLink = false
   ) => {
     if (items.length === 0) {
       return (
@@ -146,14 +153,24 @@ if (!allowed) {
                 ? new Date(contract.created_at).toLocaleDateString()
                 : ""}
             </small>
+
             <div className="contract-actions">
-  <a
-    href={`/dashboard/contracts/${contract.id}`}
-    className="primary-action-link"
-  >
-    View Details
-  </a>
-</div>
+              <a
+                href={`/dashboard/contracts/${contract.id}`}
+                className="primary-action-link"
+              >
+                View Details
+              </a>
+
+              {showReviewLink && contract.application_id && (
+                <a
+                  href={`/dashboard/review/${contract.application_id}`}
+                  className="primary-action-link"
+                >
+                  Leave Review
+                </a>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -196,7 +213,8 @@ if (!allowed) {
           completedContracts,
           "✅",
           "No completed contracts",
-          "Completed work will appear here."
+          "Completed work will appear here.",
+          true
         )}
       </section>
 
