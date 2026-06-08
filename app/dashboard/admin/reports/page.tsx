@@ -135,6 +135,15 @@ export default function AdminReportsPage() {
       {report.status || "pending"}
     </p>
 
+    {report.reported_user_id && (
+      <a
+        href={`/freelancers/${report.reported_user_id}`}
+        className="primary-action-link"
+      >
+        View Reported Profile
+      </a>
+    )}
+
     <div className="contract-actions">
       <button
         onClick={() =>
