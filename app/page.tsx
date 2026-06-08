@@ -1,5 +1,6 @@
 "use client";
 
+import FeaturedFreelancers from "@/app/components/FeaturedFreelancers";
 import PlatformStats from "@/app/components/PlatformStats";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -114,6 +115,7 @@ export default function HomePage() {
       </section>
 
       <PlatformStats />
+      <FeaturedFreelancers />
 
       <section className="home-section">
         <div className="home-section-header">
