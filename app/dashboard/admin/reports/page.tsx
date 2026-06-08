@@ -153,7 +153,18 @@ export default function AdminReportsPage() {
 
     <p>
       <strong>Status:</strong>{" "}
-      {report.status || "pending"}
+
+<span
+  className={
+    report.status === "resolved"
+      ? "verified-badge"
+      : report.status === "dismissed"
+      ? "top-rated-badge"
+      : "reject-btn"
+  }
+>
+  {report.status || "pending"}
+</span>
     </p>
 
     {report.reported_user_id && (
