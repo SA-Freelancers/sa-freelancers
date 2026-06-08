@@ -1,19 +1,91 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
+import LoadingSkeleton from "@/app/components/LoadingSkeleton";
+
+type Application = {
+  id: string;
+  freelancer_id?: string;
+  job_id?: string;
+  status?: string;
+};
 
 export default function ReviewPage() {
   const params = useParams();
   const applicationId = params.applicationId as string;
 
+  const [application, setApplication] = useState<Application | null>(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [canReview, setCanReview] = useState(false);
+
+  useEffect(() => {
+    loadReviewAccess();
+  }, []);
+
+  const loadReviewAccess = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setMessage("Please login first.");
+      setLoading(false);
+      return;
+    }
+
+    const { data: appData } = await supabase
+      .from("applications")
+      .select("*")
+      .eq("id", applicationId)
+      .single();
+
+    if (!appData) {
+      setMessage("Application not found.");
+      setLoading(false);
+      return;
+    }
+
+    setApplication(appData as Application);
+
+    const { data: project } = await supabase
+      .from("projects")
+      .select("id, status, payment_status, client_id")
+      .eq("application_id", applicationId)
+      .eq("client_id", user.id)
+      .single();
+
+    if (
+      project &&
+      (project.status === "completed" || project.payment_status === "paid")
+    ) {
+      setCanReview(true);
+    }
+
+    setLoading(false);
+  };
 
   const submitReview = async () => {
     setMessage("");
+
+    if (!canReview) {
+      setMessage("You can only review after the project is completed or paid.");
+      return;
+    }
+
+    if (!application?.freelancer_id) {
+      setMessage("Freelancer not found.");
+      return;
+    }
+
+    if (!comment.trim()) {
+      setMessage("Please write a short review comment.");
+      return;
+    }
 
     const {
       data: { user },
@@ -24,14 +96,15 @@ export default function ReviewPage() {
       return;
     }
 
-    const { data: application } = await supabase
-      .from("applications")
-      .select("freelancer_id")
-      .eq("id", applicationId)
-      .single();
+    const { data: existingReview } = await supabase
+      .from("reviews")
+      .select("id")
+      .eq("application_id", applicationId)
+      .eq("client_id", user.id)
+      .maybeSingle();
 
-    if (!application) {
-      setMessage("Application not found.");
+    if (existingReview) {
+      setMessage("You have already reviewed this freelancer.");
       return;
     }
 
@@ -53,20 +126,35 @@ export default function ReviewPage() {
     setRating(5);
   };
 
+  if (loading) return <LoadingSkeleton />;
+
   return (
-    <div>
-      <section className="hero-section" style={hero}>
+    <main className="contracts-page">
+      <section className="contracts-header dark-card">
+        <p className="dashboard-badge">Review</p>
+
         <h1>Leave a Review</h1>
-        <p>Rate the freelancer and help other clients make better decisions.</p>
+
+        <p>
+          Rate the freelancer after the project is completed or payment has been
+          made.
+        </p>
       </section>
 
-      <div className="dark-card" style={card}>
-        <label style={label}>Rating</label>
+      <section className="dark-card contract-card">
+        {!canReview && (
+          <p className="upload-message">
+            Reviews are only available after a project is completed or paid.
+          </p>
+        )}
+
+        <label className="form-label">Rating</label>
 
         <select
           value={rating}
           onChange={(e) => setRating(Number(e.target.value))}
-          style={input}
+          className="form-input"
+          disabled={!canReview}
         >
           <option value={5}>⭐⭐⭐⭐⭐ 5 Stars</option>
           <option value={4}>⭐⭐⭐⭐ 4 Stars</option>
@@ -75,66 +163,26 @@ export default function ReviewPage() {
           <option value={1}>⭐ 1 Star</option>
         </select>
 
-        <label style={label}>Review Comment</label>
+        <label className="form-label">Review Comment</label>
 
         <textarea
           placeholder="Write your review..."
           value={comment}
           onChange={(e) => setComment(e.target.value)}
-          style={{ ...input, minHeight: 140 }}
+          className="form-input proposal-textarea"
+          disabled={!canReview}
         />
 
-        <button onClick={submitReview} style={primaryBtn}>
+        <button
+          onClick={submitReview}
+          disabled={!canReview}
+          className="primary-action-btn"
+        >
           Submit Review
         </button>
 
-        {message && <p style={messageBox}>{message}</p>}
-      </div>
-    </div>
+        {message && <p className="upload-message">{message}</p>}
+      </section>
+    </main>
   );
 }
-
-const hero = {
-  background: "linear-gradient(135deg, #0f172a, #7c3aed)",
-  padding: 35,
-  borderRadius: 18,
-  marginBottom: 30,
-};
-
-const card = {
-  padding: 30,
-  borderRadius: 18,
-  boxShadow: "0 10px 25px rgba(15,23,42,0.06)",
-  maxWidth: 700,
-};
-
-const label = {
-  display: "block",
-  fontWeight: "bold",
-  marginBottom: 8,
-};
-
-const input = {
-  width: "100%",
-  padding: 13,
-  marginBottom: 18,
-  borderRadius: 10,
-};
-
-const primaryBtn = {
-  padding: "12px 18px",
-  background: "#7c3aed",
-  color: "white",
-  border: "none",
-  borderRadius: 10,
-  cursor: "pointer",
-  fontWeight: "bold",
-};
-
-const messageBox = {
-  marginTop: 18,
-  background: "#ecfdf5",
-  color: "#166534",
-  padding: 14,
-  borderRadius: 12,
-};
