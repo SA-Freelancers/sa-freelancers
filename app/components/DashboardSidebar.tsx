@@ -15,7 +15,6 @@ const clientLinks: SidebarLink[] = [
   { href: "/dashboard", label: "Overview", icon: "📊" },
   { href: "/dashboard/post-job", label: "Post Job", icon: "➕" },
   { href: "/dashboard/jobs", label: "My Jobs", icon: "💼" },
-  { href: "/dashboard/projects", label: "Projects", icon: "📁" },
   { href: "/dashboard/client-contracts", label: "Sent Contracts", icon: "📨" },
   { href: "/dashboard/notifications", label: "Notifications", icon: "🔔" },
   { href: "/dashboard/profile", label: "Profile Settings", icon: "👤" },
@@ -32,11 +31,10 @@ const freelancerLinks: SidebarLink[] = [
 ];
 
 const adminLinks: SidebarLink[] = [
-  { href: "/dashboard/admin", label: "Admin", icon: "🛡️" },
+  { href: "/dashboard/admin", label: "Analytics", icon: "📊" },
+  { href: "/dashboard/admin/users", label: "Users", icon: "👥" },
   { href: "/dashboard/admin/reports", label: "Reports", icon: "🚩" },
   { href: "/dashboard/admin/moderation", label: "Moderation", icon: "🛡️" },
-  { href: "/dashboard/admin/user-reports", label: "User Reports", icon: "🚩" },
-  { href: "/dashboard/admin/users", label: "Users", icon: "👥" },
 ];
 
 export default function DashboardSidebar() {
