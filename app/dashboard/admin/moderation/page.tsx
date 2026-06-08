@@ -1,112 +1,16 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { supabase } from "@/app/lib/supabase";
-import LoadingSkeleton from "@/app/components/LoadingSkeleton";
-import EmptyState from "@/app/components/EmptyState";
-
-type Log = {
-  id: string;
-  source?: string;
-  content?: string;
-  reason?: string;
-  created_at?: string;
-};
-
-export default function ModerationLogsPage() {
-  const [logs, setLogs] = useState<Log[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    loadLogs();
-  }, []);
-
-  const loadLogs = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.is_admin) {
-      setLoading(false);
-      return;
-    }
-
-    setIsAdmin(true);
-
-    const { data } = await supabase
-      .from("moderation_logs")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    setLogs((data as Log[]) || []);
-    setLoading(false);
-  };
-
-  if (loading) return <LoadingSkeleton />;
-
-  if (!isAdmin) {
-    return (
-      <main className="contracts-page">
-        <section className="dark-card contract-card">
-          <p className="dashboard-badge">Admin Moderation</p>
-          <h1>Access denied</h1>
-          <p>You are not allowed to view moderation logs.</p>
-        </section>
-      </main>
-    );
-  }
-
+export default function ModerationPage() {
   return (
     <main className="contracts-page">
-      <section className="contracts-header dark-card">
+      <section className="dark-card contract-card">
         <p className="dashboard-badge">Admin Moderation</p>
 
-        <h1>Blocked Contact Attempts</h1>
+        <h1>Moderation Center</h1>
 
-        <p>Review proposals or messages blocked for unsafe contact sharing.</p>
+        <p>
+          Review jobs, users and activity that may require
+          administrative action.
+        </p>
       </section>
-
-      {logs.length === 0 ? (
-        <EmptyState
-          emoji="🛡️"
-          title="No moderation logs"
-          description="Blocked contact attempts will appear here."
-        />
-      ) : (
-        <section className="contracts-grid">
-          {logs.map((log) => (
-            <div key={log.id} className="dark-card contract-card">
-              <h2>{log.reason || "Moderation Log"}</h2>
-
-              <p>
-                <strong>Source:</strong> {log.source || "N/A"}
-              </p>
-
-              <p className="contract-description">
-                {log.content || "No content."}
-              </p>
-
-              <small>
-                {log.created_at
-                  ? new Date(log.created_at).toLocaleString()
-                  : ""}
-              </small>
-            </div>
-          ))}
-        </section>
-      )}
     </main>
   );
 }
