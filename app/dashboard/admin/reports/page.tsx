@@ -6,6 +6,8 @@ import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 
 type Report = {
   id: string;
+  reported_user_id?: string;
+  reporter_user_id?: string;
   reason?: string;
   details?: string;
   status?: string;
@@ -107,32 +109,53 @@ export default function AdminReportsPage() {
           </div>
         ) : (
           reports.map((report) => (
-            <div key={report.id} className="dark-card contract-card">
-              <h2>{report.reason || "Report"}</h2>
+  <div
+    key={report.id}
+    className="dark-card contract-card"
+  >
+    <h2>{report.reason || "Report"}</h2>
 
-              <p>{report.details || "No details provided."}</p>
+    <p>
+      <strong>Details:</strong>{" "}
+      {report.details || "No details provided."}
+    </p>
 
-              <p>
-                <strong>Status:</strong> {report.status || "pending"}
-              </p>
+    <p>
+      <strong>Reported User:</strong>{" "}
+      {report.reported_user_id || "N/A"}
+    </p>
 
-              <div className="contract-actions">
-                <button
-                  onClick={() => updateStatus(report.id, "resolved")}
-                  className="accept-btn"
-                >
-                  Resolve
-                </button>
+    <p>
+      <strong>Reporter:</strong>{" "}
+      {report.reporter_user_id || "N/A"}
+    </p>
 
-                <button
-                  onClick={() => updateStatus(report.id, "dismissed")}
-                  className="reject-btn"
-                >
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          ))
+    <p>
+      <strong>Status:</strong>{" "}
+      {report.status || "pending"}
+    </p>
+
+    <div className="contract-actions">
+      <button
+        onClick={() =>
+          updateStatus(report.id, "resolved")
+        }
+        className="accept-btn"
+      >
+        Resolve
+      </button>
+
+      <button
+        onClick={() =>
+          updateStatus(report.id, "dismissed")
+        }
+        className="reject-btn"
+      >
+        Dismiss
+      </button>
+    </div>
+  </div>
+))
         )}
       </section>
     </main>
