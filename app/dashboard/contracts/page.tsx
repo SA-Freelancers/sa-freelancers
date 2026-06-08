@@ -291,6 +291,12 @@ if (!allowed) {
                     View Details
                   </a>
                 </div>
+                <a
+  href={`/dashboard/review/${contract.id}`}
+  className="primary-action-link"
+>
+  Leave Review
+</a>
               </div>
             ))}
           </div>
