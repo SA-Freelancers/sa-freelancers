@@ -49,9 +49,9 @@ export default function HomePage() {
     if (!loggedIn) {
       return (
         <>
-          <Link href="/register" className="home-primary-btn">
-            Get Started
-          </Link>
+          <Link href="/search" className="home-primary-btn">
+  Find Work
+</Link>
 
           <Link href="/login" className="home-secondary-btn">
             Login
@@ -100,16 +100,15 @@ export default function HomePage() {
       <section className="home-hero">
         <div className="home-hero-content">
           <p className="dashboard-badge">South African Freelance Marketplace</p>
+<h1>
+  South Africa&apos;s freelance marketplace
+  <span> for trusted work.</span>
+</h1>
 
-          <h1>
-            Hire trusted freelancers
-            <span> faster and safer.</span>
-          </h1>
-
-          <p>
-            Post jobs, receive proposals, manage projects, message freelancers
-            and grow your business on one professional platform.
-          </p>
+<p>
+  Connect with skilled South African freelancers, post jobs, apply for projects,
+  manage contracts and build professional working relationships safely.
+</p>
 
           <div className="home-actions">{renderHeroButtons()}</div>
         </div>
