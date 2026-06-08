@@ -15,12 +15,38 @@ type Report = {
 export default function AdminReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  const [allowed, setAllowed] = useState(false);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     loadReports();
   }, []);
 
   const loadReports = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setAllowed(false);
+      setLoading(false);
+      return;
+    }
+
+    const { data: adminProfile } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single();
+
+    if (!adminProfile?.is_admin) {
+      setAllowed(false);
+      setLoading(false);
+      return;
+    }
+
+    setAllowed(true);
+
     const { data } = await supabase
       .from("reports")
       .select("*")
@@ -30,19 +56,36 @@ export default function AdminReportsPage() {
     setLoading(false);
   };
 
-  const updateStatus = async (
-    reportId: string,
-    status: string
-  ) => {
-    await supabase
+  const updateStatus = async (reportId: string, status: string) => {
+    setMessage("");
+
+    const { error } = await supabase
       .from("reports")
       .update({ status })
       .eq("id", reportId);
 
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setMessage(`Report marked as ${status}.`);
     loadReports();
   };
 
   if (loading) return <LoadingSkeleton />;
+
+  if (!allowed) {
+    return (
+      <main className="contracts-page">
+        <section className="dark-card contract-card">
+          <p className="dashboard-badge">Admin</p>
+          <h1>Access Restricted</h1>
+          <p>Only admins can view reports.</p>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="contracts-page">
@@ -51,10 +94,10 @@ export default function AdminReportsPage() {
 
         <h1>User Reports</h1>
 
-        <p>
-          Review reported users, projects and platform issues.
-        </p>
+        <p>Review reported users, projects and platform issues.</p>
       </section>
+
+      {message && <p className="upload-message">{message}</p>}
 
       <section className="contracts-grid">
         {reports.length === 0 ? (
@@ -64,33 +107,25 @@ export default function AdminReportsPage() {
           </div>
         ) : (
           reports.map((report) => (
-            <div
-              key={report.id}
-              className="dark-card contract-card"
-            >
+            <div key={report.id} className="dark-card contract-card">
               <h2>{report.reason || "Report"}</h2>
 
               <p>{report.details || "No details provided."}</p>
 
               <p>
-                <strong>Status:</strong>{" "}
-                {report.status || "pending"}
+                <strong>Status:</strong> {report.status || "pending"}
               </p>
 
               <div className="contract-actions">
                 <button
-                  onClick={() =>
-                    updateStatus(report.id, "resolved")
-                  }
+                  onClick={() => updateStatus(report.id, "resolved")}
                   className="accept-btn"
                 >
                   Resolve
                 </button>
 
                 <button
-                  onClick={() =>
-                    updateStatus(report.id, "dismissed")
-                  }
+                  onClick={() => updateStatus(report.id, "dismissed")}
                   className="reject-btn"
                 >
                   Dismiss
