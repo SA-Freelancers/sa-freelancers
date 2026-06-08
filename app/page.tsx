@@ -1,5 +1,6 @@
 "use client";
 
+import PlatformStats from "@/app/components/PlatformStats";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/app/lib/supabase";
@@ -112,27 +113,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="stats-section">
-        <div className="dark-card stats-card">
-          <h3>12K+</h3>
-          <p>Freelancers</p>
-        </div>
-
-        <div className="dark-card stats-card">
-          <h3>4.8★</h3>
-          <p>Platform Rating</p>
-        </div>
-
-        <div className="dark-card stats-card">
-          <h3>8K+</h3>
-          <p>Projects Completed</p>
-        </div>
-
-        <div className="dark-card stats-card">
-          <h3>24/7</h3>
-          <p>Marketplace Access</p>
-        </div>
-      </section>
+      <PlatformStats />
 
       <section className="home-section">
         <div className="home-section-header">
