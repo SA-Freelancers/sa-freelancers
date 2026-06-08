@@ -61,13 +61,14 @@ export default function AdminPage() {
     <main className="dashboard-home">
       <section className="dashboard-hero dark-card">
         <div>
-          <p className="dashboard-badge">Admin Dashboard</p>
+          <p className="dashboard-badge">Administrator Panel</p>
 
-          <h1>Platform Analytics</h1>
+<h1>Marketplace Control Centre</h1>
 
-          <p>
-            Monitor users, jobs, contracts and marketplace activity.
-          </p>
+<p>
+  Monitor platform growth, manage users, review reports and
+  maintain marketplace safety.
+</p>
         </div>
       </section>
 
@@ -101,6 +102,15 @@ export default function AdminPage() {
           <h3>{contracts}</h3>
           <p>Contracts</p>
         </div>
+        <div className="dark-card stat-card">
+  <h3>Coming Soon</h3>
+  <p>Revenue Tracking</p>
+</div>
+
+<div className="dark-card stat-card">
+  <h3>Coming Soon</h3>
+  <p>Dispute Resolution</p>
+</div>
       </section>
       <section className="dashboard-quick-actions">
   <a href="/dashboard/admin/users" className="dark-card quick-action-card">
