@@ -22,6 +22,42 @@ export default function TermsPage() {
             information.
           </p>
         </div>
+        <div className="dark-card safety-card">
+  <h2>Account Suspension</h2>
+
+  <p>
+    SA Freelancers reserves the right to suspend or remove accounts involved
+    in fraud, abuse, harassment, spam, fake projects or attempts to bypass
+    platform protections.
+  </p>
+</div>
+
+<div className="dark-card safety-card">
+  <h2>Contracts & Deliverables</h2>
+
+  <p>
+    Freelancers are responsible for delivering agreed work and clients are
+    responsible for providing clear project requirements and timely feedback.
+  </p>
+</div>
+
+<div className="dark-card safety-card">
+  <h2>Dispute Resolution</h2>
+
+  <p>
+    In the event of disagreements, platform records such as contracts,
+    messages and project activity may be reviewed to help resolve disputes.
+  </p>
+</div>
+
+<div className="dark-card safety-card">
+  <h2>Intellectual Property</h2>
+
+  <p>
+    Ownership of completed work should be agreed between the client and
+    freelancer. Users must not upload copyrighted content without permission.
+  </p>
+</div>
 
         <div className="dark-card safety-card">
           <h2>No off-platform bypassing</h2>
@@ -53,9 +89,9 @@ export default function TermsPage() {
 
         <p>Browse trusted opportunities and manage your work safely.</p>
 
-        <Link href="/search" className="home-primary-btn">
-          Search Marketplace
-        </Link>
+        <Link href="/register" className="home-primary-btn">
+  Join SA Freelancers
+</Link>
       </section>
     </main>
   );

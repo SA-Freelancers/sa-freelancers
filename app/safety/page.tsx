@@ -6,54 +6,53 @@ export default function SafetyPage() {
       <section className="safety-hero dark-card">
         <p className="dashboard-badge">Trust & Safety</p>
 
-        <h1>Platform safety rules</h1>
+        <h1>Keeping clients and freelancers safe</h1>
 
         <p>
-          SA Freelancers is built to help clients and freelancers work safely,
-          professionally and transparently.
+          SA Freelancers is designed to promote professional relationships,
+          secure hiring and responsible platform usage.
         </p>
       </section>
 
       <section className="safety-grid">
         <div className="dark-card safety-card">
-          <h2>No off-platform contact before hiring</h2>
+          <h2>Verified Profiles</h2>
           <p>
-            Users should not share phone numbers, WhatsApp, email addresses or
-            outside contact details before a project is accepted.
+            Complete profiles help build trust and improve hiring decisions.
           </p>
         </div>
 
         <div className="dark-card safety-card">
-          <h2>Keep proposals professional</h2>
+          <h2>Protected Communication</h2>
           <p>
-            Freelancers should explain their skills, timeline, pricing and work
-            plan without trying to move the client away from the platform.
+            Users are encouraged to keep communication inside the platform.
           </p>
         </div>
 
         <div className="dark-card safety-card">
-          <h2>Use profiles and reviews</h2>
+          <h2>Contracts</h2>
           <p>
-            Clients should review freelancer profiles, documents and ratings
-            before accepting a proposal.
+            Contracts help define responsibilities and provide transparency.
           </p>
         </div>
 
         <div className="dark-card safety-card">
-          <h2>Payments should stay protected</h2>
+          <h2>Reporting Tools</h2>
           <p>
-            Future payment features should keep transactions inside the platform
-            before contact details are shared.
+            Suspicious activity can be reported for review by administrators.
           </p>
         </div>
       </section>
 
       <section className="home-cta dark-card">
-        <h2>Ready to hire safely?</h2>
-        <p>Browse freelancers and manage proposals from your dashboard.</p>
+        <h2>Work with confidence</h2>
 
-        <Link href="/search" className="home-primary-btn">
-          Search Marketplace
+        <p>
+          Join a marketplace focused on professionalism, transparency and trust.
+        </p>
+
+        <Link href="/register" className="home-primary-btn">
+          Create Account
         </Link>
       </section>
     </main>

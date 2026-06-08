@@ -23,6 +23,17 @@ export default function PrivacyPage() {
             and freelancers connect professionally.
           </p>
         </div>
+        <div className="dark-card safety-card">
+  <h2>Data Security</h2>
+
+  <p>
+    User information is stored securely and access is restricted to authorised
+    platform functions. We continuously monitor the platform to improve
+    security and reliability.
+  </p>
+</div>
+        
+        
 
         <div className="dark-card safety-card">
           <h2>Safe Communication</h2>
@@ -32,6 +43,15 @@ export default function PrivacyPage() {
             through the platform.
           </p>
         </div>
+        <div className="dark-card safety-card">
+  <h2>Data Security</h2>
+
+  <p>
+    User information is stored securely and access is restricted to authorised
+    platform functions. We continuously monitor the platform to improve
+    security and reliability.
+  </p>
+</div>
 
         <div className="dark-card safety-card">
           <h2>Protected Access</h2>
@@ -59,9 +79,9 @@ export default function PrivacyPage() {
           Explore projects, freelancers and opportunities with confidence.
         </p>
 
-        <Link href="/search" className="home-primary-btn">
-          Search Marketplace
-        </Link>
+        <Link href="/register" className="home-primary-btn">
+  Join SA Freelancers
+</Link>
       </section>
     </main>
   );
