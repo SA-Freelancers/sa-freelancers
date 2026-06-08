@@ -111,17 +111,37 @@ export default function AdminUsersPage() {
             </p>
 
             <p>
-              <strong>Role:</strong> {user.role || "N/A"}
-            </p>
+  <strong>Role:</strong>{" "}
+
+  {user.role === "client" && (
+    <span className="verified-badge">Client</span>
+  )}
+
+  {user.role === "freelancer" && (
+    <span className="top-rated-badge">Freelancer</span>
+  )}
+
+  {!user.role && "N/A"}
+</p>
+            <p>
+  <strong>Admin:</strong>{" "}
+
+  {user.is_admin ? (
+    <span className="verified-badge">Administrator</span>
+  ) : (
+    "No"
+  )}
+</p>
 
             <p>
-              <strong>Admin:</strong> {user.is_admin ? "Yes" : "No"}
-            </p>
+  <strong>Status:</strong>{" "}
 
-            <p>
-              <strong>Status:</strong>{" "}
-              {user.suspended ? "Suspended" : "Active"}
-            </p>
+  {user.suspended ? (
+    <span className="reject-btn">Suspended</span>
+  ) : (
+    <span className="accept-btn">Active</span>
+  )}
+</p>
 
             <div className="contract-actions">
               <button
