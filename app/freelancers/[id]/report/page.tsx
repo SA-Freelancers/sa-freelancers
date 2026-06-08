@@ -7,8 +7,7 @@ import { supabase } from "@/app/lib/supabase";
 export default function ReportUserPage() {
   const params = useParams();
   const router = useRouter();
-
-  const freelancerId = params.id as string;
+  const reportedUserId = params.id as string;
 
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
@@ -36,10 +35,11 @@ export default function ReportUserPage() {
     }
 
     const { error } = await supabase.from("reports").insert({
-      reported_user_id: freelancerId,
+      reported_user_id: reportedUserId,
       reporter_user_id: user.id,
       reason,
       details,
+      status: "pending",
     });
 
     if (error) {
@@ -47,16 +47,11 @@ export default function ReportUserPage() {
       setLoading(false);
       return;
     }
-await supabase.from("notifications").insert({
-  title: "New user report submitted",
-  body: `A user was reported for: ${reason}`,
-  user_id: null,
-  link: "/dashboard/admin/user-reports",
-});
+
     setMessage("Report submitted successfully.");
 
     setTimeout(() => {
-      router.push(`/freelancers/${freelancerId}`);
+      router.push(`/freelancers/${reportedUserId}`);
     }, 1200);
 
     setLoading(false);
@@ -71,11 +66,11 @@ await supabase.from("notifications").insert({
 
         <p>
           Help keep the marketplace safe by reporting suspicious or unsafe
-          behavior.
+          behaviour.
         </p>
       </section>
 
-      <section className="dark-card hire-card">
+      <section className="dark-card contract-card">
         <label className="form-label">Reason</label>
 
         <select
@@ -86,9 +81,7 @@ await supabase.from("notifications").insert({
           <option value="">Select reason</option>
           <option value="Spam">Spam</option>
           <option value="Fake profile">Fake profile</option>
-          <option value="Outside contact request">
-            Outside contact request
-          </option>
+          <option value="Outside contact request">Outside contact request</option>
           <option value="Harassment">Harassment</option>
           <option value="Scam">Scam</option>
         </select>
@@ -102,11 +95,7 @@ await supabase.from("notifications").insert({
           className="form-input proposal-textarea"
         />
 
-        <button
-          onClick={submitReport}
-          disabled={loading}
-          className="reject-btn"
-        >
+        <button onClick={submitReport} disabled={loading} className="reject-btn">
           {loading ? "Submitting..." : "Submit Report"}
         </button>
 
