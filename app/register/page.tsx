@@ -91,7 +91,7 @@ if (!hasUppercase || !hasNumber) {
       <section className="auth-card dark-card">
         <p className="dashboard-badge">Create Account</p>
 
-        <h1>Join SA Freelancers</h1>
+        <h1>Join Freelance Hub SA</h1>
 
         <p className="auth-description">
           Create a client or freelancer account and start using the marketplace.

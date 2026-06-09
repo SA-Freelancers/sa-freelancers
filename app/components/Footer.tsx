@@ -5,7 +5,7 @@ export default function Footer() {
     <footer className="site-footer">
       <div className="site-footer-content">
         <div className="footer-brand">
-          <h2>SA Freelancers</h2>
+          <h2>Freelance Hub SA</h2>
 
           <p>
             South Africa’s modern freelance marketplace for trusted work,
@@ -44,7 +44,7 @@ export default function Footer() {
       </div>
 
       <div className="footer-bottom">
-        © 2026 SA Freelancers. All rights reserved.
+        © 2026 Freelance Hub SA. All rights reserved.
       </div>
     </footer>
   );

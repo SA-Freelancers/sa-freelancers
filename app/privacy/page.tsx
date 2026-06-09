@@ -9,7 +9,7 @@ export default function PrivacyPage() {
         <h1>Your privacy matters</h1>
 
         <p>
-          SA Freelancers is committed to protecting user information and keeping
+          Freelance Hub SA is committed to protecting user information and keeping
           platform activity secure.
         </p>
       </section>
@@ -80,7 +80,7 @@ export default function PrivacyPage() {
         </p>
 
         <Link href="/register" className="home-primary-btn">
-  Join SA Freelancers
+  Join Freelance Hub SA
 </Link>
       </section>
     </main>

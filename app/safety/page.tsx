@@ -9,7 +9,7 @@ export default function SafetyPage() {
         <h1>Keeping clients and freelancers safe</h1>
 
         <p>
-          SA Freelancers is designed to promote professional relationships,
+          Freelance Hub SA is designed to promote professional relationships,
           secure hiring and responsible platform usage.
         </p>
       </section>

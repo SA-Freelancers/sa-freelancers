@@ -9,7 +9,7 @@ export default function ContactPage() {
         <h1>How can we help?</h1>
 
         <p>
-          Contact SA Freelancers for account support, payment questions,
+          Contact Freelance Hub SA for account support, payment questions,
           reporting issues or marketplace help.
         </p>
       </section>

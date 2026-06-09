@@ -9,7 +9,7 @@ export default function TermsPage() {
         <h1>Platform rules and user responsibilities</h1>
 
         <p>
-          These terms help keep SA Freelancers safe, professional and fair for
+          These terms help keep Freelance Hub SA safe, professional and fair for
           both clients and freelancers.
         </p>
       </section>
@@ -26,7 +26,7 @@ export default function TermsPage() {
   <h2>Account Suspension</h2>
 
   <p>
-    SA Freelancers reserves the right to suspend or remove accounts involved
+    Freelance Hub SA reserves the right to suspend or remove accounts involved
     in fraud, abuse, harassment, spam, fake projects or attempts to bypass
     platform protections.
   </p>
@@ -85,12 +85,12 @@ export default function TermsPage() {
       </section>
 
       <section className="home-cta dark-card">
-        <h2>Continue using SA Freelancers</h2>
+        <h2>Continue using Freelance Hub SA</h2>
 
         <p>Browse trusted opportunities and manage your work safely.</p>
 
         <Link href="/register" className="home-primary-btn">
-  Join SA Freelancers
+  Join Freelance Hub SA
 </Link>
       </section>
     </main>

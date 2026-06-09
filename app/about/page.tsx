@@ -4,10 +4,10 @@ export default function AboutPage() {
       <section className="dark-card" style={{ padding: 40, borderRadius: 24 }}>
         <p className="dashboard-badge">About Us</p>
 
-        <h1>About SA Freelancers</h1>
+        <h1>About Freelance Hub SA</h1>
 
         <p>
-          SA Freelancers connects South African clients with skilled local
+          Freelance Hub SA connects South African clients with skilled local
           freelancers across engineering, design, development, writing,
           marketing and professional services.
         </p>

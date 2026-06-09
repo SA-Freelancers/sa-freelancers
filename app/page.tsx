@@ -99,7 +99,7 @@ export default function HomePage() {
     <main className="home-page">
       <section className="home-hero">
         <div className="home-hero-content">
-          <p className="dashboard-badge">South African Freelance Marketplace</p>
+          <p className="dashboard-badge">South Africa's Trusted Freelance Marketplace</p>
 <h1>
   South Africa&apos;s freelance marketplace
   <span> for trusted work.</span>
