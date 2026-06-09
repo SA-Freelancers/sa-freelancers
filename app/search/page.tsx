@@ -12,11 +12,15 @@ type Job = {
   description?: string;
   category?: string;
   budget?: number | string;
+  created_at?: string;
 };
 
 export default function SearchPage() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [minBudget, setMinBudget] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
+
   const [jobs, setJobs] = useState<Job[]>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -80,16 +84,43 @@ export default function SearchPage() {
     setMessage(error ? error.message : "Job saved!");
   };
 
-  const filteredJobs = jobs.filter((job) => {
-    const text = `${job.title || ""} ${job.description || ""}`.toLowerCase();
+  const clearFilters = () => {
+    setSearch("");
+    setSelectedCategory("");
+    setMinBudget("");
+    setSortBy("newest");
+  };
 
-    const matchesSearch = text.includes(search.toLowerCase());
+  const filteredJobs = jobs
+    .filter((job) => {
+      const text = `${job.title || ""} ${job.description || ""} ${
+        job.category || ""
+      }`.toLowerCase();
 
-    const matchesCategory =
-      !selectedCategory || job.category === selectedCategory;
+      const matchesSearch = text.includes(search.toLowerCase());
 
-    return matchesSearch && matchesCategory;
-  });
+      const matchesCategory =
+        !selectedCategory || job.category === selectedCategory;
+
+      const jobBudget = Number(job.budget || 0);
+      const matchesBudget = !minBudget || jobBudget >= Number(minBudget);
+
+      return matchesSearch && matchesCategory && matchesBudget;
+    })
+    .sort((a, b) => {
+      if (sortBy === "budget-high") {
+        return Number(b.budget || 0) - Number(a.budget || 0);
+      }
+
+      if (sortBy === "budget-low") {
+        return Number(a.budget || 0) - Number(b.budget || 0);
+      }
+
+      return (
+        new Date(b.created_at || 0).getTime() -
+        new Date(a.created_at || 0).getTime()
+      );
+    });
 
   if (loading) return <LoadingSkeleton />;
 
@@ -113,8 +144,9 @@ export default function SearchPage() {
         <h1>Find paid job opportunities and grow your freelance career</h1>
 
         <p>
-          Browse available projects, send professional proposals, and get hired
-          by clients looking for your skills.
+          Browse available projects, filter by budget and category, send
+          professional proposals, and get hired by clients looking for your
+          skills.
         </p>
       </section>
 
@@ -148,16 +180,38 @@ export default function SearchPage() {
           <option value="Data Entry">Data Entry</option>
           <option value="Virtual Assistant">Virtual Assistant</option>
         </select>
+
+        <input
+          type="number"
+          placeholder="Minimum budget e.g. 1000"
+          value={minBudget}
+          onChange={(e) => setMinBudget(e.target.value)}
+          className="form-input"
+        />
+
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="form-input"
+        >
+          <option value="newest">Newest first</option>
+          <option value="budget-high">Highest budget</option>
+          <option value="budget-low">Lowest budget</option>
+        </select>
+
+        <button onClick={clearFilters} className="secondary-action-btn">
+          Clear Filters
+        </button>
       </section>
 
       <section className="search-section">
-        <h2>Available Opportunities</h2>
+        <h2>Available Opportunities ({filteredJobs.length})</h2>
 
         {filteredJobs.length === 0 ? (
           <EmptyState
             emoji="💼"
             title="No jobs found"
-            description="Try another keyword or category. New jobs will appear here when clients post projects."
+            description="Try another keyword, category or budget. New jobs will appear here when clients post projects."
           />
         ) : (
           <div className="marketplace-grid">
@@ -174,6 +228,12 @@ export default function SearchPage() {
                 <p>
                   <strong>Budget:</strong> ZAR {job.budget || "N/A"}
                 </p>
+
+                {job.created_at && (
+                  <small>
+                    Posted: {new Date(job.created_at).toLocaleDateString()}
+                  </small>
+                )}
 
                 <div className="marketplace-actions">
                   <Link
