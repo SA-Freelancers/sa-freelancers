@@ -4,11 +4,20 @@ import "./globals.css";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
-export const metadata: Metadata = {
-  title: "SA Freelancers",
-  description: "South African Freelance Marketplace",
+export const metadata = {
+  title: "SA Freelancers | South African Freelance Marketplace",
+  description:
+    "Hire trusted South African freelancers or find freelance work across engineering, design, development, writing, marketing and more.",
+  keywords: [
+    "South African freelancers",
+    "freelance marketplace South Africa",
+    "hire freelancers",
+    "find freelance jobs",
+    "engineering freelancers",
+    "CAD drafting freelancers",
+    "web development freelancers",
+  ],
 };
-
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
