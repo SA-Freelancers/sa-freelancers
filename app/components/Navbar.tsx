@@ -118,6 +118,7 @@ export default function Navbar() {
       <div className="navbar-container">
         <Link href="/" className="navbar-logo" onClick={closeMenu}>
           <span>SA</span> Freelancers
+<small className="navbar-tagline">Trusted Work</small>
         </Link>
 
         <button
