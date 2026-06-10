@@ -99,15 +99,8 @@ export default function HomePage() {
     <main className="home-page">
       <section className="home-hero">
         <div className="home-hero-content">
-          <p className="dashboard-badge">South Africa's Trusted Freelance Marketplace</p>
-<h1>
-  South Africa&apos;s freelance marketplace
-  <span> for trusted work.</span>
-</h1>
-
-<p>
-  Connect with skilled South African freelancers, post jobs, apply for projects,
-  manage contracts and build professional working relationships safely.
+          <p className="dashboard-badge">
+  Freelance Hub SA
 </p>
 
           <div className="home-actions">{renderHeroButtons()}</div>

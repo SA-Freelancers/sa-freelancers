@@ -7,7 +7,7 @@ import Footer from "./components/Footer";
 export const metadata = {
   title: "Freelance Hub SA | South Africa's Trusted Freelance Marketplace",
   description:
-    "Hire trusted South African freelancers or find freelance work across engineering, design, development, writing, marketing and more.",
+    "Freelance Hub SA connects South African businesses with skilled freelancers across engineering, drafting, design, development, writing, marketing and more.",
   keywords: [
     "South African freelancers",
     "freelance marketplace South Africa",
