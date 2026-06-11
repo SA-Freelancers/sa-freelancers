@@ -17,6 +17,7 @@ type Profile = {
   portfolio_url?: string;
   verified?: boolean;
   top_rated?: boolean;
+  suspended?: boolean;
 };
 
 type Review = {
@@ -43,13 +44,14 @@ export default function FreelancerPublicProfilePage() {
       .from("profiles")
       .select("*")
       .eq("id", id)
+      .eq("role", "freelancer")
       .single();
 
     const { data: reviewData } = await supabase
-  .from("reviews")
-  .select("*")
-  .eq("freelancer_id", id)
-  .order("created_at", { ascending: false });
+      .from("reviews")
+      .select("*")
+      .eq("freelancer_id", id)
+      .order("created_at", { ascending: false });
 
     setProfile(profileData as Profile);
     setReviews((reviewData as Review[]) || []);
@@ -58,7 +60,7 @@ export default function FreelancerPublicProfilePage() {
 
   if (loading) return <LoadingSkeleton />;
 
-  if (!profile) {
+  if (!profile || profile.suspended) {
     return (
       <main className="profile-page">
         <EmptyState
@@ -102,42 +104,39 @@ export default function FreelancerPublicProfilePage() {
             {profile.full_name || "Freelancer"}
           </h1>
 
-          <div className="marketplace-badges">
-            {profile.verified && (
-              <span className="verified-badge">
-                ✔ Verified
-              </span>
-            )}
-
-            {profile.top_rated && (
-              <span className="top-rated-badge">
-                ★ Top Rated
-              </span>
-            )}
-          </div>
-          <div style={{ marginTop: 20 }}>
-  <div style={{ marginTop: 20, display: "flex", gap: 12, flexWrap: "wrap" }}>
-  <a href={`/hire/${profile.id}`} className="primary-action-link">
-    Hire Freelancer
-  </a>
-
-  <a href={`/freelancers/${profile.id}/report`} className="reject-btn">
-    Report User
-  </a>
-</div>
-</div>
-<a
-  href={`/freelancers/${profile.id}/report`}
-  className="reject-btn"
->
-  Report User
-</a>
           <p className="profile-role">
             {profile.role || "Professional Freelancer"}
           </p>
 
-          <div className="profile-rating">
-            ⭐ {averageRating} ({reviews.length} reviews)
+          <div className="marketplace-badges">
+            {profile.verified && (
+              <span className="verified-badge">✔ Verified</span>
+            )}
+
+            {profile.top_rated && (
+              <span className="top-rated-badge">★ Top Rated</span>
+            )}
+
+            <span className="rating-badge">
+              ⭐ {averageRating} ({reviews.length} reviews)
+            </span>
+          </div>
+
+          <div
+            style={{
+              marginTop: 20,
+              display: "flex",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <a href={`/hire/${profile.id}`} className="primary-action-link">
+              Hire Freelancer
+            </a>
+
+            <a href={`/freelancers/${profile.id}/report`} className="reject-btn">
+              Report User
+            </a>
           </div>
         </div>
       </section>
