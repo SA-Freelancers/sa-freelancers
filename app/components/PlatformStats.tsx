@@ -14,28 +14,14 @@ export default function PlatformStats() {
   }, []);
 
   const loadStats = async () => {
-    const { count: freelancerCount } = await supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true })
-      .eq("role", "freelancer");
+    const { data, error } = await supabase.rpc("get_platform_stats");
 
-    const { count: clientCount } = await supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true })
-      .eq("role", "client");
+    if (error || !data || data.length === 0) return;
 
-    const { count: jobCount } = await supabase
-      .from("jobs")
-      .select("*", { count: "exact", head: true });
-
-    const { count: applicationCount } = await supabase
-      .from("applications")
-      .select("*", { count: "exact", head: true });
-
-    setFreelancers(freelancerCount || 0);
-    setClients(clientCount || 0);
-    setJobs(jobCount || 0);
-    setApplications(applicationCount || 0);
+    setFreelancers(Number(data[0].freelancers_count || 0));
+    setClients(Number(data[0].clients_count || 0));
+    setJobs(Number(data[0].jobs_count || 0));
+    setApplications(Number(data[0].applications_count || 0));
   };
 
   return (
