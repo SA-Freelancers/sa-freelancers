@@ -6,10 +6,11 @@ import { supabase } from "@/app/lib/supabase";
 
 type Job = {
   id: string;
-  title: string;
-  budget: number;
-  category: string;
-  created_at: string;
+  title?: string;
+  description?: string;
+  budget?: number | string;
+  category?: string;
+  created_at?: string;
 };
 
 export default function LatestJobs() {
@@ -41,15 +42,23 @@ export default function LatestJobs() {
       <div className="home-grid">
         {jobs.map((job) => (
           <div key={job.id} className="dark-card home-card">
-            <h3>{job.title}</h3>
+            <span className="marketplace-badge">
+              {job.category || "General"}
+            </span>
+
+            <h3>{job.title || "Untitled Job"}</h3>
+
+            <p>{job.description?.slice(0, 120) || "No description yet."}</p>
 
             <p>
-              <strong>Category:</strong> {job.category || "General"}
+              <strong>Budget:</strong> ZAR {job.budget || "N/A"}
             </p>
 
-            <p>
-              <strong>Budget:</strong> ZAR {job.budget || 0}
-            </p>
+            {job.created_at && (
+              <small>
+                Posted: {new Date(job.created_at).toLocaleDateString()}
+              </small>
+            )}
 
             <Link
               href={`/dashboard/jobs/${job.id}`}

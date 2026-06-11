@@ -45,17 +45,36 @@ export default function FeaturedFreelancers() {
       <div className="home-grid">
         {freelancers.map((freelancer) => (
           <div key={freelancer.id} className="dark-card home-card">
+            <div className="profile-preview-placeholder">
+              {freelancer.avatar_url ? (
+                <img
+                  src={freelancer.avatar_url}
+                  alt={freelancer.full_name || "Freelancer"}
+                  className="profile-preview-avatar"
+                />
+              ) : (
+                "👤"
+              )}
+            </div>
+
             <h3>{freelancer.full_name || "Freelancer"}</h3>
 
-            <p>{freelancer.category || "General Freelancer"}</p>
+            <p>
+              <strong>Category:</strong>{" "}
+              {freelancer.category || "General Freelancer"}
+            </p>
 
-            <p>{freelancer.bio?.slice(0, 100) || "Professional freelancer."}</p>
+            <p>{freelancer.bio?.slice(0, 120) || "Professional freelancer."}</p>
 
-            {freelancer.verified && <p className="verified-badge">✔ Verified</p>}
+            <div className="marketplace-badges">
+              {freelancer.verified && (
+                <span className="verified-badge">✔ Verified</span>
+              )}
 
-            {freelancer.top_rated && (
-              <p className="top-rated-badge">★ Top Rated</p>
-            )}
+              {freelancer.top_rated && (
+                <span className="top-rated-badge">★ Top Rated</span>
+              )}
+            </div>
 
             <Link
               href={`/freelancers/${freelancer.id}`}
