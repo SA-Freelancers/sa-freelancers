@@ -1,3 +1,4 @@
+import WhatsAppButton from "./components/WhatsAppButton";
 import GoogleAnalytics from "./components/GoogleAnalytics";
 import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Navbar />
         <main className="main-wrapper">{children}</main>
         <Footer />
+        <WhatsAppButton />
       </body>
     </html>
   );

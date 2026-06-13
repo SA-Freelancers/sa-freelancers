@@ -39,6 +39,7 @@ export default function Footer() {
             <Link href="/privacy">Privacy Policy</Link>
             <Link href="/terms">Terms of Service</Link>
             <Link href="/contact">Contact & Support</Link>
+            <Link href="/support">Support</Link>
           </div>
         </div>
       </div>
@@ -46,6 +47,7 @@ export default function Footer() {
       <div className="footer-bottom">
         © 2026 Freelance Hub SA. All rights reserved.
       </div>
+      <p>support@freelancehubsa.co.za</p>
     </footer>
   );
 }
