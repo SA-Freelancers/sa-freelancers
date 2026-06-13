@@ -121,8 +121,8 @@ export default function Navbar() {
   <Image
     src="/freelancehubsa-navbar-logo.png"
     alt="Freelance Hub SA"
-    width={220}
-    height={45}
+    width={280}
+    height={70}
     priority
   />
 </Link>
