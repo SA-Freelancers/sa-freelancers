@@ -2919,10 +2919,7 @@ body {
   margin-left: 4px;
 }
 .navbar-logo img {
-  height: 54px;
+  height: 64px;
   width: auto;
   object-fit: contain;
-  border-radius: 10px;
-  background: #0f172a;
-  padding: 6px 10px;
 }

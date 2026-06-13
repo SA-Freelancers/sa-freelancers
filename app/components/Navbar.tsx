@@ -119,10 +119,10 @@ export default function Navbar() {
       <div className="navbar-container">
         <Link href="/" className="navbar-logo" onClick={closeMenu}>
   <Image
-    src="/freelancehubsa-navbar-logo.png"
+    src="/freelancehubsa-navbar-dark.png"
     alt="Freelance Hub SA"
-    width={280}
-    height={70}
+    width={360}
+    height={85}
     priority
   />
 </Link>
