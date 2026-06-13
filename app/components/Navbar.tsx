@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
@@ -118,12 +117,12 @@ export default function Navbar() {
   return (
     <header className="navbar-wrapper">
       <div className="navbar-container">
-        <Link href="/" className="logo-container">
+        <Link href="/" className="navbar-logo" onClick={closeMenu}>
   <Image
-    src="/logo.png"
+    src="/freelancehubsa-navbar-logo.png"
     alt="Freelance Hub SA"
-    width={260}
-    height={70}
+    width={220}
+    height={45}
     priority
   />
 </Link>
