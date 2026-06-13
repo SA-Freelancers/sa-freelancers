@@ -18,7 +18,13 @@ description:
     "CAD drafting freelancers",
     "web development freelancers",
   ],
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
