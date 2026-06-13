@@ -1,3 +1,4 @@
+import GoogleAnalytics from "./components/GoogleAnalytics";
 import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
@@ -6,8 +7,8 @@ import Footer from "./components/Footer";
 
 export const metadata = {
   title: "Freelance Hub SA | South Africa's Trusted Freelance Marketplace",
-  description:
-    "Freelance Hub SA connects South African businesses with skilled freelancers across engineering, drafting, design, development, writing, marketing and more.",
+description:
+  "Find freelancers, hire talent and grow your business with Freelance Hub SA.",
   keywords: [
     "South African freelancers",
     "freelance marketplace South Africa",
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
+  <GoogleAnalytics />
         <Navbar />
         <main className="main-wrapper">{children}</main>
         <Footer />
