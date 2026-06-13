@@ -1,3 +1,7 @@
+"use client";
+
+import { FaWhatsapp } from "react-icons/fa";
+
 export default function WhatsAppButton() {
   return (
     <a
@@ -16,12 +20,14 @@ export default function WhatsAppButton() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontSize: "28px",
+        fontSize: "32px",
         textDecoration: "none",
         zIndex: 9999,
+        boxShadow: "0 6px 20px rgba(0,0,0,0.25)",
       }}
+      aria-label="WhatsApp Support"
     >
-      💬
+      <FaWhatsapp />
     </a>
   );
 }
