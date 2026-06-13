@@ -117,15 +117,14 @@ export default function Navbar() {
   return (
     <header className="navbar-wrapper">
       <div className="navbar-container">
-        <Link href="/" className="navbar-logo" onClick={closeMenu}>
-  <Image
-    src="/freelancehubsa-navbar-dark.png"
-    alt="Freelance Hub SA"
-    width={360}
-    height={85}
-    priority
-  />
-</Link>
+        <Image
+  src="/freelancehubsa-navbar-dark.png"
+  alt="Freelance Hub SA"
+  width={500}
+  height={120}
+  priority
+  className="navbar-logo-image"
+/>
 
         <button
           className="navbar-menu-btn"

@@ -2923,3 +2923,19 @@ body {
   width: auto;
   object-fit: contain;
 }
+.navbar-logo {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-logo-image {
+  width: 320px;
+  height: auto;
+  object-fit: contain;
+}
+
+@media (max-width: 768px) {
+  .navbar-logo-image {
+    width: 220px;
+  }
+}
