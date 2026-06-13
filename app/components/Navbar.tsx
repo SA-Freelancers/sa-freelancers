@@ -118,15 +118,15 @@ export default function Navbar() {
     <header className="navbar-wrapper">
       <div className="navbar-container">
   <Link href="/" className="navbar-logo" onClick={closeMenu}>
-    <Image
-      src="/freelancehubsa-navbar-dark.png"
-      alt="Freelance Hub SA"
-      width={520}
-      height={120}
-      priority
-      className="navbar-logo-image"
-    />
-  </Link>
+  <Image
+    src="/freelancehubsa-navbar-dark.png"
+    alt="Freelance Hub SA"
+    width={300}
+    height={70}
+    priority
+    className="navbar-logo-image"
+  />
+</Link>
         <button
           className="navbar-menu-btn"
           onClick={() => setMenuOpen(!menuOpen)}

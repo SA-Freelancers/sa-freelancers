@@ -2907,7 +2907,21 @@ body {
   visibility: visible;
   pointer-events: auto;
 }
-/* ---------- LOGO ---------- */
+/* =========================
+   NAVBAR LOGO
+========================= */
+
+.navbar-wrapper {
+  padding: 0;
+}
+
+.navbar-container {
+  min-height: 72px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
 .navbar-logo {
   display: flex;
@@ -2916,22 +2930,38 @@ body {
 }
 
 .navbar-logo-image {
-  width: 520px;
+  width: 300px;
   height: auto;
   object-fit: contain;
   display: block;
 }
 
+/* Desktop Large Screens */
+@media (min-width: 1400px) {
+  .navbar-logo-image {
+    width: 320px;
+  }
+}
+
 /* Tablet */
 @media (max-width: 1024px) {
   .navbar-logo-image {
-    width: 400px;
+    width: 240px;
+  }
+
+  .navbar-container {
+    min-height: 68px;
   }
 }
 
 /* Mobile */
 @media (max-width: 768px) {
   .navbar-logo-image {
-    width: 250px;
+    width: 180px;
+  }
+
+  .navbar-container {
+    min-height: 64px;
+    padding: 0 14px;
   }
 }
