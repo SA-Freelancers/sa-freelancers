@@ -6,22 +6,15 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
 export const metadata = {
-  title: "Freelance Hub SA | South Africa's Trusted Freelance Marketplace",
-description:
-  "Find freelancers, hire talent and grow your business with Freelance Hub SA.",
-  keywords: [
-    "South African freelancers",
-    "freelance marketplace South Africa",
-    "hire freelancers",
-    "find freelance jobs",
-    "engineering freelancers",
-    "CAD drafting freelancers",
-    "web development freelancers",
-  ],
+  title: "Freelance Hub SA",
+  description: "South Africa's freelance marketplace for trusted work.",
   icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
-    apple: "/icon.png",
+    icon: [
+      { url: "/icon.png", type: "image/png" },
+      { url: "/icon.png?v=2", type: "image/png" },
+    ],
+    shortcut: "/icon.png?v=2",
+    apple: "/icon.png?v=2",
   },
 };
 
