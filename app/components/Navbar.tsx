@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -116,10 +118,15 @@ export default function Navbar() {
   return (
     <header className="navbar-wrapper">
       <div className="navbar-container">
-        <Link href="/" className="navbar-logo" onClick={closeMenu}>
-          <span>Freelance</span> Hub SA
-<small className="navbar-tagline">Trusted Work</small>
-        </Link>
+        <Link href="/" className="logo-container">
+  <Image
+    src="/logo.png"
+    alt="Freelance Hub SA"
+    width={260}
+    height={70}
+    priority
+  />
+</Link>
 
         <button
           className="navbar-menu-btn"
