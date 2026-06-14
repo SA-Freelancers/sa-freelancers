@@ -119,6 +119,42 @@ export default function HomePage() {
       <PlatformStats />
       <FeaturedFreelancers />
       <LatestJobs />
+      <section className="dark-card" style={{
+  padding: "30px",
+  marginTop: "30px",
+  textAlign: "center",
+}}>
+  <h2>Why Freelance Hub SA?</h2>
+
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+      gap: "20px",
+      marginTop: "20px",
+    }}
+  >
+    <div>
+      <h3>✔ Verified Profiles</h3>
+      <p>Build trust through verified freelancer accounts.</p>
+    </div>
+
+    <div>
+      <h3>🔒 Secure Platform</h3>
+      <p>Safe communication and project management tools.</p>
+    </div>
+
+    <div>
+      <h3>⭐ Reviews & Ratings</h3>
+      <p>Transparent feedback from clients and freelancers.</p>
+    </div>
+
+    <div>
+      <h3>🇿🇦 South African Focus</h3>
+      <p>Built specifically for South African businesses and freelancers.</p>
+    </div>
+  </div>
+</section>
 
       <section className="home-section">
         <div className="home-section-header">

@@ -109,6 +109,7 @@ export default function Footer() {
             <h3>Resources</h3>
 
             <Link href="/about">About Us</Link>
+            <Link href="/faq">FAQ</Link>
             <Link href="/safety">Trust & Safety</Link>
             <Link href="/terms">Terms</Link>
             <Link href="/privacy">Privacy</Link>

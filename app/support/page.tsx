@@ -45,6 +45,13 @@ export default function SupportPage() {
         <h2>Website</h2>
 
         <p>https://freelancehubsa.co.za</p>
+        <p>
+  Looking for quick answers? Visit our FAQ page.
+</p>
+
+<Link href="/faq">
+  Frequently Asked Questions
+</Link>
       </div>
     </main>
   );

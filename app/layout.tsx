@@ -8,7 +8,8 @@ import Footer from "./components/Footer";
 
 export const metadata = {
   title: "Freelance Hub SA",
-  description: "South Africa's freelance marketplace for trusted work.",
+  description:
+    "South Africa's trusted freelance marketplace. Find freelancers, hire talent, post jobs, manage contracts and grow your business.",
   icons: {
     icon: [
       { url: "/icon.png", type: "image/png" },
