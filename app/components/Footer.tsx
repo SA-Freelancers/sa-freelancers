@@ -8,9 +8,23 @@ export default function Footer() {
           <h2>Freelance Hub SA</h2>
 
           <p>
-            South Africa’s modern freelance marketplace for trusted work,
+            South Africa's modern freelance marketplace for trusted work,
             projects, hiring and opportunities.
           </p>
+
+          <div style={{ marginTop: "20px" }}>
+            <p>📧 support@freelancehubsa.co.za</p>
+            <p>💳 billing@freelancehubsa.co.za</p>
+            <p>🔒 security@freelancehubsa.co.za</p>
+
+            <a
+              href="https://wa.me/27624494338"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              💬 WhatsApp Support
+            </a>
+          </div>
         </div>
 
         <div className="footer-links">
@@ -46,7 +60,6 @@ export default function Footer() {
       <div className="footer-bottom">
         © 2026 Freelance Hub SA. All rights reserved.
       </div>
-      <p>support@freelancehubsa.co.za</p>
     </footer>
   );
 }
