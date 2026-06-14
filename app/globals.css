@@ -1919,41 +1919,6 @@ body:not(.dark) .home-hero h1 span {
   color: #22c55e !important;
 }
 
-/* PHONE VIEW */
-@media (max-width: 900px) {
-  .navbar-menu-btn {
-    display: block;
-  }
-
-  .navbar-links {
-    display: none;
-    position: absolute;
-    top: 62px;
-    left: 12px;
-    right: 12px;
-    background: #0f172a;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 22px;
-    padding: 18px;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    box-shadow: 0 20px 45px rgba(0,0,0,0.35);
-  }
-
-  .navbar-mobile-open {
-    display: flex;
-  }
-
-  .navbar-link,
-  .navbar-login-btn,
-  .navbar-register-btn,
-  .navbar-logout-btn,
-  .navbar-dark-btn {
-    width: 100%;
-    text-align: center;
-  }
-
   .home-hero {
     min-height: auto !important;
     padding: 70px 16px 55px !important;
@@ -1986,7 +1951,7 @@ body:not(.dark) .home-hero h1 span {
   .stats-section {
     margin-top: 20px !important;
   }
-}
+
 /* FINAL MOBILE OVERFLOW FIX */
 * {
   box-sizing: border-box;
@@ -2957,14 +2922,72 @@ body {
   }
 }
 
-/* Mobile */
+/* =========================
+   MOBILE NAVBAR
+========================= */
 @media (max-width: 768px) {
-  .navbar-logo-image {
-    width: 220px;
-  }
 
   .navbar-container {
-    min-height: 76px;
-    padding: 0 14px;
+    position: relative;
+  }
+
+  .navbar-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+  }
+
+  /* HIDE MENU BY DEFAULT */
+  .navbar-links {
+    display: none;
+
+    position: absolute;
+    top: 100%;
+    left: 0;
+
+    width: 100%;
+
+    flex-direction: column;
+    gap: 16px;
+
+    padding: 20px;
+
+    background: #08142f;
+    border-radius: 0 0 24px 24px;
+
+    z-index: 999;
+  }
+
+  /* SHOW ONLY WHEN BUTTON CLICKED */
+  .navbar-links.navbar-mobile-open {
+    display: flex;
+  }
+
+  .navbar-link,
+  .navbar-login-btn,
+  .navbar-register-btn,
+  .navbar-dark-btn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* MOBILE LOGO */
+  .navbar-logo-image {
+    width: 180px;
+    height: auto;
+  }
+
+  /* WHATSAPP BUTTON */
+  .whatsapp-float {
+    width: 60px;
+    height: 60px;
+    right: 20px;
+    bottom: 20px;
   }
 }
