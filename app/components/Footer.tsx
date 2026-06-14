@@ -1,4 +1,9 @@
 import Link from "next/link";
+import {
+  FaWhatsapp,
+  FaFacebook,
+  FaLinkedin,
+} from "react-icons/fa";
 
 export default function Footer() {
   return (
@@ -14,16 +19,71 @@ export default function Footer() {
 
           <div style={{ marginTop: "20px" }}>
             <p>📧 support@freelancehubsa.co.za</p>
+
             <p>💳 billing@freelancehubsa.co.za</p>
+
             <p>🔒 security@freelancehubsa.co.za</p>
 
-            <a
-              href="https://wa.me/27624494338"
-              target="_blank"
-              rel="noopener noreferrer"
+            <div
+              style={{
+                display: "flex",
+                gap: "16px",
+                alignItems: "center",
+                marginTop: "16px",
+                flexWrap: "wrap",
+              }}
             >
-              💬 WhatsApp Support
-            </a>
+              <a
+                href="https://wa.me/27624494338"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  color: "#25D366",
+                  textDecoration: "none",
+                  fontWeight: "600",
+                }}
+              >
+                <FaWhatsapp size={22} />
+                WhatsApp Support
+              </a>
+
+              <a
+                href="https://www.facebook.com/share/1aZDto8cms/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  color: "#1877F2",
+                  textDecoration: "none",
+                  fontWeight: "600",
+                }}
+              >
+                <FaFacebook size={22} />
+                Facebook
+              </a>
+
+              <a
+                href="https://linkedin.com/company/freelance-hub-sa"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  color: "#0A66C2",
+                  textDecoration: "none",
+                  fontWeight: "600",
+                }}
+              >
+                <FaLinkedin size={22} />
+                LinkedIn
+              </a>
+            </div>
           </div>
         </div>
 
