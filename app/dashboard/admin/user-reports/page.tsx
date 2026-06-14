@@ -26,6 +26,8 @@ export default function AdminUserReportsPage() {
   }, []);
 
   const loadReports = async () => {
+    setLoading(true);
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -42,42 +44,55 @@ export default function AdminUserReportsPage() {
       .single();
 
     if (!profile?.is_admin) {
+      setIsAdmin(false);
       setLoading(false);
       return;
     }
 
     setIsAdmin(true);
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("reports")
       .select("*")
       .order("created_at", { ascending: false });
 
+    if (error) {
+      setMessage(error.message);
+      setLoading(false);
+      return;
+    }
+
     setReports((data as Report[]) || []);
     setLoading(false);
   };
-const suspendUser = async (userId?: string) => {
-  if (!userId) {
-    setMessage("No reported user found.");
-    return;
-  }
 
-  const confirmSuspend = confirm("Suspend this user?");
-  if (!confirmSuspend) return;
+  const suspendUser = async (userId?: string) => {
+    setMessage("");
 
-  const { error } = await supabase
-    .from("profiles")
-    .update({ suspended: true })
-    .eq("id", userId);
+    if (!userId) {
+      setMessage("No reported user found.");
+      return;
+    }
 
-  if (error) {
-    setMessage(error.message);
-    return;
-  }
+    const confirmSuspend = confirm("Suspend this user?");
+    if (!confirmSuspend) return;
 
-  setMessage("User suspended successfully.");
-};
+    const { error } = await supabase
+      .from("profiles")
+      .update({ suspended: true })
+      .eq("id", userId);
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setMessage("User suspended successfully.");
+  };
+
   const markReviewed = async (reportId: string) => {
+    setMessage("");
+
     const { error } = await supabase
       .from("reports")
       .update({ status: "reviewed" })
@@ -88,15 +103,13 @@ const suspendUser = async (userId?: string) => {
       return;
     }
 
-    setMessage("Report marked as reviewed.");
-
     setReports((prev) =>
       prev.map((report) =>
-        report.id === reportId
-          ? { ...report, status: "reviewed" }
-          : report
+        report.id === reportId ? { ...report, status: "reviewed" } : report
       )
     );
+
+    setMessage("Report marked as reviewed.");
   };
 
   if (loading) return <LoadingSkeleton />;
@@ -117,9 +130,6 @@ const suspendUser = async (userId?: string) => {
   const reviewedReports = reports.filter(
     (report) => report.status === "reviewed"
   );
-  const totalReports = reports.length;
-const openReportsCount = openReports.length;
-const reviewedReportsCount = reviewedReports.length;
 
   const renderReports = (items: Report[]) => {
     if (items.length === 0) {
@@ -171,22 +181,34 @@ const reviewedReportsCount = reviewedReports.length;
                 : ""}
             </small>
 
-            {report.status !== "reviewed" && (
-              <div className="contract-actions">
-                <button
-                  onClick={() => markReviewed(report.id)}
-                  className="accept-btn"
+            <div className="contract-actions">
+              {report.reported_user_id && (
+                <a
+                  href={`/freelancers/${report.reported_user_id}`}
+                  className="primary-action-link"
                 >
-                  Mark Reviewed
-                </button>
-                <button
-  onClick={() => suspendUser(report.reported_user_id)}
-  className="reject-btn"
->
-  Suspend User
-</button>
-              </div>
-            )}
+                  View Reported Profile
+                </a>
+              )}
+
+              {report.status !== "reviewed" && (
+                <>
+                  <button
+                    onClick={() => markReviewed(report.id)}
+                    className="accept-btn"
+                  >
+                    Mark Reviewed
+                  </button>
+
+                  <button
+                    onClick={() => suspendUser(report.reported_user_id)}
+                    className="reject-btn"
+                  >
+                    Suspend User
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         ))}
       </section>
@@ -204,22 +226,23 @@ const reviewedReportsCount = reviewedReports.length;
       </section>
 
       {message && <p className="upload-message">{message}</p>}
+
       <section className="dashboard-stats">
-  <div className="dark-card stat-card">
-    <h3>{totalReports}</h3>
-    <p>Total Reports</p>
-  </div>
+        <div className="dark-card stat-card">
+          <h3>{reports.length}</h3>
+          <p>Total Reports</p>
+        </div>
 
-  <div className="dark-card stat-card">
-    <h3>{openReportsCount}</h3>
-    <p>Open Reports</p>
-  </div>
+        <div className="dark-card stat-card">
+          <h3>{openReports.length}</h3>
+          <p>Open Reports</p>
+        </div>
 
-  <div className="dark-card stat-card">
-    <h3>{reviewedReportsCount}</h3>
-    <p>Reviewed Reports</p>
-  </div>
-</section>
+        <div className="dark-card stat-card">
+          <h3>{reviewedReports.length}</h3>
+          <p>Reviewed Reports</p>
+        </div>
+      </section>
 
       <section>
         <h2 style={{ marginBottom: 18 }}>Open Reports</h2>
