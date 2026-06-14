@@ -18,6 +18,7 @@ type Profile = {
   verified?: boolean;
   top_rated?: boolean;
   suspended?: boolean;
+  email_verified?: boolean;
 };
 
 type Review = {
@@ -109,6 +110,9 @@ export default function FreelancerPublicProfilePage() {
           </p>
 
           <div className="marketplace-badges">
+            {profile.email_verified && (
+  <span className="verified-badge">✔ Email Verified</span>
+)}
             {profile.verified && (
               <span className="verified-badge">✔ Verified</span>
             )}

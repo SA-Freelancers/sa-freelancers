@@ -29,11 +29,20 @@ export default function DashboardLayout({
       return;
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("suspended")
-      .eq("id", user.id)
-      .single();
+    const verified = !!user.email_confirmed_at;
+
+await supabase
+  .from("profiles")
+  .update({
+    email_verified: verified,
+  })
+  .eq("id", user.id);
+
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("suspended")
+  .eq("id", user.id)
+  .single();
 
     if (profile?.suspended) {
       await supabase.auth.signOut();
