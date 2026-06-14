@@ -2979,9 +2979,9 @@ body {
 
   /* MOBILE LOGO */
   .navbar-logo-image {
-    width: 180px;
-    height: auto;
-  }
+  width: 280px;
+  height: auto;
+}
 
   /* WHATSAPP BUTTON */
   .whatsapp-float {
