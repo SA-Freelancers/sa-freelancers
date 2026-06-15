@@ -36,6 +36,7 @@ const adminLinks: SidebarLink[] = [
   { href: "/dashboard/admin/reports", label: "Reports", icon: "🚩" },
   { href: "/dashboard/admin/moderation", label: "Moderation", icon: "🛡️" },
   { href: "/dashboard/admin/messages", label: "Messages", icon: "✉️" },
+  { href: "/dashboard/admin/jobs", label: "Jobs", icon: "💼" },
 ];
 
 export default function DashboardSidebar() {
