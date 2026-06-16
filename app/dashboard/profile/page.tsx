@@ -57,6 +57,96 @@ export default function ProfilePage() {
     setLoading(false);
   };
 
+  const uploadFile = async (
+    file: File,
+    folder: string,
+    column: "avatar_url" | "cv_url" | "portfolio_url"
+  ) => {
+    setMessage("");
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setMessage("Please login first.");
+      return;
+    }
+
+    const fileExt = file.name.split(".").pop();
+    const filePath = `${folder}/${user.id}-${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("uploads")
+      .upload(filePath, file, {
+        upsert: true,
+      });
+
+    if (uploadError) {
+      setMessage(uploadError.message);
+      return;
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("uploads")
+      .getPublicUrl(filePath);
+
+    const publicUrl = publicUrlData.publicUrl;
+
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ [column]: publicUrl })
+      .eq("id", user.id);
+
+    if (updateError) {
+      setMessage(updateError.message);
+      return;
+    }
+
+    setMessage("File uploaded successfully.");
+    loadProfile();
+  };
+
+  const handleAvatarUpload = async (file?: File) => {
+    if (!file) return;
+
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      setMessage("Profile picture must be PNG, JPG or WEBP.");
+      return;
+    }
+
+    await uploadFile(file, "avatars", "avatar_url");
+  };
+
+  const handleCVUpload = async (file?: File) => {
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+      setMessage("CV must be a PDF file.");
+      return;
+    }
+
+    await uploadFile(file, "cv", "cv_url");
+  };
+
+  const handlePortfolioUpload = async (file?: File) => {
+    if (!file) return;
+
+    const allowedTypes = [
+      "application/pdf",
+      "image/png",
+      "image/jpeg",
+      "image/webp",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      setMessage("Portfolio must be PDF, PNG, JPG or WEBP.");
+      return;
+    }
+
+    await uploadFile(file, "portfolio", "portfolio_url");
+  };
+
   const saveProfile = async () => {
     setMessage("");
 
@@ -191,6 +281,40 @@ export default function ProfilePage() {
           </button>
 
           {message && <p className="upload-message">{message}</p>}
+
+          {isFreelancer && (
+            <>
+              <div className="profile-divider" />
+
+              <h2>Upload Documents</h2>
+
+              <label className="form-label">Profile Picture</label>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="form-input"
+                onChange={(e) => handleAvatarUpload(e.target.files?.[0])}
+              />
+
+              <label className="form-label">CV PDF</label>
+              <input
+                type="file"
+                accept="application/pdf"
+                className="form-input"
+                onChange={(e) => handleCVUpload(e.target.files?.[0])}
+              />
+
+              <label className="form-label">
+                Portfolio PDF or Image
+              </label>
+              <input
+                type="file"
+                accept="application/pdf,image/png,image/jpeg,image/webp"
+                className="form-input"
+                onChange={(e) => handlePortfolioUpload(e.target.files?.[0])}
+              />
+            </>
+          )}
         </div>
 
         <div className="dark-card profile-preview-card">
