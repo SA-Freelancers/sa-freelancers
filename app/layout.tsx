@@ -1,3 +1,4 @@
+import VersionRefresh from "./components/VersionRefresh";
 import WhatsAppButton from "./components/WhatsAppButton";
 import GoogleAnalytics from "./components/GoogleAnalytics";
 import type { ReactNode } from "react";
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
   <GoogleAnalytics />
+  <VersionRefresh />
         <Navbar />
         <main className="main-wrapper">{children}</main>
         <Footer />
