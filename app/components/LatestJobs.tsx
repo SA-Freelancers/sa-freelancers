@@ -11,6 +11,7 @@ type Job = {
   budget?: number | string;
   category?: string;
   created_at?: string;
+  applications?: { id: string }[];
 };
 
 export default function LatestJobs() {
@@ -23,7 +24,14 @@ export default function LatestJobs() {
   const loadJobs = async () => {
     const { data } = await supabase
       .from("jobs")
-      .select("*")
+      .select(
+        `
+        *,
+        applications (
+          id
+        )
+      `
+      )
       .order("created_at", { ascending: false })
       .limit(6);
 
@@ -43,20 +51,26 @@ export default function LatestJobs() {
         {jobs.map((job) => (
           <div key={job.id} className="dark-card home-card">
             <span className="marketplace-badge">
-              {job.category || "General"}
+              📂 {job.category || "General"}
             </span>
 
-            <h3>{job.title || "Untitled Job"}</h3>
+            <h3>🔥 {job.title || "Untitled Job"}</h3>
 
             <p>{job.description?.slice(0, 120) || "No description yet."}</p>
 
             <p>
-              <strong>Budget:</strong> ZAR {job.budget || "N/A"}
+              <strong>💰 Budget:</strong> ZAR {job.budget || "N/A"}
+            </p>
+
+            <p>
+              <strong>👥 Applications:</strong>{" "}
+              {job.applications?.length || 0}
             </p>
 
             {job.created_at && (
               <small>
-                Posted: {new Date(job.created_at).toLocaleDateString()}
+                📅 Posted:{" "}
+                {new Date(job.created_at).toLocaleDateString("en-ZA")}
               </small>
             )}
 
