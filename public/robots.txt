@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://freelancehubsa.co.za/sitemap.xml
