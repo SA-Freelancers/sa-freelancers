@@ -19,6 +19,7 @@ type Profile = {
   top_rated?: boolean;
   suspended?: boolean;
   email_verified?: boolean;
+  created_at?: string;
 };
 
 type Review = {
@@ -106,13 +107,14 @@ export default function FreelancerPublicProfilePage() {
           </h1>
 
           <p className="profile-role">
-            {profile.role || "Professional Freelancer"}
+            South African {profile.category || "Freelancer"}
           </p>
 
           <div className="marketplace-badges">
             {profile.email_verified && (
-  <span className="verified-badge">✔ Email Verified</span>
-)}
+              <span className="verified-badge">✔ Email Verified</span>
+            )}
+
             {profile.verified && (
               <span className="verified-badge">✔ Verified</span>
             )}
@@ -147,26 +149,50 @@ export default function FreelancerPublicProfilePage() {
 
       <section className="profile-layout">
         <div className="dark-card profile-card">
-          <h2>About</h2>
+          <h2>Professional Summary</h2>
 
           <p className="profile-bio">
-            {profile.bio || "No bio added yet."}
+            {profile.bio || "This freelancer has not added a bio yet."}
           </p>
 
           <div className="profile-divider" />
 
-          <h2>Documents</h2>
+          <h2>Profile Details</h2>
+
+          <p>
+            <strong>Category:</strong>{" "}
+            {profile.category || "Not specified"}
+          </p>
+
+          <p>
+            <strong>Reviews:</strong> {reviews.length}
+          </p>
+
+          <p>
+            <strong>Average Rating:</strong> {averageRating}
+          </p>
+
+          {profile.created_at && (
+            <p>
+              <strong>Joined:</strong>{" "}
+              {new Date(profile.created_at).toLocaleDateString("en-ZA")}
+            </p>
+          )}
+
+          <div className="profile-divider" />
+
+          <h2>Documents & Portfolio</h2>
 
           <div className="profile-documents">
             {profile.cv_url && (
               <a href={profile.cv_url} target="_blank" rel="noreferrer">
-                View CV
+                📄 View CV
               </a>
             )}
 
             {profile.portfolio_url && (
               <a href={profile.portfolio_url} target="_blank" rel="noreferrer">
-                View Portfolio
+                🖼️ View Portfolio
               </a>
             )}
 
@@ -177,7 +203,7 @@ export default function FreelancerPublicProfilePage() {
         </div>
 
         <div className="dark-card profile-card">
-          <h2>Reviews</h2>
+          <h2>Client Reviews</h2>
 
           {reviews.length === 0 ? (
             <EmptyState
