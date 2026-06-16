@@ -156,6 +156,18 @@ export default function JobDetailsPage() {
       setSubmitting(false);
       return;
     }
+    const { data: existingApplication } = await supabase
+  .from("applications")
+  .select("id")
+  .eq("job_id", id)
+  .eq("freelancer_id", user.id)
+  .maybeSingle();
+
+if (existingApplication) {
+  setMessage("You have already applied for this job.");
+  setSubmitting(false);
+  return;
+}
 
     const { error } = await supabase.from("applications").insert({
       job_id: id,

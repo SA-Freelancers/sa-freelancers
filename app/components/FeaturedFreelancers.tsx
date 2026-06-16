@@ -12,6 +12,10 @@ type Freelancer = {
   avatar_url?: string;
   verified?: boolean;
   top_rated?: boolean;
+  email_verified?: boolean;
+  reviews?: {
+    rating: number;
+  }[];
 };
 
 export default function FeaturedFreelancers() {
@@ -24,13 +28,27 @@ export default function FeaturedFreelancers() {
   const loadFreelancers = async () => {
     const { data } = await supabase
       .from("profiles")
-      .select("*")
+      .select(
+        `
+        *,
+        reviews (
+          rating
+        )
+      `
+      )
       .eq("role", "freelancer")
       .eq("suspended", false)
       .order("top_rated", { ascending: false })
       .limit(6);
 
     setFreelancers((data as Freelancer[]) || []);
+  };
+
+  const getAverageRating = (reviews?: { rating: number }[]) => {
+    if (!reviews || reviews.length === 0) return "No ratings";
+
+    const total = reviews.reduce((sum, review) => sum + review.rating, 0);
+    return (total / reviews.length).toFixed(1);
   };
 
   if (freelancers.length === 0) return null;
@@ -64,9 +82,18 @@ export default function FeaturedFreelancers() {
               {freelancer.category || "General Freelancer"}
             </p>
 
+            <p>
+              ⭐ {getAverageRating(freelancer.reviews)} (
+              {freelancer.reviews?.length || 0} reviews)
+            </p>
+
             <p>{freelancer.bio?.slice(0, 120) || "Professional freelancer."}</p>
 
             <div className="marketplace-badges">
+              {freelancer.email_verified && (
+                <span className="verified-badge">✔ Email Verified</span>
+              )}
+
               {freelancer.verified && (
                 <span className="verified-badge">✔ Verified</span>
               )}
