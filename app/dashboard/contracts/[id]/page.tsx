@@ -101,7 +101,7 @@ export default function ContractDetailsPage() {
             <h3>Created</h3>
             <p>
               {contract.created_at
-                ? new Date(contract.created_at).toLocaleDateString()
+                ? new Date(contract.created_at).toLocaleDateString("en-ZA")
                 : "N/A"}
             </p>
           </div>
@@ -151,7 +151,7 @@ export default function ContractDetailsPage() {
 
                     <p>
                       {activity.created_at
-                        ? new Date(activity.created_at).toLocaleString()
+                        ? new Date(activity.created_at).toLocaleString("en-ZA")
                         : ""}
                     </p>
                   </div>

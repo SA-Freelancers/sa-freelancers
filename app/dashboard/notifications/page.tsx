@@ -91,7 +91,7 @@ export default function NotificationsPage() {
                 <p>{notification.body || "You have a new update."}</p>
 
                 <small>
-                  {new Date(notification.created_at).toLocaleString()}
+                  {new Date(notification.created_at).toLocaleString("en-ZA")}
                 </small>
               </div>
             </Link>

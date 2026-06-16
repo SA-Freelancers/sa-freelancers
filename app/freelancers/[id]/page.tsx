@@ -196,7 +196,7 @@ export default function FreelancerPublicProfilePage() {
                   <p>{review.comment || "No comment provided."}</p>
 
                   <small>
-                    {new Date(review.created_at).toLocaleDateString()}
+                    {new Date(review.created_at).toLocaleDateString("en-ZA")}
                   </small>
                 </div>
               ))}

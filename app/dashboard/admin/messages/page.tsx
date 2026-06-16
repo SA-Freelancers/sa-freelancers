@@ -101,7 +101,7 @@ export default function AdminMessagesPage() {
 
               <small>
                 {item.created_at
-                  ? new Date(item.created_at).toLocaleString()
+                  ? new Date(item.created_at).toLocaleString("en-ZA")
                   : ""}
               </small>
             </div>

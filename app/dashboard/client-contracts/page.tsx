@@ -150,7 +150,7 @@ export default function ClientContractsPage() {
 
             <small>
               {contract.created_at
-                ? new Date(contract.created_at).toLocaleDateString()
+                ? new Date(contract.created_at).toLocaleDateString("en-ZA")
                 : ""}
             </small>
 

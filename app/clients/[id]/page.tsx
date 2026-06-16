@@ -113,7 +113,7 @@ export default function ClientProfilePage() {
                   <p>{review.comment || "No comment provided."}</p>
                   <small>
                     {review.created_at
-                      ? new Date(review.created_at).toLocaleDateString()
+                      ? new Date(review.created_at).toLocaleDateString("en-ZA")
                       : ""}
                   </small>
                 </div>

@@ -124,7 +124,7 @@ export default function MessagesPage() {
                     color: isMine ? "white" : "var(--muted)",
                   }}
                 >
-                  {new Date(msg.created_at).toLocaleString()}
+                  {new Date(msg.created_at).toLocaleString("en-ZA")}
                 </small>
               </div>
             </div>

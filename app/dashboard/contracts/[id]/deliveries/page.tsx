@@ -166,7 +166,7 @@ export default function DeliveriesPage() {
 
                 <small>
                   {delivery.created_at
-                    ? new Date(delivery.created_at).toLocaleDateString()
+                    ? new Date(delivery.created_at).toLocaleDateString("en-ZA")
                     : ""}
                 </small>
               </div>

@@ -177,7 +177,7 @@ export default function AdminUserReportsPage() {
 
             <small>
               {report.created_at
-                ? new Date(report.created_at).toLocaleString()
+                ? new Date(report.created_at).toLocaleString("en-ZA")
                 : ""}
             </small>
 

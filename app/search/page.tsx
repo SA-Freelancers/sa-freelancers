@@ -231,7 +231,7 @@ export default function SearchPage() {
 
                 {job.created_at && (
                   <small>
-                    Posted: {new Date(job.created_at).toLocaleDateString()}
+                    Posted: {new Date(job.created_at).toLocaleDateString("en-ZA")}
                   </small>
                 )}
 
