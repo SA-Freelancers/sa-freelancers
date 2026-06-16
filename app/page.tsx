@@ -49,12 +49,12 @@ export default function HomePage() {
     if (!loggedIn) {
       return (
         <>
-          <Link href="/search" className="home-primary-btn">
-  Find Work
-</Link>
+          <Link href="/register" className="home-primary-btn">
+            Hire Freelancers
+          </Link>
 
-          <Link href="/login" className="home-secondary-btn">
-            Login
+          <Link href="/search" className="home-secondary-btn">
+            Find Work
           </Link>
         </>
       );
@@ -98,63 +98,106 @@ export default function HomePage() {
   return (
     <main className="home-page">
       <section className="home-hero">
-  <div className="home-hero-content">
-    <p className="dashboard-badge">Freelance Hub SA</p>
+        <div className="home-hero-content">
+          <p className="dashboard-badge">Freelance Hub SA</p>
 
-    <h1>
-      South Africa&apos;s freelance marketplace
-      <span> for trusted work.</span>
-    </h1>
+          <h1>
+            South Africa&apos;s trusted freelance marketplace
+            <span> for skilled work.</span>
+          </h1>
 
-    <p>
-      Connect with skilled South African freelancers, post jobs, apply for
-      projects, manage contracts and build professional working relationships
-      safely.
-    </p>
+          <p>
+            Hire skilled freelancers, find quality projects, manage contracts,
+            build reviews and work safely on one South African platform.
+          </p>
 
-    <div className="home-actions">{renderHeroButtons()}</div>
-  </div>
-</section>
+          <div className="home-actions">{renderHeroButtons()}</div>
+
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              flexWrap: "wrap",
+              justifyContent: "center",
+              marginTop: 22,
+            }}
+          >
+            <span className="verified-badge">✔ Secure Contracts</span>
+            <span className="verified-badge">✔ Verified Profiles</span>
+            <span className="top-rated-badge">★ Trusted Reviews</span>
+            <span className="verified-badge">🇿🇦 South African Talent</span>
+          </div>
+        </div>
+      </section>
 
       <PlatformStats />
+
+      <section
+        className="dark-card"
+        style={{
+          padding: "30px",
+          marginTop: "30px",
+          textAlign: "center",
+        }}
+      >
+        <h2>Why Freelance Hub SA?</h2>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+            gap: "20px",
+            marginTop: "20px",
+          }}
+        >
+          <div>
+            <h3>✔ Verified Profiles</h3>
+            <p>Build trust through professional freelancer accounts.</p>
+          </div>
+
+          <div>
+            <h3>🔒 Secure Platform</h3>
+            <p>Keep communication, contracts and reviews inside the platform.</p>
+          </div>
+
+          <div>
+            <h3>⭐ Reviews & Ratings</h3>
+            <p>Transparent feedback from clients and freelancers.</p>
+          </div>
+
+          <div>
+            <h3>🇿🇦 South African Focus</h3>
+            <p>Built for local businesses, freelancers and opportunities.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="home-section">
+        <div className="home-section-header">
+          <p className="dashboard-badge">How It Works</p>
+          <h2>Simple steps to get work done</h2>
+        </div>
+
+        <div className="home-grid">
+          <div className="dark-card home-card">
+            <h3>1. Post a Job</h3>
+            <p>Create a project with your budget, category and full details.</p>
+          </div>
+
+          <div className="dark-card home-card">
+            <h3>2. Review Proposals</h3>
+            <p>Compare freelancers by skills, pricing, profiles and reviews.</p>
+          </div>
+
+          <div className="dark-card home-card">
+            <h3>3. Hire & Manage</h3>
+            <p>Use contracts, messages and reviews to complete work safely.</p>
+          </div>
+        </div>
+      </section>
+
       <FeaturedFreelancers />
       <LatestJobs />
-      <section className="dark-card" style={{
-  padding: "30px",
-  marginTop: "30px",
-  textAlign: "center",
-}}>
-  <h2>Why Freelance Hub SA?</h2>
-
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
-      gap: "20px",
-      marginTop: "20px",
-    }}
-  >
-    <div>
-      <h3>✔ Verified Profiles</h3>
-      <p>Build trust through verified freelancer accounts.</p>
-    </div>
-
-    <div>
-      <h3>🔒 Secure Platform</h3>
-      <p>Safe communication and project management tools.</p>
-    </div>
-
-    <div>
-      <h3>⭐ Reviews & Ratings</h3>
-      <p>Transparent feedback from clients and freelancers.</p>
-    </div>
-
-    <div>
-      <h3>🇿🇦 South African Focus</h3>
-      <p>Built specifically for South African businesses and freelancers.</p>
-    </div>
-  </div>
-</section>
 
       <section className="home-section">
         <div className="home-section-header">
@@ -174,30 +217,6 @@ export default function HomePage() {
 
       <section className="home-section">
         <div className="home-section-header">
-          <p className="dashboard-badge">How It Works</p>
-          <h2>Simple steps to get work done</h2>
-        </div>
-
-        <div className="home-grid">
-          <div className="dark-card home-card">
-            <h3>1. Post a Job</h3>
-            <p>Create a project with your budget, category and full details.</p>
-          </div>
-
-          <div className="dark-card home-card">
-            <h3>2. Get Proposals</h3>
-            <p>Freelancers apply with pricing, skills and cover messages.</p>
-          </div>
-
-          <div className="dark-card home-card">
-            <h3>3. Hire & Manage</h3>
-            <p>Choose the best freelancer and manage progress from dashboard.</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="home-section">
-        <div className="home-section-header">
           <p className="dashboard-badge">Trust & Safety</p>
           <h2>Built to keep work inside the platform</h2>
         </div>
@@ -206,8 +225,8 @@ export default function HomePage() {
           <div className="dark-card home-card">
             <h3>No Off-Platform Contact Before Hiring</h3>
             <p>
-              Proposals are checked to discourage phone numbers, WhatsApp and
-              email sharing before a client hires.
+              Proposals discourage phone numbers, WhatsApp and email sharing
+              before a client hires.
             </p>
           </div>
 
@@ -232,7 +251,7 @@ export default function HomePage() {
       {!loggedIn && (
         <section className="home-cta dark-card">
           <h2>Ready to build your next project?</h2>
-          <p>Join South Africa’s growing freelance marketplace today.</p>
+          <p>Join South Africa&apos;s growing freelance marketplace today.</p>
 
           <Link href="/register" className="home-primary-btn">
             Create Free Account
