@@ -7,17 +7,17 @@ import "./globals.css";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Freelance Hub SA",
   description:
     "South Africa's trusted freelance marketplace. Find freelancers, hire talent, post jobs, manage contracts and grow your business.",
   icons: {
     icon: [
-      { url: "/icon.png", type: "image/png" },
-      { url: "/icon.png?v=2", type: "image/png" },
+      { url: "/favicon.ico" },
+      { url: "/icon.png", type: "image/png", sizes: "192x192" },
     ],
-    shortcut: "/icon.png?v=2",
-    apple: "/icon.png?v=2",
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
 };
 
