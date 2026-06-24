@@ -9,20 +9,18 @@ import Footer from "./components/Footer";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.freelancehubsa.co.za"),
-
   title: "Freelance Hub SA",
-
   description:
     "South Africa's trusted freelance marketplace. Find freelancers, hire talent, post jobs, manage contracts and grow your business.",
-
-  alternates: {
-    canonical: "https://www.freelancehubsa.co.za",
-  },
-
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    icon: [
+      { url: "/favicon.ico?v=6" },
+      { url: "/favicon-48.png?v=6", type: "image/png", sizes: "48x48" },
+      { url: "/icon-192.png?v=6", type: "image/png", sizes: "192x192" },
+      { url: "/icon-512.png?v=6", type: "image/png", sizes: "512x512" },
+    ],
+    shortcut: "/favicon.ico?v=6",
+    apple: "/apple-touch-icon.png?v=6",
   },
 };
 
