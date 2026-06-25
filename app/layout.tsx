@@ -13,16 +13,14 @@ export const metadata: Metadata = {
   description:
     "South Africa's trusted freelance marketplace. Find freelancers, hire talent, post jobs, manage contracts and grow your business.",
   icons: {
-    icon: [
-      { url: "/favicon.ico?v=6" },
-      { url: "/favicon-48.png?v=6", type: "image/png", sizes: "48x48" },
-      { url: "/icon-192.png?v=6", type: "image/png", sizes: "192x192" },
-      { url: "/icon-512.png?v=6", type: "image/png", sizes: "512x512" },
-    ],
-    shortcut: "/favicon.ico?v=6",
-    apple: "/apple-touch-icon.png?v=6",
-  },
-};
+  icon: [
+    { url: "/favicon.ico" },
+    { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+  ],
+  apple: "/apple-touch-icon.png",
+},
+manifest: "/site.webmanifest",
 
 export const viewport: Viewport = {
   width: "device-width",
