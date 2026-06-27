@@ -3152,3 +3152,21 @@ border-color:#22c55e;
     grid-template-columns: 1fr;
   }
 }
+.search-filters-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:16px;
+margin-bottom:20px;
+}
+
+.search-buttons{
+display:flex;
+gap:12px;
+flex-wrap:wrap;
+margin-top:10px;
+}
+
+.search-buttons button{
+flex:1;
+min-width:180px;
+}

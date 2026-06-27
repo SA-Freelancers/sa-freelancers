@@ -161,66 +161,87 @@ export default function SearchPage() {
     <section className="dark-card search-filter-card">
       {message && <p className="search-message">{message}</p>}
 
-      <input
-        type="text"
-        placeholder="Search jobs, skills, project titles..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="form-input"
-      />
+      <div className="search-filters-grid">
 
-      <button
-        onClick={() => setActiveSearch(search)}
-        className="primary-action-btn"
-      >
-        🔍 Search Jobs
-      </button>
+  <input
+    type="text"
+    placeholder="🔍 Search jobs, skills, project titles..."
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+    className="form-input"
+  />
 
-      <select
-        value={selectedCategory}
-        onChange={(e) => setSelectedCategory(e.target.value)}
-        className="form-input"
-      >
-        <option value="">All Categories</option>
-        <option value="Web Development">Web Development</option>
-        <option value="Mobile Development">Mobile Development</option>
-        <option value="Graphic Design">Graphic Design</option>
-        <option value="UI/UX Design">UI/UX Design</option>
-        <option value="Writing">Writing</option>
-        <option value="Video Editing">Video Editing</option>
-        <option value="Digital Marketing">Digital Marketing</option>
-        <option value="Engineering">Engineering</option>
-        <option value="CAD Drafting">CAD Drafting</option>
-        <option value="Fitting & Turning">Fitting & Turning</option>
-        <option value="Data Entry">Data Entry</option>
-        <option value="Virtual Assistant">Virtual Assistant</option>
-      </select>
+  <select
+    value={selectedCategory}
+    onChange={(e) => setSelectedCategory(e.target.value)}
+    className="form-input"
+  >
+    <option value="">All Categories</option>
+    <option value="Engineering">Engineering</option>
+    <option value="CAD Drafting">CAD Drafting</option>
+    <option value="Web Development">Web Development</option>
+    <option value="Graphic Design">Graphic Design</option>
+    <option value="Writing">Writing</option>
+    <option value="Marketing">Marketing</option>
+    <option value="Video Editing">Video Editing</option>
+    <option value="Virtual Assistant">Virtual Assistant</option>
+  </select>
 
-      <input
-        type="number"
-        placeholder="Minimum budget e.g. 1000"
-        value={minBudget}
-        onChange={(e) => setMinBudget(e.target.value)}
-        className="form-input"
-      />
+  <input
+    type="number"
+    placeholder="Minimum Budget"
+    value={minBudget}
+    onChange={(e) => setMinBudget(e.target.value)}
+    className="form-input"
+  />
 
-      <select
-        value={sortBy}
-        onChange={(e) => setSortBy(e.target.value)}
-        className="form-input"
-      >
-        <option value="newest">Newest first</option>
-        <option value="budget-high">Highest budget</option>
-        <option value="budget-low">Lowest budget</option>
-      </select>
+  <select
+    value={sortBy}
+    onChange={(e) => setSortBy(e.target.value)}
+    className="form-input"
+  >
+    <option value="newest">Newest First</option>
+    <option value="budget-high">Highest Budget</option>
+    <option value="budget-low">Lowest Budget</option>
+  </select>
 
-      <button onClick={clearFilters} className="secondary-action-btn">
-        Clear Filters
-      </button>
+</div>
+
+<div className="search-buttons">
+
+  <button
+    onClick={() => setActiveSearch(search)}
+    className="primary-action-btn"
+  >
+    🔍 Search Jobs
+  </button>
+
+  <button
+    onClick={clearFilters}
+    className="secondary-action-btn"
+  >
+    Clear Filters
+  </button>
+
+</div>
     </section>
 
     <section className="search-section">
-      <h2>Available Opportunities ({filteredJobs.length})</h2>
+      <div
+  style={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flexWrap: "wrap",
+    marginBottom: 20,
+  }}
+>
+  <h2>Available Opportunities</h2>
+
+  <p>
+    <strong>{filteredJobs.length}</strong> Jobs Found
+  </p>
+</div>
 
       {filteredJobs.length === 0 ? (
         <EmptyState
@@ -246,18 +267,22 @@ export default function SearchPage() {
       {job.category || "General"}
     </span>
 
-    {Number(job.budget || 0) >= 10000 && (
-      <span className="top-rated-badge">⭐ Featured</span>
-    )}
+    {Number(job.budget || 0) >= 15000 && (
+  <span className="top-rated-badge">💎 High Paying</span>
+)}
+
+{Number(job.budget || 0) >= 10000 && Number(job.budget || 0) < 15000 && (
+  <span className="top-rated-badge">⭐ Featured</span>
+)}
+
+{job.created_at &&
+  new Date(job.created_at).getTime() >
+    Date.now() - 1000 * 60 * 60 * 24 && (
+    <span className="verified-badge">🔥 Urgent</span>
+  )}
   </div>
 
   <h3>{job.title || "Untitled Job"}</h3>
-
-  {job.created_at &&
-    new Date(job.created_at).getTime() >
-      Date.now() - 1000 * 60 * 60 * 24 && (
-      <span className="verified-badge">🔥 New</span>
-    )}
 
   <p>{job.description?.slice(0, 140) || "No description yet."}</p>
 
