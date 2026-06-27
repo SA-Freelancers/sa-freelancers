@@ -3110,3 +3110,16 @@ body {
     border-radius: 14px;
   }
 }
+.marketplace-card{
+transition:all .25s ease;
+}
+
+.marketplace-card:hover{
+
+transform:translateY(-6px);
+
+box-shadow:0 18px 40px rgba(0,0,0,.18);
+
+border-color:#22c55e;
+
+}

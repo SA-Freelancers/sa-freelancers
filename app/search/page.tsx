@@ -61,14 +61,14 @@ export default function SearchPage() {
 
   const loadJobs = async () => {
     const { data } = await supabase
-      .from("jobs")
-.select(`
-  *,
-  applications (
-    id
-  )
-`)
-      .order("created_at", { ascending: false });
+  .from("jobs")
+  .select(`
+    *,
+    applications (
+      id
+    )
+  `)
+  .order("created_at", { ascending: false });
 
     setJobs((data as Job[]) || []);
   };
@@ -232,47 +232,73 @@ export default function SearchPage() {
         <div className="marketplace-grid">
           {filteredJobs.map((job) => (
             <div key={job.id} className="dark-card marketplace-card">
-              <span className="marketplace-badge">
-                {job.category || "General"}
-              </span>
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 12,
+      flexWrap: "wrap",
+    }}
+  >
+    <span className="marketplace-badge">
+      {job.category || "General"}
+    </span>
 
-              <h3>{job.title || "Untitled Job"}</h3>
+    {Number(job.budget || 0) >= 10000 && (
+      <span className="top-rated-badge">⭐ Featured</span>
+    )}
+  </div>
 
-              <p>{job.description?.slice(0, 140) || "No description yet."}</p>
+  <h3>{job.title || "Untitled Job"}</h3>
 
-              <p>
-                <strong>Budget:</strong>{" "}
-                R{Number(job.budget || 0).toLocaleString("en-ZA")}
-              </p>
+  {job.created_at &&
+    new Date(job.created_at).getTime() >
+      Date.now() - 1000 * 60 * 60 * 24 && (
+      <span className="verified-badge">🔥 New</span>
+    )}
 
-              <p>
-                <strong>Applications:</strong>{" "}
-                {job.applications?.length || 0}
-              </p>
+  <p>{job.description?.slice(0, 140) || "No description yet."}</p>
 
-              {job.created_at && (
-                <small>
-                  Posted:{" "}
-                  {new Date(job.created_at).toLocaleDateString("en-ZA")}
-                </small>
-              )}
+  <div className="job-meta">
+    <p>
+      💰 <strong>Budget</strong>
+      <br />
+      R{Number(job.budget || 0).toLocaleString("en-ZA")}
+    </p>
 
-              <div className="marketplace-actions">
-                <Link
-                  href={`/dashboard/jobs/${job.id}`}
-                  className="primary-action-link"
-                >
-                  View & Apply
-                </Link>
+    <p>
+      👥 <strong>Applicants</strong>
+      <br />
+      {job.applications?.length || 0}
+    </p>
 
-                <button
-                  onClick={() => saveJob(job.id)}
-                  className="danger-action-btn"
-                >
-                  ❤️ Save
-                </button>
-              </div>
-            </div>
+    <p>
+      📅 <strong>Posted</strong>
+      <br />
+      {job.created_at
+        ? new Date(job.created_at).toLocaleDateString("en-ZA")
+        : "-"}
+    </p>
+  </div>
+
+  <div className="marketplace-actions">
+    <Link
+      href={`/dashboard/jobs/${job.id}`}
+      className="primary-action-link"
+    >
+      View Details →
+    </Link>
+
+    <button
+      onClick={() => saveJob(job.id)}
+      className="danger-action-btn"
+    >
+      🤍 Save Job
+    </button>
+  </div>
+</div>
           ))}
         </div>
       )}
