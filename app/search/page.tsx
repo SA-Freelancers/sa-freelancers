@@ -13,6 +13,9 @@ type Job = {
   category?: string;
   budget?: number | string;
   created_at?: string;
+  featured?: boolean;
+  urgent?: boolean;
+  high_paying?: boolean;
   applications?: { id: string }[];
 };
 
