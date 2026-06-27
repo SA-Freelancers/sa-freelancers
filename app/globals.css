@@ -3176,3 +3176,57 @@ min-width:180px;
   margin-top: -4px;
   margin-bottom: 12px;
 }
+.marketplace-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 490px;
+  overflow: hidden;
+}
+
+.marketplace-card h3 {
+  min-height: 56px;
+}
+
+.marketplace-card > p {
+  min-height: 72px;
+}
+
+.job-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: auto;
+  margin-bottom: 20px;
+}
+
+.job-meta p {
+  min-height: 96px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.55);
+  margin: 0;
+}
+
+.marketplace-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.marketplace-actions a,
+.marketplace-actions button {
+  flex: 1;
+  min-width: 130px;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .marketplace-card {
+    min-height: auto;
+  }
+
+  .job-meta {
+    grid-template-columns: 1fr;
+  }
+}
