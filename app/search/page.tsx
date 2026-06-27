@@ -317,13 +317,12 @@ export default function SearchPage() {
     fontSize: ".9rem",
   }}
 >
-  🌍 {job.location || "Remote"}
-</div>
-<p className="job-location">🌍 {job.location || "Remote"}</p>
+    🌍 {job.location || "Remote"}
+    </div>
 
-  <p>{job.description?.slice(0, 140) || "No description yet."}</p>
+    <p>{job.description?.slice(0, 140) || "No description yet."}</p>
 
-  <div className="job-meta">
+    <div className="job-meta">
     <p>
       💰 <strong>Budget</strong>
       <br />
@@ -337,8 +336,8 @@ export default function SearchPage() {
     </p>
 
     <p>
-  🕒 <strong>Posted</strong>
-  <br />
+    🕒 <strong>Posted</strong>
+   <br />
   {getPostedTime(job.created_at)}
 </p>
   </div>
@@ -357,8 +356,8 @@ export default function SearchPage() {
     >
       🤍 Save Job
     </button>
-  </div>
-</div>
+    </div>
+    </div>
           ))}
         </div>
       )}
