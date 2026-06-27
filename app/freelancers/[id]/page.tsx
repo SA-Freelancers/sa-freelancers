@@ -6,6 +6,7 @@ import { supabase } from "@/app/lib/supabase";
 import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 import EmptyState from "@/app/components/EmptyState";
 import RecommendedJobs from "@/app/components/RecommendedJobs";
+import ProfileCompleteness from "@/app/components/ProfileCompleteness";
 
 type Profile = {
   id: string;
