@@ -308,7 +308,7 @@ export default function SearchPage() {
   <div className="job-location">
     🌍 Remote
 </div>
-    <p>{job.description?.slice(0, 100) || "No description yet."}</p>>
+    <p>{job.description?.slice(0, 100) || "No description yet."}</p>
 
     <div className="job-meta">
     <p>
