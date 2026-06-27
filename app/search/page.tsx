@@ -133,6 +133,34 @@ export default function SearchPage() {
         new Date(a.created_at || 0).getTime()
       );
     });
+    const getPostedTime = (date?: string) => {
+  if (!date) return "-";
+
+  const now = new Date();
+  const posted = new Date(date);
+
+  const diffMs = now.getTime() - posted.getTime();
+
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+
+  if (hours < 1) return "Just now";
+
+  if (hours < 24)
+    return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+
+  const days = Math.floor(hours / 24);
+
+  if (days === 1) return "Yesterday";
+
+  if (days < 7)
+    return `${days} days ago`;
+
+  const weeks = Math.floor(days / 7);
+
+  if (weeks === 1) return "1 week ago";
+
+  return `${weeks} weeks ago`;
+};
 
   if (loading) return <LoadingSkeleton />;
 
@@ -277,12 +305,20 @@ export default function SearchPage() {
 </div>
 
   <h3>{job.title || "Untitled Job"}</h3>
-  <p className="job-location">
-  📍 {job.location || "Remote"}
-</p>
-<p>
-  📍 {job.location || "Remote"}
-</p>
+  <div
+  style={{
+    display: "inline-block",
+    marginBottom: 12,
+    padding: "6px 12px",
+    borderRadius: 999,
+    background: "rgba(34,197,94,.12)",
+    color: "#22c55e",
+    fontWeight: 600,
+    fontSize: ".9rem",
+  }}
+>
+  🌍 {job.location || "Remote"}
+</div>
 
   <p>{job.description?.slice(0, 140) || "No description yet."}</p>
 
@@ -300,12 +336,10 @@ export default function SearchPage() {
     </p>
 
     <p>
-      📅 <strong>Posted</strong>
-      <br />
-      {job.created_at
-        ? new Date(job.created_at).toLocaleDateString("en-ZA")
-        : "-"}
-    </p>
+  🕒 <strong>Posted</strong>
+  <br />
+  {getPostedTime(job.created_at)}
+</p>
   </div>
 
   <div className="marketplace-actions">

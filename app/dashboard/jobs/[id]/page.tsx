@@ -14,6 +14,12 @@ type Job = {
   description?: string;
   budget?: number | string;
   client_id?: string;
+  created_at?: string;
+  location?: string;
+  featured?: boolean;
+  urgent?: boolean;
+  high_paying?: boolean;
+  applications?: { id: string }[];
 };
 
 const blockedContactPattern =
@@ -38,6 +44,28 @@ export default function JobDetailsPage() {
     loadJob();
   }, [id]);
 
+  const getPostedTime = (date?: string) => {
+    if (!date) return "-";
+
+    const now = new Date();
+    const posted = new Date(date);
+    const diffMs = now.getTime() - posted.getTime();
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+
+    if (hours < 1) return "Just now";
+    if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+
+    const days = Math.floor(hours / 24);
+
+    if (days === 1) return "Yesterday";
+    if (days < 7) return `${days} days ago`;
+
+    const weeks = Math.floor(days / 7);
+
+    if (weeks === 1) return "1 week ago";
+    return `${weeks} weeks ago`;
+  };
+
   const loadJob = async () => {
     const {
       data: { user },
@@ -58,7 +86,14 @@ export default function JobDetailsPage() {
 
     const { data } = await supabase
       .from("jobs")
-      .select("*")
+      .select(
+        `
+        *,
+        applications (
+          id
+        )
+      `
+      )
       .eq("id", id)
       .single();
 
@@ -156,18 +191,19 @@ export default function JobDetailsPage() {
       setSubmitting(false);
       return;
     }
-    const { data: existingApplication } = await supabase
-  .from("applications")
-  .select("id")
-  .eq("job_id", id)
-  .eq("freelancer_id", user.id)
-  .maybeSingle();
 
-if (existingApplication) {
-  setMessage("You have already applied for this job.");
-  setSubmitting(false);
-  return;
-}
+    const { data: existingApplication } = await supabase
+      .from("applications")
+      .select("id")
+      .eq("job_id", id)
+      .eq("freelancer_id", user.id)
+      .maybeSingle();
+
+    if (existingApplication) {
+      setMessage("You have already applied for this job.");
+      setSubmitting(false);
+      return;
+    }
 
     const { error } = await supabase.from("applications").insert({
       job_id: id,
@@ -187,6 +223,7 @@ if (existingApplication) {
     setProposal("");
     setPrice("");
     setSubmitting(false);
+    loadJob();
   };
 
   if (loading) return <LoadingSkeleton />;
@@ -211,19 +248,63 @@ if (existingApplication) {
   return (
     <main className="job-page">
       <section className="job-hero dark-card">
-        <p className="dashboard-badge">{job.category || "General Job"}</p>
+        <div className="marketplace-badges">
+          <span className="marketplace-badge">
+            {job.category || "General Job"}
+          </span>
+
+          {job.featured && (
+            <span className="top-rated-badge">⭐ Featured</span>
+          )}
+
+          {job.urgent && (
+            <span className="verified-badge">🔥 Urgent</span>
+          )}
+
+          {job.high_paying && (
+            <span className="top-rated-badge">💎 High Paying</span>
+          )}
+        </div>
 
         <h1>{job.title || "Untitled Job"}</h1>
 
         <p>
-          Review the project details and manage this job safely inside the
-          platform.
+          Review the project details, submit a professional proposal and keep
+          communication safely inside Freelance Hub SA.
         </p>
       </section>
 
       <section className="job-layout">
         <div className="dark-card job-card">
-          <span className="marketplace-badge">{job.category || "General"}</span>
+          <h2>Project Overview</h2>
+
+          <div className="job-meta">
+            <p>
+              💰 <strong>Budget</strong>
+              <br />
+              R{Number(job.budget || 0).toLocaleString("en-ZA")}
+            </p>
+
+            <p>
+              👥 <strong>Applicants</strong>
+              <br />
+              {job.applications?.length || 0}
+            </p>
+
+            <p>
+              🌍 <strong>Location</strong>
+              <br />
+              {job.location || "Remote"}
+            </p>
+
+            <p>
+              🕒 <strong>Posted</strong>
+              <br />
+              {getPostedTime(job.created_at)}
+            </p>
+          </div>
+
+          <div className="profile-divider" />
 
           <h2>Job Details</h2>
 
@@ -231,9 +312,14 @@ if (existingApplication) {
             {job.description || "No job description provided."}
           </p>
 
-          <div className="job-budget-box">
-            <span>Client Budget</span>
-            <strong>R{Number(job.budget || 0).toLocaleString("en-ZA")}</strong>
+          <div className="profile-divider" />
+
+          <h2>Client Trust</h2>
+
+          <div className="marketplace-badges">
+            <span className="verified-badge">🛡 Verified Client</span>
+            <span className="verified-badge">🌍 Remote Project</span>
+            <span className="top-rated-badge">⭐ Platform Protected</span>
           </div>
 
           {canManageJob && (
@@ -265,6 +351,7 @@ if (existingApplication) {
             </p>
 
             <label className="form-label">Your Proposal</label>
+
             <textarea
               placeholder="Explain your experience, timeline, and how you will solve the client’s problem..."
               value={proposal}
@@ -273,6 +360,7 @@ if (existingApplication) {
             />
 
             <label className="form-label">Your Proposed Price</label>
+
             <input
               type="number"
               placeholder="Example: 2500"
