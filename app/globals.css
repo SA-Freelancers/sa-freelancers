@@ -3123,3 +3123,32 @@ box-shadow:0 18px 40px rgba(0,0,0,.18);
 border-color:#22c55e;
 
 }
+.marketplace-card {
+  transition: all 0.25s ease;
+}
+
+.marketplace-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+  border-color: #22c55e;
+}
+
+.job-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.job-meta p {
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.55);
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .job-meta {
+    grid-template-columns: 1fr;
+  }
+}
