@@ -3230,3 +3230,84 @@ min-width:180px;
     grid-template-columns: 1fr;
   }
 }
+.marketplace-grid {
+  align-items: stretch;
+}
+
+.marketplace-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
+  padding: 26px;
+  overflow: hidden;
+}
+
+.marketplace-card h3 {
+  min-height: 62px;
+  margin-top: 14px;
+  margin-bottom: 14px;
+}
+
+.marketplace-card > p {
+  min-height: 78px;
+  line-height: 1.6;
+}
+
+.job-location {
+  display: inline-block;
+  width: 100%;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.13);
+  color: #22c55e;
+  font-weight: 700;
+  margin: 4px 0 18px;
+}
+
+.job-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: auto;
+  margin-bottom: 18px;
+}
+
+.job-meta p {
+  min-width: 0;
+  min-height: 94px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.65);
+  margin: 0;
+  overflow: hidden;
+  word-break: normal;
+}
+
+.job-meta strong {
+  display: block;
+  margin-top: 4px;
+}
+
+.marketplace-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.marketplace-actions a,
+.marketplace-actions button {
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .marketplace-card {
+    min-height: auto;
+  }
+
+  .job-meta {
+    grid-template-columns: 1fr;
+  }
+}
