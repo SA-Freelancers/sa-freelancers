@@ -13,6 +13,7 @@ type Job = {
   category?: string;
   budget?: number | string;
   created_at?: string;
+  location?: string;
   featured?: boolean;
   urgent?: boolean;
   high_paying?: boolean;
@@ -276,6 +277,12 @@ export default function SearchPage() {
 </div>
 
   <h3>{job.title || "Untitled Job"}</h3>
+  <p className="job-location">
+  📍 {job.location || "Remote"}
+</p>
+<p>
+  📍 {job.location || "Remote"}
+</p>
 
   <p>{job.description?.slice(0, 140) || "No description yet."}</p>
 
