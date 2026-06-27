@@ -319,6 +319,7 @@ export default function SearchPage() {
 >
   🌍 {job.location || "Remote"}
 </div>
+<p className="job-location">🌍 {job.location || "Remote"}</p>
 
   <p>{job.description?.slice(0, 140) || "No description yet."}</p>
 
