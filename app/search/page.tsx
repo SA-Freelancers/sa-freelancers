@@ -307,9 +307,8 @@ export default function SearchPage() {
   <h3>{job.title || "Untitled Job"}</h3>
   <p className="job-location">
     🌍 {job.location || "Remote"}
-</p>
-
-    <p>{job.description?.slice(0, 110) || "No description yet."}</p>
+  </p>
+    <p>{job.description?.slice(0, 100) || "No description yet."}</p>>
 
     <div className="job-meta">
     <p>
