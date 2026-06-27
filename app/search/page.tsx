@@ -26,6 +26,7 @@ export default function SearchPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [allowed, setAllowed] = useState(false);
+  const [activeSearch, setActiveSearch] = useState("");
 
   useEffect(() => {
     checkAccess();
@@ -92,6 +93,7 @@ export default function SearchPage() {
 
   const clearFilters = () => {
     setSearch("");
+    setActiveSearch("");
     setSelectedCategory("");
     setMinBudget("");
     setSortBy("newest");
@@ -103,7 +105,7 @@ export default function SearchPage() {
         job.category || ""
       }`.toLowerCase();
 
-      const matchesSearch = text.includes(search.toLowerCase());
+      const matchesSearch = text.includes(activeSearch.toLowerCase());
 
       const matchesCategory =
         !selectedCategory || job.category === selectedCategory;
@@ -166,9 +168,13 @@ export default function SearchPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="form-input"
         />
-        <button className="primary-action-btn">
+        <button
+        onClick={() => setActiveSearch(search)}
+  className="primary-action-btn"
+>
   🔍 Search Jobs
 </button>
+  
 
         <select
           value={selectedCategory}
@@ -241,8 +247,9 @@ export default function SearchPage() {
                 </p>
 
                 <p>
-  <strong>Applications:</strong> {job.applications?.length || 0}
-</p>
+                  <strong>Applications:</strong> {job.applications?.length || 0}
+                  </p>
+
 
                 {job.created_at && (
                   <small>
