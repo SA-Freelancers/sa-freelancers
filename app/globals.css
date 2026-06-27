@@ -3311,3 +3311,10 @@ min-width:180px;
     grid-template-columns: 1fr;
   }
 }
+.job-meta {
+  grid-template-columns: 1.1fr 1.25fr 1fr;
+}
+
+.job-meta p {
+  font-size: 0.92rem;
+}
