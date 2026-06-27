@@ -129,7 +129,7 @@ export default function JobsPage() {
               </p>
 
               <p className="contract-budget">
-                Budget: ZAR {job.budget || "N/A"}
+                Budget: R{Number(job.budget || 0).toLocaleString("en-ZA")}
               </p>
 
               <div className="contract-actions">

@@ -13,6 +13,7 @@ type Job = {
   category?: string;
   budget?: number | string;
   created_at?: string;
+  applications?: { id: string }[];
 };
 
 export default function SearchPage() {
@@ -60,7 +61,12 @@ export default function SearchPage() {
   const loadJobs = async () => {
     const { data } = await supabase
       .from("jobs")
-      .select("*")
+.select(`
+  *,
+  applications (
+    id
+  )
+`)
       .order("created_at", { ascending: false });
 
     setJobs((data as Job[]) || []);
@@ -160,6 +166,9 @@ export default function SearchPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="form-input"
         />
+        <button className="primary-action-btn">
+  🔍 Search Jobs
+</button>
 
         <select
           value={selectedCategory}
@@ -198,6 +207,7 @@ export default function SearchPage() {
           <option value="budget-high">Highest budget</option>
           <option value="budget-low">Lowest budget</option>
         </select>
+        <p>
 
         <button onClick={clearFilters} className="secondary-action-btn">
           Clear Filters
@@ -226,8 +236,13 @@ export default function SearchPage() {
                 <p>{job.description?.slice(0, 140) || "No description yet."}</p>
 
                 <p>
-                  <strong>Budget:</strong> ZAR {job.budget || "N/A"}
+                  <strong>Budget:</strong> 
+                  R{Number(job.budget || 0).toLocaleString("en-ZA")}
                 </p>
+
+                <p>
+  <strong>Applications:</strong> {job.applications?.length || 0}
+</p>
 
                 {job.created_at && (
                   <small>

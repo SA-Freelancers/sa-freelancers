@@ -59,7 +59,7 @@ export default function LatestJobs() {
             <p>{job.description?.slice(0, 120) || "No description yet."}</p>
 
             <p>
-              <strong>💰 Budget:</strong> ZAR {job.budget || "N/A"}
+              <strong>💰 Budget:</strong> R{Number(job.budget || 0).toLocaleString("en-ZA")}
             </p>
 
             <p>

@@ -233,7 +233,7 @@ if (existingApplication) {
 
           <div className="job-budget-box">
             <span>Client Budget</span>
-            <strong>ZAR {job.budget || "N/A"}</strong>
+            <strong>R{Number(job.budget || 0).toLocaleString("en-ZA")}</strong>
           </div>
 
           {canManageJob && (

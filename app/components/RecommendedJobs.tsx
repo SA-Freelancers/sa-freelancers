@@ -68,7 +68,7 @@ export default function RecommendedJobs() {
             <h3>{job.title || "Untitled Job"}</h3>
 
             <p>
-              <strong>Budget:</strong> ZAR {job.budget || "N/A"}
+              <strong>Budget:</strong> R{Number(job.budget || 0).toLocaleString("en-ZA")}
             </p>
 
             <Link
