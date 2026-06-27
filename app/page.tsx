@@ -3,6 +3,7 @@
 import LatestJobs from "@/app/components/LatestJobs";
 import FeaturedFreelancers from "@/app/components/FeaturedFreelancers";
 import PlatformStats from "@/app/components/PlatformStats";
+import MarketplaceActivity from "@/app/components/MarketplaceActivity";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/app/lib/supabase";
