@@ -145,138 +145,137 @@ export default function SearchPage() {
   }
 
   return (
-    <main className="search-page">
-      <section className="search-hero dark-card">
-        <p className="dashboard-badge">Freelancer Marketplace</p>
+  <main className="search-page">
+    <section className="search-hero dark-card">
+      <p className="dashboard-badge">Freelancer Marketplace</p>
 
-        <h1>Find paid job opportunities and grow your freelance career</h1>
+      <h1>Find paid job opportunities and grow your freelance career</h1>
 
-        <p>
-          Browse available projects, filter by budget and category, send
-          professional proposals, and get hired by clients looking for your
-          skills.
-        </p>
-      </section>
+      <p>
+        Browse available projects, filter by budget and category, send
+        professional proposals, and get hired by clients looking for your
+        skills.
+      </p>
+    </section>
 
-      <section className="dark-card search-filter-card">
-        {message && <p className="search-message">{message}</p>}
+    <section className="dark-card search-filter-card">
+      {message && <p className="search-message">{message}</p>}
 
-        <input
-          type="text"
-          placeholder="Search jobs, skills, project titles..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="form-input"
-        />
-        <button
+      <input
+        type="text"
+        placeholder="Search jobs, skills, project titles..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="form-input"
+      />
+
+      <button
         onClick={() => setActiveSearch(search)}
-  className="primary-action-btn"
->
-  🔍 Search Jobs
-</button>
-  
+        className="primary-action-btn"
+      >
+        🔍 Search Jobs
+      </button>
 
-        <select
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-          className="form-input"
-        >
-          <option value="">All Categories</option>
-          <option value="Web Development">Web Development</option>
-          <option value="Mobile Development">Mobile Development</option>
-          <option value="Graphic Design">Graphic Design</option>
-          <option value="UI/UX Design">UI/UX Design</option>
-          <option value="Writing">Writing</option>
-          <option value="Video Editing">Video Editing</option>
-          <option value="Digital Marketing">Digital Marketing</option>
-          <option value="Engineering">Engineering</option>
-          <option value="CAD Drafting">CAD Drafting</option>
-          <option value="Fitting & Turning">Fitting & Turning</option>
-          <option value="Data Entry">Data Entry</option>
-          <option value="Virtual Assistant">Virtual Assistant</option>
-        </select>
+      <select
+        value={selectedCategory}
+        onChange={(e) => setSelectedCategory(e.target.value)}
+        className="form-input"
+      >
+        <option value="">All Categories</option>
+        <option value="Web Development">Web Development</option>
+        <option value="Mobile Development">Mobile Development</option>
+        <option value="Graphic Design">Graphic Design</option>
+        <option value="UI/UX Design">UI/UX Design</option>
+        <option value="Writing">Writing</option>
+        <option value="Video Editing">Video Editing</option>
+        <option value="Digital Marketing">Digital Marketing</option>
+        <option value="Engineering">Engineering</option>
+        <option value="CAD Drafting">CAD Drafting</option>
+        <option value="Fitting & Turning">Fitting & Turning</option>
+        <option value="Data Entry">Data Entry</option>
+        <option value="Virtual Assistant">Virtual Assistant</option>
+      </select>
 
-        <input
-          type="number"
-          placeholder="Minimum budget e.g. 1000"
-          value={minBudget}
-          onChange={(e) => setMinBudget(e.target.value)}
-          className="form-input"
+      <input
+        type="number"
+        placeholder="Minimum budget e.g. 1000"
+        value={minBudget}
+        onChange={(e) => setMinBudget(e.target.value)}
+        className="form-input"
+      />
+
+      <select
+        value={sortBy}
+        onChange={(e) => setSortBy(e.target.value)}
+        className="form-input"
+      >
+        <option value="newest">Newest first</option>
+        <option value="budget-high">Highest budget</option>
+        <option value="budget-low">Lowest budget</option>
+      </select>
+
+      <button onClick={clearFilters} className="secondary-action-btn">
+        Clear Filters
+      </button>
+    </section>
+
+    <section className="search-section">
+      <h2>Available Opportunities ({filteredJobs.length})</h2>
+
+      {filteredJobs.length === 0 ? (
+        <EmptyState
+          emoji="💼"
+          title="No jobs found"
+          description="Try another keyword, category or budget. New jobs will appear here when clients post projects."
         />
+      ) : (
+        <div className="marketplace-grid">
+          {filteredJobs.map((job) => (
+            <div key={job.id} className="dark-card marketplace-card">
+              <span className="marketplace-badge">
+                {job.category || "General"}
+              </span>
 
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          className="form-input"
-        >
-          <option value="newest">Newest first</option>
-          <option value="budget-high">Highest budget</option>
-          <option value="budget-low">Lowest budget</option>
-        </select>
-        <p>
+              <h3>{job.title || "Untitled Job"}</h3>
 
-        <button onClick={clearFilters} className="secondary-action-btn">
-          Clear Filters
-        </button>
-      </section>
+              <p>{job.description?.slice(0, 140) || "No description yet."}</p>
 
-      <section className="search-section">
-        <h2>Available Opportunities ({filteredJobs.length})</h2>
+              <p>
+                <strong>Budget:</strong>{" "}
+                R{Number(job.budget || 0).toLocaleString("en-ZA")}
+              </p>
 
-        {filteredJobs.length === 0 ? (
-          <EmptyState
-            emoji="💼"
-            title="No jobs found"
-            description="Try another keyword, category or budget. New jobs will appear here when clients post projects."
-          />
-        ) : (
-          <div className="marketplace-grid">
-            {filteredJobs.map((job) => (
-              <div key={job.id} className="dark-card marketplace-card">
-                <span className="marketplace-badge">
-                  {job.category || "General"}
-                </span>
+              <p>
+                <strong>Applications:</strong>{" "}
+                {job.applications?.length || 0}
+              </p>
 
-                <h3>{job.title || "Untitled Job"}</h3>
+              {job.created_at && (
+                <small>
+                  Posted:{" "}
+                  {new Date(job.created_at).toLocaleDateString("en-ZA")}
+                </small>
+              )}
 
-                <p>{job.description?.slice(0, 140) || "No description yet."}</p>
+              <div className="marketplace-actions">
+                <Link
+                  href={`/dashboard/jobs/${job.id}`}
+                  className="primary-action-link"
+                >
+                  View & Apply
+                </Link>
 
-                <p>
-                  <strong>Budget:</strong> 
-                  R{Number(job.budget || 0).toLocaleString("en-ZA")}
-                </p>
-
-                <p>
-                  <strong>Applications:</strong> {job.applications?.length || 0}
-                  </p>
-
-
-                {job.created_at && (
-                  <small>
-                    Posted: {new Date(job.created_at).toLocaleDateString("en-ZA")}
-                  </small>
-                )}
-
-                <div className="marketplace-actions">
-                  <Link
-                    href={`/dashboard/jobs/${job.id}`}
-                    className="primary-action-link"
-                  >
-                    View & Apply
-                  </Link>
-
-                  <button
-                    onClick={() => saveJob(job.id)}
-                    className="danger-action-btn"
-                  >
-                    ❤️ Save
-                  </button>
-                </div>
+                <button
+                  onClick={() => saveJob(job.id)}
+                  className="danger-action-btn"
+                >
+                  ❤️ Save
+                </button>
               </div>
-            ))}
-          </div>
-        )}
-      </section>
-    </main>
-  );
-}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  </main>
+);
