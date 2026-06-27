@@ -3348,20 +3348,27 @@ min-width:180px;
   font-size: 0.92rem;
 }
 
-.job-location {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  min-width: 130px;
-  max-width: 190px;
-  height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
-  background: rgba(34, 197, 94, 0.14);
-  color: #22c55e;
-  font-weight: 700;
-  font-size: 0.82rem;
-  margin: 4px 0 12px;
+.job-location{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+
+    width:auto;
+    max-width:95px;
+    height:28px;
+
+    padding:0 12px;
+
+    border-radius:999px;
+
+    background:#183d39;
+
+    color:#3be57f;
+
+    font-size:13px;
+    font-weight:600;
+
+    margin:8px 0 14px;
 }
 
 .job-meta {
