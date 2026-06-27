@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 import EmptyState from "@/app/components/EmptyState";
+import RecommendedJobs from "@/app/components/RecommendedJobs";
 
 type Profile = {
   id: string;
