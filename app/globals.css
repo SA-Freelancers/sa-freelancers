@@ -3327,102 +3327,66 @@ min-width:180px;
   align-items: stretch;
 }
 
-.marketplace-card {
-  display: flex;
-  flex-direction: column;
-  min-height: 475px;
-  padding: 22px;
-  border-radius: 22px;
-  overflow: hidden;
+/* ===== Compact Marketplace Cards ===== */
+
+.marketplace-card{
+    display:flex;
+    flex-direction:column;
+    padding:18px;
+    min-height:390px;
+    border-radius:18px;
 }
 
-.marketplace-card h3 {
-  min-height: 58px;
-  margin: 14px 0 12px;
-  line-height: 1.2;
+.marketplace-card h3{
+    margin:10px 0 8px;
+    font-size:1.55rem;
+    line-height:1.15;
+    min-height:48px;
 }
 
-.marketplace-card > p:not(.job-location) {
-  min-height: 76px;
-  line-height: 1.55;
-  margin: 12px 0 18px;
+.marketplace-card>p:not(.job-location){
+    margin:8px 0 12px;
+    min-height:56px;
+    line-height:1.45;
+    font-size:0.95rem;
 }
 
-.job-location {
-  display: inline-flex;
-  align-items: center;
-  width: 72%;
-  padding: 7px 14px;
-  border-radius: 999px;
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
-  font-weight: 700;
-  margin: 2px 0 14px;
+.job-location{
+    margin:4px 0 10px;
+    padding:6px 14px;
+    font-size:.9rem;
 }
 
-.job-meta {
-  display: grid;
-  grid-template-columns: 1fr 1.2fr 1fr;
-  gap: 10px;
-  margin-top: auto;
-  margin-bottom: 18px;
+.job-meta{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+    margin-bottom:14px;
 }
 
-.job-meta p {
-  min-height: 88px;
-  padding: 11px 12px;
-  border-radius: 12px;
-  background: rgba(15, 23, 42, 0.62);
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.35;
-  overflow: visible;
+.job-meta p{
+    padding:10px;
+    min-height:70px;
+    border-radius:10px;
+    margin:0;
+    font-size:.9rem;
+    line-height:1.25;
 }
 
-.job-meta strong {
-  display: block;
-  margin: 4px 0 6px;
-  font-size: 0.96rem;
+.job-meta strong{
+    display:block;
+    margin-bottom:4px;
+    font-size:.95rem;
 }
 
-.marketplace-actions {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-  margin-top: auto;
+.marketplace-actions{
+    margin-top:auto;
+    display:grid;
+    gap:8px;
 }
 
 .marketplace-actions a,
-.marketplace-actions button {
-  width: 100%;
-  justify-content: center;
-  text-align: center;
-  border-radius: 12px;
-}
-
-@media (max-width: 768px) {
-  .marketplace-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .marketplace-card {
-    min-height: auto;
-  }
-
-  .job-location {
-    width: 100%;
-  }
-
-  .job-meta {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-
-  .job-meta p {
-    font-size: 0.82rem;
-    padding: 9px;
-  }
-
-  .job-meta strong {
-    font-size: 0.84rem;
-  }
+.marketplace-actions button{
+    height:44px;
+    font-size:.95rem;
 }

@@ -305,22 +305,11 @@ export default function SearchPage() {
 </div>
 
   <h3>{job.title || "Untitled Job"}</h3>
-  <div
-  style={{
-    display: "inline-block",
-    marginBottom: 12,
-    padding: "6px 12px",
-    borderRadius: 999,
-    background: "rgba(34,197,94,.12)",
-    color: "#22c55e",
-    fontWeight: 600,
-    fontSize: ".9rem",
-  }}
->
+  <p className="job-location">
     🌍 {job.location || "Remote"}
-    </div>
+</p>
 
-    <p>{job.description?.slice(0, 140) || "No description yet."}</p>
+    <p>{job.description?.slice(0, 110) || "No description yet."}</p>
 
     <div className="job-meta">
     <p>
