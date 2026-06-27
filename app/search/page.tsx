@@ -254,33 +254,23 @@ export default function SearchPage() {
           {filteredJobs.map((job) => (
             <div key={job.id} className="dark-card marketplace-card">
   <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      gap: 10,
-      marginBottom: 12,
-      flexWrap: "wrap",
-    }}
-  >
-    <span className="marketplace-badge">
-      {job.category || "General"}
-    </span>
+  style={{
+    display: "flex",
+    gap: 8,
+    flexWrap: "wrap",
+    marginBottom: 12,
+  }}
+>
+  <span className="marketplace-badge">
+    {job.category || "General"}
+  </span>
 
-    {Number(job.budget || 0) >= 15000 && (
-  <span className="top-rated-badge">💎 High Paying</span>
-)}
+  {job.featured && <span className="top-rated-badge">⭐ Featured</span>}
 
-{Number(job.budget || 0) >= 10000 && Number(job.budget || 0) < 15000 && (
-  <span className="top-rated-badge">⭐ Featured</span>
-)}
+  {job.urgent && <span className="verified-badge">🔥 Urgent</span>}
 
-{job.created_at &&
-  new Date(job.created_at).getTime() >
-    Date.now() - 1000 * 60 * 60 * 24 && (
-    <span className="verified-badge">🔥 Urgent</span>
-  )}
-  </div>
+  {job.high_paying && <span className="top-rated-badge">💎 High Paying</span>}
+</div>
 
   <h3>{job.title || "Untitled Job"}</h3>
 
