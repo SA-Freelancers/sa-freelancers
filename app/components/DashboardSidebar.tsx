@@ -13,6 +13,9 @@ type SidebarLink = {
 
 const clientLinks: SidebarLink[] = [
   { href: "/dashboard", label: "Overview", icon: "📊" },
+
+  { href: "/freelancers", label: "Browse Freelancers", icon: "👨‍💻" },
+
   { href: "/dashboard/post-job", label: "Post Job", icon: "➕" },
   { href: "/dashboard/jobs", label: "My Jobs", icon: "💼" },
   { href: "/dashboard/client-contracts", label: "Sent Contracts", icon: "📨" },
@@ -22,7 +25,7 @@ const clientLinks: SidebarLink[] = [
 
 const freelancerLinks: SidebarLink[] = [
   { href: "/dashboard", label: "Overview", icon: "📊" },
-  { href: "/search", label: "Marketplace", icon: "🔍" },
+  { href: "/search", label: "Browse Jobs", icon: "💼" },
   { href: "/dashboard/contracts", label: "Contracts", icon: "📄" },
   { href: "/dashboard/favorites", label: "Favorites", icon: "❤️" },
   { href: "/dashboard/notifications", label: "Notifications", icon: "🔔" },

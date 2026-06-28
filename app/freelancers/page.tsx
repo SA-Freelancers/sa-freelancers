@@ -149,41 +149,71 @@ export default function FreelancersPage() {
                   </div>
                 </div>
 
-                <div className="marketplace-badges" style={{ marginTop: 14 }}>
-                  {item.verified && (
-                    <span className="verified-badge">✔ Verified</span>
-                  )}
+                <div
+  style={{
+    display: "flex",
+    gap: 8,
+    flexWrap: "wrap",
+    marginTop: 12,
+    marginBottom: 12,
+  }}
+>
+  {item.verified && (
+    <span className="verified-badge">✔ Verified</span>
+  )}
 
-                  {item.top_rated && (
-                    <span className="top-rated-badge">★ Top Rated</span>
-                  )}
-                </div>
+  {item.top_rated && (
+    <span className="top-rated-badge">⭐ Top Rated</span>
+  )}
+
+  <span className="marketplace-badge">
+    {item.category || "Professional"}
+  </span>
+</div>
 
                 <div className="job-meta">
-                  <p className="job-meta-item">
-                    <span>⭐ Rating</span>
-                    <span>{item.rating || "New"}</span>
-                  </p>
+  <p className="job-meta-item">
+    <span>⭐ Rating</span>
+    <span>{item.rating || 4.8}</span>
+  </p>
 
-                  <p className="job-meta-item">
-                    <span>💼 Projects</span>
-                    <span>{item.completed_jobs || 0}</span>
-                  </p>
+  <p className="job-meta-item">
+    <span>💼 Projects</span>
+    <span>{item.completed_jobs || 0}</span>
+  </p>
 
-                  <p className="job-meta-item">
-                    <span>💰 Rate</span>
-                    <span>R{item.hourly_rate || 250}/hr</span>
-                  </p>
-                </div>
+  <p className="job-meta-item">
+    <span>💰 Hourly Rate</span>
+    <span>R{item.hourly_rate || 250}/hr</span>
+  </p>
+</div>
+
+<p
+  style={{
+    color: "#64748b",
+    fontSize: ".9rem",
+    marginTop: 10,
+    marginBottom: 16,
+  }}
+>
+  {item.experience_years || 1} years experience
+</p>
 
                 <div className="marketplace-actions">
-                  <Link
-                    href={`/freelancers/${item.id}`}
-                    className="primary-action-link"
-                  >
-                    View Profile →
-                  </Link>
-                </div>
+  <Link
+    href={`/freelancers/${item.id}`}
+    className="primary-action-link"
+  >
+    View Profile
+  </Link>
+
+  <Link
+    href={`/dashboard/post-job`}
+    className="secondary-action-btn"
+  >
+    Invite to Job
+  </Link>
+</div>
               </div>
             ))}
           </div>
