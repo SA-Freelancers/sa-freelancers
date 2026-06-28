@@ -3236,3 +3236,52 @@ body {
   font-size: 0.7rem;
   padding: 4px 9px;
 }
+/* Light mode marketplace readability */
+body:not(.dark) .marketplace-card {
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
+}
+
+body:not(.dark) .marketplace-card h3,
+body:not(.dark) .marketplace-card p,
+body:not(.dark) .marketplace-card span {
+  color: #0f172a;
+}
+
+body:not(.dark) .marketplace-card > p:not(.job-location) {
+  color: #334155;
+}
+
+body:not(.dark) .job-meta p {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+body:not(.dark) .job-meta-item span:first-child {
+  color: #0f172a;
+}
+
+body:not(.dark) .job-meta-item span:last-child {
+  color: #334155;
+}
+
+body:not(.dark) .marketplace-badge {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+body:not(.dark) .job-location {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+body:not(.dark) .top-rated-badge {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+body:not(.dark) .verified-badge {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
