@@ -220,27 +220,25 @@ export default function SearchPage() {
   </select>
 
   <input
-    type="number"
-    placeholder="Minimum Budget"
-    value={minBudget}
-    onChange={(e) => setMinBudget(e.target.value)}
-    className="form-input"
-  />
+  type="number"
+  placeholder="Minimum Budget"
+  value={minBudget}
+  onChange={(e) => setMinBudget(e.target.value)}
+  className="form-input"
+/>
 
-  <select
-    value={sortBy}
-    onChange={(e) => setSortBy(e.target.value)}
-    className="form-input"
-  >
-    <option value="newest">Newest First</option>
-    <option value="budget-high">Highest Budget</option>
-    <option value="budget-low">Lowest Budget</option>
-  </select>
-
+<select
+  value={sortBy}
+  onChange={(e) => setSortBy(e.target.value)}
+  className="form-input"
+>
+  <option value="newest">Newest First</option>
+  <option value="budget-high">Highest Budget</option>
+  <option value="budget-low">Lowest Budget</option>
+</select>
 </div>
 
 <div className="search-buttons">
-
   <button
     onClick={() => setActiveSearch(search)}
     className="primary-action-btn"
@@ -248,108 +246,107 @@ export default function SearchPage() {
     🔍 Search Jobs
   </button>
 
-  <button
-    onClick={clearFilters}
-    className="secondary-action-btn"
-  >
+  <button onClick={clearFilters} className="secondary-action-btn">
     Clear Filters
   </button>
-
 </div>
-    </section>
+</section>
 
-    <section className="search-section">
-      <div
-  style={{
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    marginBottom: 20,
-  }}
->
-  <h2>Available Opportunities</h2>
-
-  <p>
-    <strong>{filteredJobs.length}</strong> Jobs Found
-  </p>
-</div>
-
-      {filteredJobs.length === 0 ? (
-        <EmptyState
-          emoji="💼"
-          title="No jobs found"
-          description="Try another keyword, category or budget. New jobs will appear here when clients post projects."
-        />
-      ) : (
-        <div className="marketplace-grid">
-          {filteredJobs.map((job) => (
-            <div key={job.id} className="dark-card marketplace-card">
+<section className="search-section">
   <div
-  style={{
-    display: "flex",
-    gap: 8,
-    flexWrap: "wrap",
-    marginBottom: 12,
-  }}
->
-  <span className="marketplace-badge">
-    {job.category || "General"}
-  </span>
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+      marginBottom: 20,
+    }}
+  >
+    <h2>Available Opportunities</h2>
 
-  {job.featured && <span className="top-rated-badge">⭐ Featured</span>}
-
-  {job.urgent && <span className="verified-badge">🔥 Urgent</span>}
-
-  {job.high_paying && <span className="top-rated-badge">💎 High Paying</span>}
-</div>
-
-  <h3>{job.title || "Untitled Job"}</h3>
-  <div className="job-location">
-    🌍 Remote
-</div>
-    <p>{job.description?.slice(0, 100) || "No description yet."}</p>
-
-    <div className="job-meta">
     <p>
-      💰 <strong>Budget</strong>
-      <br />
-      R{Number(job.budget || 0).toLocaleString("en-ZA")}
+      <strong>{filteredJobs.length}</strong> Jobs Found
     </p>
-
-    <p>
-      👥 <strong>Applicants</strong>
-      <br />
-      {job.applications?.length || 0}
-    </p>
-
-    <p>
-    🕒 <strong>Posted</strong>
-   <br />
-  {getPostedTime(job.created_at)}
-</p>
   </div>
 
-  <div className="marketplace-actions">
-    <Link
-      href={`/dashboard/jobs/${job.id}`}
-      className="primary-action-link"
-    >
-      View Details →
-    </Link>
+  {filteredJobs.length === 0 ? (
+    <EmptyState
+      emoji="💼"
+      title="No jobs found"
+      description="Try another keyword, category or budget. New jobs will appear here when clients post projects."
+    />
+  ) : (
+    <div className="marketplace-grid">
+      {filteredJobs.map((job) => (
+        <div key={job.id} className="dark-card marketplace-card">
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              marginBottom: 8,
+            }}
+          >
+            <span className="marketplace-badge">
+              {job.category || "General"}
+            </span>
 
-    <button
-      onClick={() => saveJob(job.id)}
-      className="danger-action-btn"
-    >
-      🤍 Save Job
-    </button>
-    </div>
-    </div>
-          ))}
+            {job.featured && (
+              <span className="top-rated-badge">⭐ Featured</span>
+            )}
+
+            {job.urgent && (
+              <span className="verified-badge">🔥 Urgent</span>
+            )}
+
+            {job.high_paying && (
+              <span className="top-rated-badge">💎 High Paying</span>
+            )}
+          </div>
+
+          <h3>{job.title || "Untitled Job"}</h3>
+
+          <div className="job-location">🌍 Remote</div>
+
+          <p>{job.description?.slice(0, 100) || "No description yet."}</p>
+
+          <div className="job-meta">
+            <p className="job-meta-item">
+              <span>💰 Budget</span>
+              <span>R{Number(job.budget || 0).toLocaleString("en-ZA")}</span>
+            </p>
+
+            <p className="job-meta-item">
+              <span>👥 Applicants</span>
+              <span>{job.applications?.length || 0}</span>
+            </p>
+
+            <p className="job-meta-item">
+              <span>🕒 Posted</span>
+              <span>{getPostedTime(job.created_at)}</span>
+            </p>
+          </div>
+
+          <div className="marketplace-actions">
+            <Link
+              href={`/dashboard/jobs/${job.id}`}
+              className="primary-action-link"
+            >
+              View Details →
+            </Link>
+
+            <button
+              onClick={() => saveJob(job.id)}
+              className="danger-action-btn"
+            >
+              🤍 Save Job
+            </button>
+          </div>
         </div>
-      )}
-    </section>
-  </main>
+      ))}
+    </div>
+  )}
+</section>
+</main>
 );
 }
