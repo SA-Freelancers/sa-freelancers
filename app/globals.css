@@ -3236,52 +3236,139 @@ body {
   font-size: 0.7rem;
   padding: 4px 9px;
 }
-/* Light mode marketplace readability */
+/* ===========================
+   IVORY LIGHT MODE
+=========================== */
+
+body:not(.dark) {
+  background: #F8F6F0;
+  color: #1f2937;
+}
+
+/* Main page sections */
+body:not(.dark) .search-page,
+body:not(.dark) .dashboard-page,
+body:not(.dark) .profile-page,
+body:not(.dark) .contracts-page {
+  background: #F8F6F0;
+}
+
+/* Hero & filter cards */
+body:not(.dark) .dark-card,
+body:not(.dark) .search-hero,
+body:not(.dark) .search-filter-card {
+  background: #FCFBF8;
+  border: 1px solid #E8E2D6;
+  color: #1F2937;
+}
+
+/* ===========================
+   JOB CARDS
+=========================== */
+
 body:not(.dark) .marketplace-card {
-  background: #ffffff;
-  color: #0f172a;
-  border: 1px solid #e2e8f0;
+  background: #FFFFFF;
+  border: 1px solid #E8E2D6;
+  box-shadow: 0 8px 22px rgba(0,0,0,.05);
+  color: #1F2937;
 }
 
-body:not(.dark) .marketplace-card h3,
-body:not(.dark) .marketplace-card p,
-body:not(.dark) .marketplace-card span {
-  color: #0f172a;
+body:not(.dark) .marketplace-card:hover{
+  transform: translateY(-4px);
+  box-shadow:0 18px 40px rgba(0,0,0,.08);
 }
 
-body:not(.dark) .marketplace-card > p:not(.job-location) {
-  color: #334155;
+/* Titles */
+
+body:not(.dark) .marketplace-card h3{
+    color:#111827;
 }
 
-body:not(.dark) .job-meta p {
-  background: #f1f5f9;
-  color: #0f172a;
+/* Description */
+
+body:not(.dark) .marketplace-card p{
+    color:#4B5563;
 }
 
-body:not(.dark) .job-meta-item span:first-child {
-  color: #0f172a;
+/* ===========================
+   META BOXES
+=========================== */
+
+body:not(.dark) .job-meta p{
+    background:#F7F7F5;
+    border:1px solid #ECE8DE;
+    color:#1F2937;
 }
 
-body:not(.dark) .job-meta-item span:last-child {
-  color: #334155;
+body:not(.dark) .job-meta strong{
+    color:#111827;
 }
 
-body:not(.dark) .marketplace-badge {
-  background: #dbeafe;
-  color: #1d4ed8;
+body:not(.dark) .posted-value{
+    color:#6B7280;
 }
 
-body:not(.dark) .job-location {
-  background: #dcfce7;
-  color: #15803d;
+/* ===========================
+   CATEGORY BADGES
+=========================== */
+
+body:not(.dark) .marketplace-badge{
+    background:#E8F0FF;
+    color:#2563EB;
 }
 
-body:not(.dark) .top-rated-badge {
-  background: #fef3c7;
-  color: #92400e;
+/* Remote */
+
+body:not(.dark) .job-location{
+    background:#E9F8EE;
+    color:#16A34A;
 }
 
-body:not(.dark) .verified-badge {
-  background: #dbeafe;
-  color: #1d4ed8;
+/* Featured */
+
+body:not(.dark) .top-rated-badge{
+    background:#FFF3CD;
+    color:#B45309;
+}
+
+/* Urgent */
+
+body:not(.dark) .verified-badge{
+    background:#FFE4E6;
+    color:#DC2626;
+}
+
+/* ===========================
+   HEADINGS
+=========================== */
+
+body:not(.dark) h1,
+body:not(.dark) h2,
+body:not(.dark) h3{
+    color:#111827;
+}
+
+body:not(.dark) .dashboard-badge{
+    color:#2563EB;
+}
+
+/* ===========================
+   LINKS
+=========================== */
+
+body:not(.dark) a{
+    color:inherit;
+}
+
+/* ===========================
+   BUTTONS
+=========================== */
+
+body:not(.dark) .primary-action-link,
+body:not(.dark) .primary-action-btn{
+    box-shadow:0 6px 14px rgba(37,99,235,.18);
+}
+
+body:not(.dark) .danger-action-btn{
+    box-shadow:0 6px 14px rgba(220,38,38,.15);
 }
