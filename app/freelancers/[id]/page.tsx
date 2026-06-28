@@ -12,15 +12,28 @@ type Profile = {
   id: string;
   full_name?: string;
   role?: string;
+
+  headline?: string;
   bio?: string;
   category?: string;
+
+  rating?: number;
+  completed_jobs?: number;
+  hourly_rate?: number;
+  experience_years?: number;
+
+  country?: string;
+  availability?: string;
+
   avatar_url?: string;
   cv_url?: string;
   portfolio_url?: string;
+
   verified?: boolean;
   top_rated?: boolean;
   suspended?: boolean;
   email_verified?: boolean;
+
   created_at?: string;
 };
 
@@ -159,28 +172,49 @@ export default function FreelancerPublicProfilePage() {
 
           <div className="profile-divider" />
 
-          <h2>Profile Details</h2>
+          <h2>Professional Details</h2>
 
-          <p>
-            <strong>Category:</strong>{" "}
-            {profile.category || "Not specified"}
-          </p>
+<p>
+  <strong>Headline:</strong>{" "}
+  {profile.headline || "Professional Freelancer"}
+</p>
 
-          <p>
-            <strong>Reviews:</strong> {reviews.length}
-          </p>
+<p>
+  <strong>Country:</strong>{" "}
+  {profile.country || "South Africa"}
+</p>
 
-          <p>
-            <strong>Average Rating:</strong> {averageRating}
-          </p>
+<p>
+  <strong>Experience:</strong>{" "}
+  {profile.experience_years || 1} Years
+</p>
 
-          {profile.created_at && (
-            <p>
-              <strong>Joined:</strong>{" "}
-              {new Date(profile.created_at).toLocaleDateString("en-ZA")}
-            </p>
-          )}
+<p>
+  <strong>Hourly Rate:</strong>{" "}
+  R{profile.hourly_rate || 250}/hr
+</p>
 
+<p>
+  <strong>Completed Projects:</strong>{" "}
+  {profile.completed_jobs || 0}
+</p>
+
+<p>
+  <strong>Availability:</strong>{" "}
+  {profile.availability || "Available"}
+</p>
+
+<p>
+  <strong>Average Rating:</strong>{" "}
+  ⭐ {profile.rating || averageRating}
+</p>
+
+{profile.created_at && (
+  <p>
+    <strong>Member Since:</strong>{" "}
+    {new Date(profile.created_at).toLocaleDateString("en-ZA")}
+  </p>
+)}
           <div className="profile-divider" />
 
           <h2>Documents & Portfolio</h2>

@@ -3236,3 +3236,34 @@ body {
   font-size: 0.7rem;
   padding: 4px 9px;
 }
+delete from applications
+where job_id in (
+  select id
+  from (
+    select
+      id,
+      row_number() over (
+        partition by lower(trim(title))
+        order by created_at desc
+      ) as rn
+    from jobs
+    where is_demo = true
+  ) x
+  where x.rn > 1
+);
+
+delete from jobs
+where id in (
+  select id
+  from (
+    select
+      id,
+      row_number() over (
+        partition by lower(trim(title))
+        order by created_at desc
+      ) as rn
+    from jobs
+    where is_demo = true
+  ) x
+  where x.rn > 1
+);
