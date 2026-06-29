@@ -25,6 +25,19 @@ export default function ProfilePage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [headline, setHeadline] = useState("");
+const [location, setLocation] = useState("");
+const [country, setCountry] = useState("South Africa");
+const [availability, setAvailability] = useState("Available");
+const [responseTime, setResponseTime] = useState("Within 2 hours");
+const [experience, setExperience] = useState("");
+const [hourlyRate, setHourlyRate] = useState("");
+const [education, setEducation] = useState("");
+const [linkedin, setLinkedin] = useState("");
+const [website, setWebsite] = useState("");
+const [skills, setSkills] = useState("");
+const [languages, setLanguages] = useState("");
+const [certifications, setCertifications] = useState("");
 
   useEffect(() => {
     loadProfile();
@@ -49,9 +62,49 @@ export default function ProfilePage() {
     if (data) {
       setProfile(data);
       setFullName(data.full_name || "");
-      setRole(data.role || "");
-      setBio(data.bio || "");
-      setCategory(data.category || "");
+setRole(data.role || "");
+setBio(data.bio || "");
+setCategory(data.category || "");
+
+setHeadline(data.headline || "");
+setLocation(data.location || "");
+setCountry(data.country || "South Africa");
+setAvailability(data.availability || "Available");
+setResponseTime(data.response_time || "Within 2 hours");
+
+setExperience(
+  data.years_experience
+    ? data.years_experience.toString()
+    : ""
+);
+
+setHourlyRate(
+  data.hourly_rate
+    ? data.hourly_rate.toString()
+    : ""
+);
+
+setEducation(data.education || "");
+setLinkedin(data.linkedin_url || "");
+setWebsite(data.website_url || "");
+
+setSkills(
+  Array.isArray(data.skills)
+    ? data.skills.join(", ")
+    : ""
+);
+
+setLanguages(
+  Array.isArray(data.languages)
+    ? data.languages.join(", ")
+    : ""
+);
+
+setCertifications(
+  Array.isArray(data.certifications)
+    ? data.certifications.join(", ")
+    : ""
+);
     }
 
     setLoading(false);
@@ -168,16 +221,41 @@ export default function ProfilePage() {
     }
 
     const updateData =
-      role === "freelancer"
-        ? {
-            full_name: fullName,
-            bio,
-            category,
-          }
-        : {
-            full_name: fullName,
-            bio,
-          };
+  role === "freelancer"
+    ? {
+        full_name: fullName,
+        bio,
+        category,
+        headline,
+        location,
+        country,
+        availability,
+        response_time: responseTime,
+        years_experience: experience ? Number(experience) : null,
+        hourly_rate: hourlyRate ? Number(hourlyRate) : null,
+        education,
+        linkedin_url: linkedin,
+        website_url: website,
+        skills: skills
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        languages: languages
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        certifications: certifications
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+      }
+    : {
+        full_name: fullName,
+        bio,
+        location,
+        country,
+        website_url: website,
+      };
 
     const { error } = await supabase
       .from("profiles")
@@ -247,30 +325,45 @@ export default function ProfilePage() {
           />
 
           {isFreelancer && (
-            <>
-              <label className="form-label">Category</label>
+  <>
+    <label className="form-label">Category</label>
 
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="form-input"
-              >
-                <option value="">Select category</option>
-                <option value="Web Development">Web Development</option>
-                <option value="Mobile Development">Mobile Development</option>
-                <option value="Graphic Design">Graphic Design</option>
-                <option value="UI/UX Design">UI/UX Design</option>
-                <option value="Writing">Writing</option>
-                <option value="Video Editing">Video Editing</option>
-                <option value="Digital Marketing">Digital Marketing</option>
-                <option value="Engineering">Engineering</option>
-                <option value="CAD Drafting">CAD Drafting</option>
-                <option value="Fitting & Turning">Fitting & Turning</option>
-                <option value="Data Entry">Data Entry</option>
-                <option value="Virtual Assistant">Virtual Assistant</option>
-              </select>
-            </>
-          )}
+    <select
+      value={category}
+      onChange={(e) => setCategory(e.target.value)}
+      className="form-input"
+    >
+      <option value="">Select category</option>
+      <option value="Web Development">Web Development</option>
+      <option value="Mobile Development">Mobile Development</option>
+      <option value="Graphic Design">Graphic Design</option>
+      <option value="UI/UX Design">UI/UX Design</option>
+      <option value="Writing">Writing</option>
+      <option value="Video Editing">Video Editing</option>
+      <option value="Digital Marketing">Digital Marketing</option>
+      <option value="Engineering">Engineering</option>
+      <option value="CAD Drafting">CAD Drafting</option>
+      <option value="Data Entry">Data Entry</option>
+      <option value="Virtual Assistant">Virtual Assistant</option>
+    </select>
+
+    <label className="form-label">Professional Headline</label>
+    <input
+      placeholder="Example: Mechanical Engineering Draughtsman"
+      value={headline}
+      onChange={(e) => setHeadline(e.target.value)}
+      className="form-input"
+    />
+
+    <label className="form-label">Location</label>
+    <input
+      placeholder="Example: Johannesburg / Remote"
+      value={location}
+      onChange={(e) => setLocation(e.target.value)}
+      className="form-input"
+    />
+  </>
+)}
 
           <button
             onClick={saveProfile}
