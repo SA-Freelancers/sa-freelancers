@@ -10,6 +10,7 @@ import ProfileCompleteness from "@/app/components/ProfileCompleteness";
 
 type Profile = {
   id: string;
+
   full_name?: string;
   role?: string;
 
@@ -17,21 +18,49 @@ type Profile = {
   bio?: string;
   category?: string;
 
-  rating?: number;
-  completed_jobs?: number;
-  hourly_rate?: number;
-  experience_years?: number;
-
-  country?: string;
-  availability?: string;
-
   avatar_url?: string;
+  cover_image?: string;
+
+  location?: string;
+  country?: string;
+
+  availability?: string;
+  response_time?: string;
+
+  years_experience?: number;
+
+  hourly_rate?: number;
+
+  completed_projects?: number;
+
+  repeat_clients?: number;
+
+  completion_rate?: number;
+
+  rating?: number;
+
+  skills?: string[];
+
+  languages?: string[];
+
+  education?: string;
+
+  certifications?: string[];
+
+  linkedin_url?: string;
+
+  website_url?: string;
+
   cv_url?: string;
+
   portfolio_url?: string;
 
   verified?: boolean;
+
   top_rated?: boolean;
+
   suspended?: boolean;
+
   email_verified?: boolean;
 
   created_at?: string;
@@ -174,47 +203,15 @@ export default function FreelancerPublicProfilePage() {
 
           <h2>Professional Details</h2>
 
-<p>
-  <strong>Headline:</strong>{" "}
-  {profile.headline || "Professional Freelancer"}
-</p>
-
-<p>
-  <strong>Country:</strong>{" "}
-  {profile.country || "South Africa"}
-</p>
-
-<p>
-  <strong>Experience:</strong>{" "}
-  {profile.experience_years || 1} Years
-</p>
-
-<p>
-  <strong>Hourly Rate:</strong>{" "}
-  R{profile.hourly_rate || 250}/hr
-</p>
-
-<p>
-  <strong>Completed Projects:</strong>{" "}
-  {profile.completed_jobs || 0}
-</p>
-
-<p>
-  <strong>Availability:</strong>{" "}
-  {profile.availability || "Available"}
-</p>
-
-<p>
-  <strong>Average Rating:</strong>{" "}
-  ⭐ {profile.rating || averageRating}
-</p>
-
-{profile.created_at && (
-  <p>
-    <strong>Member Since:</strong>{" "}
-    {new Date(profile.created_at).toLocaleDateString("en-ZA")}
-  </p>
-)}
+<p><strong>Headline:</strong> {profile.headline || "Professional Freelancer"}</p>
+<p><strong>Location:</strong> {profile.location || "Remote"}</p>
+<p><strong>Country:</strong> {profile.country || "South Africa"}</p>
+<p><strong>Availability:</strong> {profile.availability || "Available"}</p>
+<p><strong>Response Time:</strong> {profile.response_time || "Within 2 hours"}</p>
+<p><strong>Experience:</strong> {profile.years_experience || 1} Years</p>
+<p><strong>Hourly Rate:</strong> R{profile.hourly_rate || 250}/hr</p>
+<p><strong>Completed Projects:</strong> {profile.completed_projects || 0}</p>
+<p><strong>Completion Rate:</strong> {profile.completion_rate || 100}%</p>
           <div className="profile-divider" />
 
           <h2>Documents & Portfolio</h2>

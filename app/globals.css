@@ -3385,3 +3385,23 @@ body:not(.dark) .danger-action-btn{
   font-size: 1.1rem;
   flex-shrink: 0;
 }
+.profile-details-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:18px;
+margin:20px 0;
+}
+
+.profile-details-grid p{
+padding:18px;
+border-radius:14px;
+background:rgba(15,23,42,.05);
+line-height:1.5;
+}
+
+.skills-grid{
+display:flex;
+gap:12px;
+flex-wrap:wrap;
+margin:18px 0;
+}
