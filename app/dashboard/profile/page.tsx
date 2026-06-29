@@ -1,5 +1,6 @@
 "use client";
 
+import ProfileCompletionCard from "@/app/components/ProfileCompletionCard";
 import { useEffect, useState } from "react";
 import { supabase } from "@/app/lib/supabase";
 import LoadingSkeleton from "@/app/components/LoadingSkeleton";
@@ -295,6 +296,25 @@ setCertifications(
             : "Update your client information so freelancers understand who they are working with."}
         </p>
       </section>
+      {isFreelancer && (
+  <ProfileCompletionCard
+    fullName={fullName}
+    headline={headline}
+    bio={bio}
+    category={category}
+    avatarUrl={profile?.avatar_url}
+    cvUrl={profile?.cv_url}
+    portfolioUrl={profile?.portfolio_url}
+    skills={
+      skills
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+    }
+    hourlyRate={hourlyRate ? Number(hourlyRate) : undefined}
+    yearsExperience={experience ? Number(experience) : undefined}
+  />
+)}
 
       <section className="profile-settings-layout">
         <div className="dark-card profile-settings-card">
