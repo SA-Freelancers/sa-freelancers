@@ -31,6 +31,11 @@ const freelancerLinks: SidebarLink[] = [
   { href: "/dashboard/notifications", label: "Notifications", icon: "🔔" },
   { href: "/dashboard/profile", label: "Profile Settings", icon: "👤" },
   { href: "/dashboard/upload", label: "Upload", icon: "⬆️" },
+  {
+  href: "/dashboard/portfolio",
+  label: "Portfolio",
+  icon: "🖼️",
+},
 ];
 
 const adminLinks: SidebarLink[] = [
