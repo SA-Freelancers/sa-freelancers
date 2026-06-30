@@ -178,6 +178,14 @@ export default function FreelancerPublicProfilePage() {
             <span className="rating-badge">
               ⭐ {averageRating} ({reviews.length} reviews)
             </span>
+            <span className="verified-badge">
+  💪 Profile Strength:{" "}
+  {profile.skills?.length && profile.bio && profile.avatar_url
+    ? "Excellent"
+    : profile.bio
+    ? "Good"
+    : "Needs Completion"}
+</span>
           </div>
 
           <div
