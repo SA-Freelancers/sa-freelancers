@@ -151,8 +151,16 @@ export default function FreelancerPublicProfilePage() {
           </h1>
 
           <p className="profile-role">
-            South African {profile.category || "Freelancer"}
-          </p>
+  {profile.headline || `South African ${profile.category || "Freelancer"}`}
+</p>
+
+<p className="profile-role">
+  📍 {profile.location || "Remote"} • {profile.country || "South Africa"}
+</p>
+
+<p className="profile-role">
+  ⚡ {profile.response_time || "Within 2 hours"} • {profile.availability || "Available"}
+</p>
 
           <div className="marketplace-badges">
             {profile.email_verified && (
