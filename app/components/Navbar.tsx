@@ -93,7 +93,7 @@ export default function Navbar() {
       localStorage.setItem("theme", "dark");
     } else {
       document.body.classList.remove("dark");
-      localStorage.setItem("theme", "light");
+      localStorage.getItem("theme") || "dark"
     }
   };
 

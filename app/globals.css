@@ -3426,3 +3426,21 @@ object-fit:cover;
 border-radius:14px;
 margin-bottom:16px;
 }
+.hero-feature-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: #1e3a8a;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+body:not(.dark) .hero-feature-badge {
+  background: #dbeafe;
+  color: #1e3a8a;
+  border: 1px solid #93c5fd;
+}

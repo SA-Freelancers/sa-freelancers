@@ -124,10 +124,10 @@ export default function HomePage() {
               marginTop: 22,
             }}
           >
-            <span className="verified-badge">✔ Secure Contracts</span>
-            <span className="verified-badge">✔ Verified Profiles</span>
-            <span className="top-rated-badge">★ Trusted Reviews</span>
-            <span className="verified-badge">🇿🇦 South African Talent</span>
+            <span className="hero-feature-badge">✓ Secure Contracts</span>
+<span className="hero-feature-badge">✓ Verified Profiles</span>
+<span className="hero-feature-badge">★ Trusted Reviews</span>
+<span className="hero-feature-badge">ZA South African Talent</span>
           </div>
         </div>
       </section>
