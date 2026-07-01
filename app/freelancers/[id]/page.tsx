@@ -81,6 +81,18 @@ export default function FreelancerPublicProfilePage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
+  type PortfolioProject = {
+  id: string;
+  title: string;
+  description?: string;
+  category?: string;
+  software?: string;
+  image_url?: string;
+  project_url?: string;
+};
+
+const [portfolioProjects, setPortfolioProjects] =
+  useState<PortfolioProject[]>([]);
   useEffect(() => {
     loadProfile();
   }, [id]);
@@ -92,6 +104,16 @@ export default function FreelancerPublicProfilePage() {
       .eq("id", id)
       .eq("role", "freelancer")
       .single();
+
+      const { data: portfolioData } = await supabase
+  .from("portfolio_projects")
+  .select("*")
+  .eq("freelancer_id", id)
+  .order("created_at", { ascending: false });
+
+setPortfolioProjects(
+  (portfolioData as PortfolioProject[]) || []
+);
 
     const { data: reviewData } = await supabase
       .from("reviews")
@@ -252,6 +274,98 @@ export default function FreelancerPublicProfilePage() {
         </div>
 
         <div className="dark-card profile-card">
+          <div className="profile-divider" />
+
+<h2>Portfolio</h2>
+
+{portfolioProjects.length === 0 ? (
+
+<p>
+
+No portfolio projects uploaded yet.
+
+</p>
+
+) : (
+
+<div className="portfolio-grid">
+
+{portfolioProjects.map((project)=>(
+
+<div
+key={project.id}
+className="portfolio-card"
+>
+
+{project.image_url && (
+
+<img
+src={project.image_url}
+alt={project.title}
+className="portfolio-image"
+/>
+
+)}
+
+<h3>{project.title}</h3>
+
+<p>
+
+{project.description}
+
+</p>
+
+<div className="marketplace-badges">
+
+{project.category && (
+
+<span className="marketplace-badge">
+
+{project.category}
+
+</span>
+
+)}
+
+{project.software && (
+
+<span className="verified-badge">
+
+{project.software}
+
+</span>
+
+)}
+
+</div>
+
+{project.project_url && (
+
+<a
+
+href={project.project_url}
+
+target="_blank"
+
+rel="noreferrer"
+
+className="primary-action-link"
+
+>
+
+View Project
+
+</a>
+
+)}
+
+</div>
+
+))}
+
+</div>
+
+)}
           <h2>Client Reviews</h2>
 
           {reviews.length === 0 ? (

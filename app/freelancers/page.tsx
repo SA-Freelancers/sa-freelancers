@@ -11,13 +11,17 @@ type Freelancer = {
   full_name?: string;
   headline?: string;
   category?: string;
+  bio?: string;
   rating?: number;
   completed_jobs?: number;
+  completed_projects?: number;
   hourly_rate?: number;
   experience_years?: number;
   verified?: boolean;
   top_rated?: boolean;
   avatar_url?: string;
+  avatar_initials?: string;
+  is_demo?: boolean;
 };
 
 export default function FreelancersPage() {
@@ -31,14 +35,25 @@ export default function FreelancersPage() {
   }, []);
 
   const loadFreelancers = async () => {
-    const { data } = await supabase
+    const { data: realData } = await supabase
       .from("profiles")
       .select("*")
       .eq("role", "freelancer")
       .eq("suspended", false)
       .order("rating", { ascending: false });
 
-    setFreelancers((data as Freelancer[]) || []);
+    const { data: demoData } = await supabase
+      .from("demo_freelancers")
+      .select("*");
+
+    const realFreelancers = (realData as Freelancer[]) || [];
+
+    const demoFreelancers = ((demoData as Freelancer[]) || []).map((item) => ({
+      ...item,
+      is_demo: true,
+    }));
+
+    setFreelancers([...realFreelancers, ...demoFreelancers]);
     setLoading(false);
   };
 
@@ -47,10 +62,10 @@ export default function FreelancersPage() {
       item.category || ""
     }`.toLowerCase();
 
-    const matchesSearch = text.includes(search.toLowerCase());
-    const matchesCategory = !category || item.category === category;
-
-    return matchesSearch && matchesCategory;
+    return (
+      text.includes(search.toLowerCase()) &&
+      (!category || item.category === category)
+    );
   });
 
   if (loading) return <LoadingSkeleton />;
@@ -130,12 +145,14 @@ export default function FreelancersPage() {
                     />
                   ) : (
                     <div className="profile-avatar-placeholder">
-                      {(item.full_name || "FH")
-                        .split(" ")
-                        .map((word) => word[0])
-                        .join("")
-                        .slice(0, 2)
-                        .toUpperCase()}
+                      {item.avatar_initials
+                        ? item.avatar_initials
+                        : (item.full_name || "FH")
+                            .split(" ")
+                            .map((word) => word[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()}
                     </div>
                   )}
 
@@ -144,76 +161,88 @@ export default function FreelancersPage() {
                       {item.full_name || "Freelancer"}
                     </h3>
                     <p style={{ margin: 0 }}>
-                      {item.headline || item.category || "Professional Freelancer"}
+                      {item.headline ||
+                        item.category ||
+                        "Professional Freelancer"}
                     </p>
                   </div>
                 </div>
 
                 <div
-  style={{
-    display: "flex",
-    gap: 8,
-    flexWrap: "wrap",
-    marginTop: 12,
-    marginBottom: 12,
-  }}
->
-  {item.verified && (
-    <span className="verified-badge">✔ Verified</span>
-  )}
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
+                    marginTop: 12,
+                    marginBottom: 12,
+                  }}
+                >
+                  {item.verified && (
+                    <span className="verified-badge">✔ Verified</span>
+                  )}
 
-  {item.top_rated && (
-    <span className="top-rated-badge">⭐ Top Rated</span>
-  )}
+                  {item.top_rated && (
+                    <span className="top-rated-badge">⭐ Top Rated</span>
+                  )}
 
-  <span className="marketplace-badge">
-    {item.category || "Professional"}
-  </span>
-</div>
+                  <span className="marketplace-badge">
+                    {item.category || "Professional"}
+                  </span>
+
+                  {item.is_demo && (
+                    <span className="marketplace-badge">Demo Profile</span>
+                  )}
+                </div>
 
                 <div className="job-meta">
-  <p className="job-meta-item">
-    <span>⭐ Rating</span>
-    <span>{item.rating || 4.8}</span>
-  </p>
+                  <p className="job-meta-item">
+                    <span>⭐ Rating</span>
+                    <span>{item.rating || 4.8}</span>
+                  </p>
 
-  <p className="job-meta-item">
-    <span>💼 Projects</span>
-    <span>{item.completed_jobs || 0}</span>
-  </p>
+                  <p className="job-meta-item">
+                    <span>💼 Projects</span>
+                    <span>
+                      {item.completed_jobs || item.completed_projects || 0}
+                    </span>
+                  </p>
 
-  <p className="job-meta-item">
-    <span>💰 Hourly Rate</span>
-    <span>R{item.hourly_rate || 250}/hr</span>
-  </p>
-</div>
+                  <p className="job-meta-item">
+                    <span>💰 Rate</span>
+                    <span>R{item.hourly_rate || 250}/hr</span>
+                  </p>
+                </div>
 
-<p
-  style={{
-    color: "#64748b",
-    fontSize: ".9rem",
-    marginTop: 10,
-    marginBottom: 16,
-  }}
->
-  {item.experience_years || 1} years experience
-</p>
+                <p
+                  style={{
+                    color: "#64748b",
+                    fontSize: ".9rem",
+                    marginTop: 10,
+                    marginBottom: 16,
+                  }}
+                >
+                  {item.experience_years || 1} years experience
+                </p>
 
                 <div className="marketplace-actions">
-  <Link
-    href={`/freelancers/${item.id}`}
-    className="primary-action-link"
-  >
-    View Profile
-  </Link>
+                  <Link
+                    href={
+                      item.is_demo
+                        ? "/freelancers"
+                        : `/freelancers/${item.id}`
+                    }
+                    className="primary-action-link"
+                  >
+                    View Profile
+                  </Link>
 
-  <Link
-    href={`/dashboard/post-job`}
-    className="secondary-action-btn"
-  >
-    Invite to Job
-  </Link>
-</div>
+                  <Link
+                    href="/dashboard/post-job"
+                    className="secondary-action-btn"
+                  >
+                    Invite to Job
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
