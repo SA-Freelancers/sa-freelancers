@@ -27,7 +27,10 @@ export default function PlatformStats() {
     );
 
     if (error) {
-      console.error("Failed to load marketplace statistics:", error.message);
+      console.error(
+        "Failed to load marketplace statistics:",
+        error.message
+      );
       setLoading(false);
       return;
     }
@@ -49,27 +52,10 @@ export default function PlatformStats() {
   useEffect(() => {
     loadStats();
 
-    // Refresh the figures every minute while the page is open.
     const interval = window.setInterval(loadStats, 60_000);
-
-    // Refresh when the visitor returns to the browser tab.
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        loadStats();
-      }
-    };
-
-    document.addEventListener(
-      "visibilitychange",
-      handleVisibilityChange
-    );
 
     return () => {
       window.clearInterval(interval);
-      document.removeEventListener(
-        "visibilitychange",
-        handleVisibilityChange
-      );
     };
   }, [loadStats]);
 
@@ -93,15 +79,62 @@ export default function PlatformStats() {
   ];
 
   return (
-    <section className="platform-stats-section">
-      <div className="platform-stats-grid">
+    <section
+      style={{
+        width: "100%",
+        padding: "56px 24px",
+        background: "#020617",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "980px",
+          margin: "0 auto",
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(190px, 1fr))",
+          gap: "22px",
+        }}
+      >
         {cards.map((card) => (
-          <article key={card.label} className="platform-stat-card">
-            <strong className="platform-stat-number">
-              {loading ? "—" : card.value.toLocaleString("en-ZA")}
+          <article
+            key={card.label}
+            style={{
+              minHeight: "170px",
+              padding: "28px 20px",
+              borderRadius: "22px",
+              background: "#1e293b",
+              border: "1px solid #334155",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+            }}
+          >
+            <strong
+              style={{
+                display: "block",
+                fontSize: "2.8rem",
+                lineHeight: 1,
+                fontWeight: 800,
+                color: "#f8fafc",
+                marginBottom: "18px",
+              }}
+            >
+              {loading
+                ? "—"
+                : card.value.toLocaleString("en-ZA")}
             </strong>
 
-            <span className="platform-stat-label">
+            <span
+              style={{
+                display: "block",
+                fontSize: "1rem",
+                color: "#cbd5e1",
+              }}
+            >
               {card.label}
             </span>
           </article>
