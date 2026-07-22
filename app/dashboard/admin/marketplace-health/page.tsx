@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/app/lib/supabase";
 import LoadingSkeleton from "@/app/components/LoadingSkeleton";
+import { supabase } from "@/app/lib/supabase";
 
 type HealthStats = {
   realFreelancers: number;
@@ -29,17 +29,32 @@ const initialStats: HealthStats = {
 };
 
 export default function MarketplaceHealthPage() {
-  const [stats, setStats] = useState<HealthStats>(initialStats);
+  const [stats, setStats] = useState(initialStats);
+
   const [loading, setLoading] = useState(true);
   const [allowed, setAllowed] = useState(false);
+
   const [message, setMessage] = useState("");
+
   const [refreshing, setRefreshing] = useState(false);
+
+  const [generatingClients, setGeneratingClients] =
+    useState(false);
+
+  const [generatingJobs, setGeneratingJobs] =
+    useState(false);
+
+  const [clientMessage, setClientMessage] =
+    useState("");
+
+  const [jobMessage, setJobMessage] =
+    useState("");
 
   useEffect(() => {
     loadHealth();
   }, []);
 
-  const loadHealth = async () => {
+  async function loadHealth() {
     setLoading(true);
     setMessage("");
 
@@ -54,13 +69,13 @@ export default function MarketplaceHealthPage() {
       return;
     }
 
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from("profiles")
       .select("is_admin")
       .eq("id", user.id)
       .single();
 
-    if (profileError || !profile?.is_admin) {
+    if (!profile?.is_admin) {
       setAllowed(false);
       setLoading(false);
       return;
@@ -69,7 +84,8 @@ export default function MarketplaceHealthPage() {
     setAllowed(true);
 
     const now = new Date();
-    const next24Hours = new Date(
+
+    const tomorrow = new Date(
       now.getTime() + 24 * 60 * 60 * 1000
     );
 
@@ -86,115 +102,305 @@ export default function MarketplaceHealthPage() {
     ] = await Promise.all([
       supabase
         .from("profiles")
-        .select("id", { count: "exact", head: true })
+        .select("id", {
+          count: "exact",
+          head: true,
+        })
         .eq("role", "freelancer")
         .eq("suspended", false),
 
       supabase
         .from("demo_freelancers")
-        .select("id", { count: "exact", head: true }),
+        .select("id", {
+          count: "exact",
+          head: true,
+        }),
 
       supabase
         .from("profiles")
-        .select("id", { count: "exact", head: true })
+        .select("id", {
+          count: "exact",
+          head: true,
+        })
         .eq("role", "client")
         .eq("suspended", false),
 
       supabase
         .from("demo_clients")
-        .select("id", { count: "exact", head: true }),
+        .select("id", {
+          count: "exact",
+          head: true,
+        }),
 
       supabase
         .from("jobs")
-        .select("id", { count: "exact", head: true })
+        .select("id", {
+          count: "exact",
+          head: true,
+        })
         .eq("is_demo", false),
 
       supabase
         .from("jobs")
-        .select("id", { count: "exact", head: true })
+        .select("id", {
+          count: "exact",
+          head: true,
+        })
         .eq("is_demo", true),
 
       supabase
         .from("applications")
-        .select("id", { count: "exact", head: true })
+        .select("id", {
+          count: "exact",
+          head: true,
+        })
         .eq("is_demo", false),
 
       supabase
         .from("applications")
-        .select("id", { count: "exact", head: true })
+        .select("id", {
+          count: "exact",
+          head: true,
+        })
         .eq("is_demo", true),
 
       supabase
         .from("jobs")
-        .select("id", { count: "exact", head: true })
+        .select("id", {
+          count: "exact",
+          head: true,
+        })
         .eq("is_demo", true)
         .not("demo_expires_at", "is", null)
         .gte("demo_expires_at", now.toISOString())
-        .lte("demo_expires_at", next24Hours.toISOString()),
+        .lte("demo_expires_at", tomorrow.toISOString()),
     ]);
 
-    const errors = [
-      realFreelancers.error,
-      demoFreelancers.error,
-      realClients.error,
-      demoClients.error,
-      realJobs.error,
-      demoJobs.error,
-      realApplications.error,
-      demoApplications.error,
-      expiringJobs.error,
-    ].filter(Boolean);
-
-    if (errors.length > 0) {
-      console.error("Marketplace health errors:", errors);
-      setMessage(
-        "Some marketplace statistics could not be loaded. Check the browser console."
-      );
-    }
-
     setStats({
-      realFreelancers: realFreelancers.count ?? 0,
-      demoFreelancers: demoFreelancers.count ?? 0,
-      realClients: realClients.count ?? 0,
-      demoClients: demoClients.count ?? 0,
-      realJobs: realJobs.count ?? 0,
-      demoJobs: demoJobs.count ?? 0,
-      realApplications: realApplications.count ?? 0,
-      demoApplications: demoApplications.count ?? 0,
-      demoJobsExpiringToday: expiringJobs.count ?? 0,
+      realFreelancers:
+        realFreelancers.count ?? 0,
+
+      demoFreelancers:
+        demoFreelancers.count ?? 0,
+
+      realClients:
+        realClients.count ?? 0,
+
+      demoClients:
+        demoClients.count ?? 0,
+
+      realJobs:
+        realJobs.count ?? 0,
+
+      demoJobs:
+        demoJobs.count ?? 0,
+
+      realApplications:
+        realApplications.count ?? 0,
+
+      demoApplications:
+        demoApplications.count ?? 0,
+
+      demoJobsExpiringToday:
+        expiringJobs.count ?? 0,
     });
 
     setLoading(false);
-  };
-
-  const refreshDemoMarketplace = async () => {
-    setRefreshing(true);
-    setMessage("Refreshing demo marketplace...");
-
-    const { error } = await supabase.rpc(
-      "run_daily_marketplace_refresh"
-    );
+  }
+    async function getAdminAccessToken() {
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
 
     if (error) {
-      setMessage(error.message);
-      setRefreshing(false);
-      return;
+      throw new Error(error.message);
     }
 
-    await loadHealth();
-    setMessage("Demo jobs and freelancers refreshed successfully.");
-    setRefreshing(false);
-  };
+    if (!session?.access_token) {
+      throw new Error(
+        "You must be logged in as an administrator."
+      );
+    }
 
-  if (loading) return <LoadingSkeleton />;
+    return session.access_token;
+  }
+
+  async function callMarketplaceRoute(
+    route: string,
+    count: number
+  ) {
+    const accessToken = await getAdminAccessToken();
+
+    const response = await fetch(route, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        count,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.error ||
+          "The marketplace operation could not be completed."
+      );
+    }
+
+    return result;
+  }
+
+  async function handleGenerateClients() {
+    try {
+      setGeneratingClients(true);
+      setClientMessage("");
+      setMessage("");
+
+      const result = await callMarketplaceRoute(
+        "/api/admin/marketplace/generate-clients",
+        10
+      );
+
+      const inserted = Number(result.inserted ?? 0);
+      const failed = Number(result.failed ?? 0);
+      const total = Number(
+        result.totalDemoClientProfiles ?? 0
+      );
+
+      let successMessage =
+        `${inserted} authenticated demo client` +
+        `${inserted === 1 ? "" : "s"} created.`;
+
+      if (total > 0) {
+        successMessage +=
+          ` Total authenticated demo clients: ${total}.`;
+      }
+
+      if (failed > 0) {
+        successMessage +=
+          ` ${failed} client${failed === 1 ? "" : "s"} failed.`;
+      }
+
+      setClientMessage(successMessage);
+
+      await loadHealth();
+    } catch (error) {
+      setClientMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not generate demo client accounts."
+      );
+    } finally {
+      setGeneratingClients(false);
+    }
+  }
+
+  async function handleGenerateJobs() {
+    try {
+      setGeneratingJobs(true);
+      setJobMessage("");
+      setMessage("");
+
+      const result = await callMarketplaceRoute(
+        "/api/admin/marketplace/generate-jobs",
+        20
+      );
+
+      const inserted = Number(result.inserted ?? 0);
+      const activeJobs = Number(
+        result.totalActiveDemoJobs ?? 0
+      );
+
+      setJobMessage(
+        `${inserted} demo job${
+          inserted === 1 ? "" : "s"
+        } created. Active demo jobs: ${activeJobs}.`
+      );
+
+      await loadHealth();
+    } catch (error) {
+      setJobMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not generate demo jobs."
+      );
+    } finally {
+      setGeneratingJobs(false);
+    }
+  }
+
+  async function refreshDemoMarketplace() {
+    try {
+      setRefreshing(true);
+      setMessage("Refreshing demo marketplace...");
+      setClientMessage("");
+      setJobMessage("");
+
+      const { error } = await supabase.rpc(
+        "run_daily_marketplace_refresh"
+      );
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      await loadHealth();
+
+      setMessage(
+        "Demo marketplace refreshed successfully."
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not refresh the demo marketplace."
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  async function handleReloadStatistics() {
+    try {
+      setMessage("Reloading marketplace statistics...");
+      setClientMessage("");
+      setJobMessage("");
+
+      await loadHealth();
+
+      setMessage(
+        "Marketplace statistics reloaded successfully."
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not reload marketplace statistics."
+      );
+    }
+  }
+
+  if (loading) {
+    return <LoadingSkeleton />;
+  }
 
   if (!allowed) {
     return (
       <main className="contracts-page">
         <section className="dark-card contract-card">
           <p className="dashboard-badge">Admin</p>
+
           <h1>Access Restricted</h1>
-          <p>Only admins can view marketplace health.</p>
+
+          <p>
+            Only authorised administrators can view and manage
+            marketplace health.
+          </p>
         </section>
       </main>
     );
@@ -250,84 +456,192 @@ export default function MarketplaceHealthPage() {
       value: stats.demoJobsExpiringToday,
     },
   ];
+    return (
+    <main className="mx-auto max-w-7xl space-y-8 p-6">
 
-  return (
-    <main className="contracts-page">
-      <section className="contracts-header dark-card">
-        <p className="dashboard-badge">
-          Admin Marketplace Health
-        </p>
+      {/* Header */}
 
-        <h1>Marketplace Health Dashboard</h1>
+      <div className="flex flex-col gap-4 rounded-xl border border-gray-700 bg-gray-900 p-6 shadow-lg md:flex-row md:items-center md:justify-between">
 
-        <p>
-          Monitor real activity, demo activity, expiring demo jobs and
-          the overall balance of the platform.
-        </p>
+        <div>
+          <p className="text-sm uppercase tracking-widest text-green-400">
+            Marketplace Engine
+          </p>
 
-        <div className="contract-actions" style={{ marginTop: 22 }}>
-          <button
-            onClick={refreshDemoMarketplace}
-            disabled={refreshing}
-            className="accept-btn"
-          >
-            {refreshing
-              ? "Refreshing..."
-              : "Refresh Demo Marketplace"}
-          </button>
+          <h1 className="mt-2 text-3xl font-bold text-white">
+            Marketplace Health
+          </h1>
+
+          <p className="mt-2 text-gray-400">
+            Monitor the activity of Freelancer Hub SA and generate realistic
+            demo marketplace data.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-3">
 
           <button
-            onClick={loadHealth}
-            disabled={refreshing}
-            className="secondary-action-btn"
+            onClick={handleReloadStatistics}
+            className="rounded-lg bg-slate-700 px-5 py-3 font-semibold text-white transition hover:bg-slate-600"
           >
             Reload Statistics
           </button>
+
+          <button
+            onClick={refreshDemoMarketplace}
+            disabled={refreshing}
+            className="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
+          >
+            {refreshing
+              ? "Refreshing..."
+              : "Refresh Marketplace"}
+          </button>
+
         </div>
 
-        {message && <p className="upload-message">{message}</p>}
-      </section>
+      </div>
 
-      <section className="dashboard-stats">
-        {cards.map((card) => (
-          <div key={card.label} className="dark-card stat-card">
-            <h3>{card.value.toLocaleString("en-ZA")}</h3>
-            <p>{card.label}</p>
-          </div>
-        ))}
-      </section>
+      {(message || clientMessage || jobMessage) && (
 
-      <section className="profile-layout" style={{ marginTop: 32 }}>
-        <div className="dark-card profile-card">
-          <h2>Real Marketplace Activity</h2>
+        <div className="rounded-lg border border-green-700 bg-green-950 p-4">
 
-          <p>
-            <strong>Total real activity:</strong>{" "}
-            {totalReal.toLocaleString("en-ZA")}
-          </p>
+          {message && (
+            <p className="text-green-300">{message}</p>
+          )}
 
-          <p>
-            These are actual users, jobs and applications created by
-            real users. As this figure grows, demo activity can be
-            reduced gradually.
-          </p>
+          {clientMessage && (
+            <p className="mt-2 text-green-300">
+              {clientMessage}
+            </p>
+          )}
+
+          {jobMessage && (
+            <p className="mt-2 text-green-300">
+              {jobMessage}
+            </p>
+          )}
+
         </div>
 
-        <div className="dark-card profile-card">
-          <h2>Demo Marketplace Activity</h2>
+      )}
 
-          <p>
-            <strong>Total demo activity:</strong>{" "}
-            {totalDemo.toLocaleString("en-ZA")}
-          </p>
+      {/* Statistics */}
 
-          <p>
-            Demo freelancers and clients are stored separately from real
-            profiles. Demo jobs rotate automatically to keep the
-            marketplace active.
-          </p>
+      <section>
+
+        <h2 className="mb-4 text-xl font-bold text-white">
+          Marketplace Statistics
+        </h2>
+
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+
+          {cards.map((card) => (
+
+            <div
+              key={card.label}
+              className="rounded-xl border border-gray-700 bg-gray-900 p-5 shadow"
+            >
+
+              <p className="text-sm text-gray-400">
+                {card.label}
+              </p>
+
+              <h3 className="mt-2 text-4xl font-bold text-white">
+                {card.value}
+              </h3>
+
+            </div>
+
+          ))}
+
         </div>
+
       </section>
+
+      {/* Summary */}
+
+      <section className="grid gap-5 md:grid-cols-2">
+
+        <div className="rounded-xl border border-green-700 bg-green-950 p-6">
+
+          <h2 className="text-xl font-bold text-white">
+            Real Marketplace
+          </h2>
+
+          <p className="mt-3 text-5xl font-bold text-green-300">
+            {totalReal}
+          </p>
+
+          <p className="mt-3 text-gray-300">
+            Total real marketplace records.
+          </p>
+
+        </div>
+
+        <div className="rounded-xl border border-blue-700 bg-blue-950 p-6">
+
+          <h2 className="text-xl font-bold text-white">
+            Demo Marketplace
+          </h2>
+
+          <p className="mt-3 text-5xl font-bold text-blue-300">
+            {totalDemo}
+          </p>
+
+          <p className="mt-3 text-gray-300">
+            Total demo marketplace records.
+          </p>
+
+        </div>
+
+      </section>
+
+      {/* Marketplace Actions */}
+
+      <section className="rounded-xl border border-gray-700 bg-gray-900 p-6 shadow">
+
+        <h2 className="mb-6 text-2xl font-bold text-white">
+          Marketplace Actions
+        </h2>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
+          <button
+            onClick={handleGenerateClients}
+            disabled={generatingClients}
+            className="rounded-lg bg-purple-600 px-5 py-4 font-semibold text-white transition hover:bg-purple-700 disabled:opacity-50"
+          >
+            {generatingClients
+              ? "Generating..."
+              : "Generate 10 Clients"}
+          </button>
+
+          <button
+            onClick={handleGenerateJobs}
+            disabled={generatingJobs}
+            className="rounded-lg bg-green-600 px-5 py-4 font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
+          >
+            {generatingJobs
+              ? "Generating..."
+              : "Generate 20 Jobs"}
+          </button>
+
+          <button
+            className="rounded-lg bg-orange-600 px-5 py-4 font-semibold text-white transition hover:bg-orange-700"
+          >
+            Generate Applications
+          </button>
+
+          <button
+            className="rounded-lg bg-red-600 px-5 py-4 font-semibold text-white transition hover:bg-red-700"
+          >
+            Remove Demo Data
+          </button>
+
+        </div>
+
+      </section>
+
     </main>
   );
 }
