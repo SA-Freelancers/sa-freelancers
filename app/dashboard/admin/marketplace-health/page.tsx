@@ -101,36 +101,44 @@ export default function MarketplaceHealthPage() {
       expiringJobs,
     ] = await Promise.all([
       supabase
-        .from("profiles")
-        .select("id", {
-          count: "exact",
-          head: true,
-        })
-        .eq("role", "freelancer")
-        .eq("suspended", false),
+  .from("profiles")
+  .select("id", {
+    count: "exact",
+    head: true,
+  })
+  .eq("role", "freelancer")
+  .eq("is_demo", false)
+  .eq("suspended", false),
+
+supabase
+  .from("profiles")
+  .select("id", {
+    count: "exact",
+    head: true,
+  })
+  .eq("role", "freelancer")
+  .eq("is_demo", true)
+  .eq("suspended", false),
 
       supabase
-        .from("demo_freelancers")
-        .select("id", {
-          count: "exact",
-          head: true,
-        }),
+  .from("profiles")
+  .select("id", {
+    count: "exact",
+    head: true,
+  })
+  .eq("role", "client")
+  .eq("suspended", false)
+  .eq("is_demo", false),
 
-      supabase
-        .from("profiles")
-        .select("id", {
-          count: "exact",
-          head: true,
-        })
-        .eq("role", "client")
-        .eq("suspended", false),
-
-      supabase
-        .from("demo_clients")
-        .select("id", {
-          count: "exact",
-          head: true,
-        }),
+supabase
+  .from("profiles")
+  .select("id", {
+    count: "exact",
+    head: true,
+  })
+  .eq("role", "client")
+  .eq("is_demo", true)
+  .eq("suspended", false),
 
       supabase
         .from("jobs")
