@@ -1,30 +1,52 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
 import { supabase } from "@/app/lib/supabase";
+
 import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 
-type UserProfile = {
-  id: string;
-  full_name?: string;
-  email?: string;
-  role?: string;
-  is_admin?: boolean;
-  suspended?: boolean;
-  created_at?: string;
-};
+import UserStatistics from "./components/UserStatistics";
+import UserFilters from "./components/UserFilters";
+import UserTable from "./components/UserTable";
+import UserPagination from "./components/UserPagination";
+import UserViewModal from "./components/UserViewModal";
+import UserEditModal from "./components/UserEditModal";
+import type { UserProfile } from "./types";
+
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
+
   const [loading, setLoading] = useState(true);
+
   const [allowed, setAllowed] = useState(false);
+
   const [message, setMessage] = useState("");
+
+  const [search, setSearch] = useState("");
+
+  const [role, setRole] = useState("all");
+
+  const [status, setStatus] = useState("all");
+
+  const [page, setPage] = useState(1);
+
+  const [selectedUser, setSelectedUser] =
+    useState<UserProfile | null>(null);
+
+  const [editingUser, setEditingUser] =
+    useState<UserProfile | null>(null);
+
+  const pageSize = 20;
 
   useEffect(() => {
     loadUsers();
   }, []);
 
-  const loadUsers = async () => {
+  async function loadUsers() {
+    setLoading(true);
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -51,17 +73,25 @@ export default function AdminUsersPage() {
     const { data } = await supabase
       .from("profiles")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", {
+        ascending: false,
+      });
 
     setUsers((data as UserProfile[]) || []);
-    setLoading(false);
-  };
 
-  const toggleSuspension = async (userId: string, currentStatus?: boolean) => {
+    setLoading(false);
+  }
+
+  async function toggleSuspension(
+    id: string,
+    current?: boolean | null
+  ) {
     const { error } = await supabase
       .from("profiles")
-      .update({ suspended: !currentStatus })
-      .eq("id", userId);
+      .update({
+        suspended: !current,
+      })
+      .eq("id", id);
 
     if (error) {
       setMessage(error.message);
@@ -69,23 +99,140 @@ export default function AdminUsersPage() {
     }
 
     setUsers((prev) =>
-      prev.map((user) =>
-        user.id === userId ? { ...user, suspended: !currentStatus } : user
+      prev.map((u) =>
+        u.id === id
+          ? {
+              ...u,
+              suspended: !current,
+            }
+          : u
       )
     );
+  }
+  const filteredUsers = useMemo(() => {
+  return users.filter((user) => {
+    const term = search.toLowerCase();
 
-    setMessage(currentStatus ? "User unsuspended." : "User suspended.");
-  };
+    const searchMatch =
+      user.full_name?.toLowerCase().includes(term) ||
+      user.email?.toLowerCase().includes(term);
 
-  if (loading) return <LoadingSkeleton />;
+    const roleMatch =
+      role === "all" ||
+      user.role === role ||
+      (role === "admin" && user.is_admin);
+
+    const statusMatch =
+      status === "all" ||
+      (status === "active" && !user.suspended) ||
+      (status === "suspended" && user.suspended) ||
+      (status === "demo" && user.is_demo) ||
+      (status === "real" && !user.is_demo);
+
+    return (
+      searchMatch &&
+      roleMatch &&
+      statusMatch
+    );
+  });
+}, [users, search, role, status]);
+
+const statistics = {
+  total: users.length,
+
+  freelancers: users.filter(
+    (u) => u.role === "freelancer"
+  ).length,
+
+  clients: users.filter(
+    (u) => u.role === "client"
+  ).length,
+
+  admins: users.filter(
+    (u) => u.is_admin
+  ).length,
+
+  demo: users.filter(
+    (u) => u.is_demo
+  ).length,
+
+  suspended: users.filter(
+    (u) => u.suspended
+  ).length,
+
+  verified: users.filter(
+    (u) => u.verified
+  ).length,
+};
+
+const totalPages = Math.max(
+  1,
+  Math.ceil(filteredUsers.length / pageSize)
+);
+
+const pageUsers = filteredUsers.slice(
+  (page - 1) * pageSize,
+  page * pageSize
+);
+
+async function saveUser(
+  editedUser: UserProfile
+) {
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      full_name: editedUser.full_name,
+      email: editedUser.email,
+      category: editedUser.category,
+      location: editedUser.location,
+      bio: editedUser.bio,
+    })
+    .eq("id", editedUser.id);
+
+  if (error) {
+    setMessage(error.message);
+    return;
+  }
+
+  setUsers((prev) =>
+    prev.map((user) =>
+      user.id === editedUser.id
+        ? editedUser
+        : user
+    )
+  );
+
+  setEditingUser(null);
+
+  setMessage("User updated.");
+}
+
+function deleteUser(user: UserProfile) {
+  if (
+    confirm(
+      `Delete ${user.full_name}?`
+    )
+  ) {
+    setMessage(
+      "Delete function will be connected to Auth later."
+    );
+  }
+}
+    if (loading) return <LoadingSkeleton />;
 
   if (!allowed) {
     return (
       <main className="contracts-page">
         <section className="dark-card contract-card">
-          <p className="dashboard-badge">Admin</p>
+          <p className="dashboard-badge">
+            Administrator
+          </p>
+
           <h1>Access Restricted</h1>
-          <p>Only admins can manage users.</p>
+
+          <p>
+            Only administrators can access this page.
+          </p>
         </section>
       </main>
     );
@@ -93,67 +240,79 @@ export default function AdminUsersPage() {
 
   return (
     <main className="contracts-page">
+
       <section className="contracts-header dark-card">
-        <p className="dashboard-badge">Admin</p>
+
+        <p className="dashboard-badge">
+          Administrator
+        </p>
+
         <h1>User Management</h1>
-        <p>View users and suspend or unsuspend accounts.</p>
+
+        <p>
+          Manage freelancers, clients and administrators.
+        </p>
+
       </section>
 
-      {message && <p className="upload-message">{message}</p>}
+      {message && (
+        <p className="upload-message">
+          {message}
+        </p>
+      )}
 
-      <section className="contracts-grid">
-        {users.map((user) => (
-          <div key={user.id} className="dark-card contract-card">
-            <h2>{user.full_name || "Unnamed User"}</h2>
+      <UserStatistics
+        total={statistics.total}
+        freelancers={statistics.freelancers}
+        clients={statistics.clients}
+        admins={statistics.admins}
+        demo={statistics.demo}
+        suspended={statistics.suspended}
+        verified={statistics.verified}
+      />
 
-            <p>
-              <strong>Email:</strong> {user.email || "N/A"}
-            </p>
+      <div
+        style={{
+          marginTop: 25,
+        }}
+      >
 
-            <p>
-  <strong>Role:</strong>{" "}
+        <UserFilters
+          search={search}
+          setSearch={setSearch}
+          role={role}
+          setRole={setRole}
+          status={status}
+          setStatus={setStatus}
+        />
 
-  {user.role === "client" && (
-    <span className="verified-badge">Client</span>
-  )}
+      </div>
 
-  {user.role === "freelancer" && (
-    <span className="top-rated-badge">Freelancer</span>
-  )}
+      <UserTable
+        users={pageUsers}
+        onSuspend={toggleSuspension}
+        onView={setSelectedUser}
+        onEdit={setEditingUser}
+        onDelete={deleteUser}
+      />
 
-  {!user.role && "N/A"}
-</p>
-            <p>
-  <strong>Admin:</strong>{" "}
+      <UserPagination
+        page={page}
+        totalPages={totalPages}
+        setPage={setPage}
+      />
 
-  {user.is_admin ? (
-    <span className="verified-badge">Administrator</span>
-  ) : (
-    "No"
-  )}
-</p>
+      <UserViewModal
+        user={selectedUser}
+        onClose={() => setSelectedUser(null)}
+      />
 
-            <p>
-  <strong>Status:</strong>{" "}
+      <UserEditModal
+        user={editingUser}
+        onClose={() => setEditingUser(null)}
+        onSave={saveUser}
+      />
 
-  {user.suspended ? (
-    <span className="reject-btn">Suspended</span>
-  ) : (
-    <span className="accept-btn">Active</span>
-  )}
-</p>
-
-            <div className="contract-actions">
-              <button
-                onClick={() => toggleSuspension(user.id, user.suspended)}
-                className={user.suspended ? "accept-btn" : "reject-btn"}
-              >
-                {user.suspended ? "Unsuspend" : "Suspend"}
-              </button>
-            </div>
-          </div>
-        ))}
-      </section>
     </main>
   );
 }

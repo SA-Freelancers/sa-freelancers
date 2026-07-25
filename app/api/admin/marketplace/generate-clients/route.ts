@@ -115,6 +115,7 @@ function shuffle<T>(values: T[]): T[] {
 }
 
 export async function POST(request: NextRequest) {
+    console.log("========== GENERATE CLIENTS API CALLED ==========");
   let createdAuthUserIds: string[] = [];
 
   try {
@@ -321,16 +322,25 @@ export async function POST(request: NextRequest) {
         });
 
       if (authError || !authData.user) {
-        failedClients.push({
-          demoClientId: client.id,
-          company: client.display_name,
-          reason:
-            authError?.message ??
-            "Supabase did not return the created Auth user.",
-        });
+  const reason =
+    authError?.message ??
+    "Supabase did not return the created Auth user.";
 
-        continue;
-      }
+  console.error("AUTH USER CREATION FAILED");
+  console.error({
+    company: client.display_name,
+    email,
+    reason,
+  });
+
+  failedClients.push({
+    demoClientId: client.id,
+    company: client.display_name,
+    reason,
+  });
+
+  continue;
+}
 
       const authUserId = authData.user.id;
       createdAuthUserIds.push(authUserId);
@@ -387,24 +397,27 @@ export async function POST(request: NextRequest) {
         );
 
       if (profileError) {
-        /*
-         * Remove the newly created Auth account when its profile fails.
-         * This prevents orphaned demo users.
-         */
-        await adminClient.auth.admin.deleteUser(authUserId);
+  console.error("PROFILE UPSERT FAILED");
+  console.error({
+    company: client.display_name,
+    email,
+    error: profileError,
+  });
 
-        createdAuthUserIds = createdAuthUserIds.filter(
-          (id) => id !== authUserId
-        );
+  await adminClient.auth.admin.deleteUser(authUserId);
 
-        failedClients.push({
-          demoClientId: client.id,
-          company: client.display_name,
-          reason: profileError.message,
-        });
+  createdAuthUserIds = createdAuthUserIds.filter(
+    (id) => id !== authUserId
+  );
 
-        continue;
-      }
+  failedClients.push({
+    demoClientId: client.id,
+    company: client.display_name,
+    reason: profileError.message,
+  });
+
+  continue;
+}
 
       createdProfiles.push({
         id: authUserId,
@@ -422,6 +435,8 @@ export async function POST(request: NextRequest) {
       })
       .eq("is_demo", true)
       .eq("role", "client");
+      console.log("CLIENT GENERATION SUMMARY");
+console.table(failedClients);
 
     return NextResponse.json({
       success: true,
