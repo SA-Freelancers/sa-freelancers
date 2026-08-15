@@ -40,54 +40,127 @@ export default function UserTable({
         style={{
           width: "100%",
           borderCollapse: "collapse",
+          minWidth: 1100,
         }}
       >
         <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Category</th>
-            <th>Location</th>
-            <th>Status</th>
-            <th>Verified</th>
-            <th>Demo</th>
-            <th>Actions</th>
+          <tr
+            style={{
+              borderBottom: "1px solid rgba(255,255,255,.15)",
+            }}
+          >
+            <th style={{ padding: "14px", textAlign: "left" }}>
+              Name
+            </th>
+
+            <th style={{ padding: "14px", textAlign: "left" }}>
+              Email
+            </th>
+
+            <th style={{ padding: "14px", textAlign: "left" }}>
+              Role
+            </th>
+
+            <th style={{ padding: "14px", textAlign: "left" }}>
+              Category
+            </th>
+
+            <th style={{ padding: "14px", textAlign: "left" }}>
+              Location
+            </th>
+
+            <th style={{ padding: "14px", textAlign: "left" }}>
+              Status
+            </th>
+
+            <th style={{ padding: "14px", textAlign: "left" }}>
+              Verified
+            </th>
+
+            <th style={{ padding: "14px", textAlign: "left" }}>
+              Demo
+            </th>
+
+            <th style={{ padding: "14px", textAlign: "left" }}>
+              Actions
+            </th>
           </tr>
         </thead>
 
         <tbody>
           {users.map((user) => (
-            <tr key={user.id}>
-              <td>{user.full_name}</td>
-
-              <td>{user.email}</td>
-
-              <td>
-                {user.is_admin
-                  ? "Administrator"
-                  : user.role}
+            <tr
+              key={user.id}
+              style={{
+                borderBottom:
+                  "1px solid rgba(255,255,255,.06)",
+              }}
+            >
+              <td style={{ padding: "14px" }}>
+                {user.full_name || "Unnamed User"}
               </td>
 
-              <td>{user.category}</td>
-
-              <td>{user.location}</td>
-
-              <td>
-                {user.suspended
-                  ? "Suspended"
-                  : "Active"}
+              <td style={{ padding: "14px" }}>
+                {user.email}
               </td>
 
-              <td>
-                {user.verified ? "✔" : "—"}
+              <td style={{ padding: "14px" }}>
+                {user.is_admin ? (
+                  <span className="verified-badge">
+                    Administrator
+                  </span>
+                ) : user.role === "client" ? (
+                  <span className="accept-btn">
+                    Client
+                  </span>
+                ) : (
+                  <span className="top-rated-badge">
+                    Freelancer
+                  </span>
+                )}
               </td>
 
-              <td>
-                {user.is_demo ? "Demo" : "Real"}
+              <td style={{ padding: "14px" }}>
+                {user.category || "-"}
               </td>
 
-              <td>
+              <td style={{ padding: "14px" }}>
+                {user.location || "-"}
+              </td>
+
+              <td style={{ padding: "14px" }}>
+                {user.suspended ? (
+                  <span className="reject-btn">
+                    Suspended
+                  </span>
+                ) : (
+                  <span className="accept-btn">
+                    Active
+                  </span>
+                )}
+              </td>
+
+              <td style={{ padding: "14px" }}>
+                {user.verified ? (
+                  <span className="verified-badge">
+                    Verified
+                  </span>
+                ) : (
+                  "-"
+                )}
+              </td>
+
+              <td style={{ padding: "14px" }}>
+                {user.is_demo ? (
+                  <span className="top-rated-badge">
+                    Demo
+                  </span>
+                ) : (
+                  "Real"
+                )}
+              </td>
+
+              <td style={{ padding: "14px" }}>
                 <div
                   style={{
                     display: "flex",
@@ -139,6 +212,21 @@ export default function UserTable({
               </td>
             </tr>
           ))}
+
+          {users.length === 0 && (
+            <tr>
+              <td
+                colSpan={9}
+                style={{
+                  padding: 40,
+                  textAlign: "center",
+                  opacity: 0.7,
+                }}
+              >
+                No users found.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </section>

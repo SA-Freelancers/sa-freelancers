@@ -2,162 +2,177 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/app/lib/supabase";
-import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 
-export default function AdminPage() {
+import DashboardHeader from "./components/DashboardHeader";
+import DashboardStats from "./components/DashboardStats";
+import AnalyticsChart from "./components/AnalyticsChart";
+import PlatformHealth from "./components/PlatformHealth";
+import RecentUsers from "./components/RecentUsers";
+import RecentJobs from "./components/RecentJobs";
+import DashboardQuickActions from "./components/DashboardQuickActions";
+import DashboardActivity from "./components/DashboardActivity";
+
+import type { UserProfile } from "./users/types";
+
+export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
-  const [users, setUsers] = useState(0);
-  const [freelancers, setFreelancers] = useState(0);
-  const [clients, setClients] = useState(0);
-  const [jobs, setJobs] = useState(0);
-  const [applications, setApplications] = useState(0);
-  const [contracts, setContracts] = useState(0);
+  const [recentUsers, setRecentUsers] = useState<UserProfile[]>([]);
+
+  const [recentJobs, setRecentJobs] = useState<any[]>([]);
+
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    freelancers: 0,
+    clients: 0,
+    jobs: 0,
+    applications: 0,
+    revenue: 0,
+  });
 
   useEffect(() => {
-    loadStats();
+    loadDashboard();
   }, []);
 
-  const loadStats = async () => {
-    const { count: userCount } = await supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true });
+  async function loadDashboard() {
+    try {
+      const [
+        totalUsers,
+        freelancers,
+        clients,
+        jobs,
+        applications,
+      ] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id", {
+            count: "exact",
+            head: true,
+          }),
 
-    const { count: freelancerCount } = await supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true })
-      .eq("role", "freelancer");
+        supabase
+          .from("profiles")
+          .select("id", {
+            count: "exact",
+            head: true,
+          })
+          .eq("role", "freelancer"),
 
-    const { count: clientCount } = await supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true })
-      .eq("role", "client");
+        supabase
+          .from("profiles")
+          .select("id", {
+            count: "exact",
+            head: true,
+          })
+          .eq("role", "client"),
 
-    const { count: jobCount } = await supabase
-      .from("jobs")
-      .select("*", { count: "exact", head: true });
+        supabase
+          .from("jobs")
+          .select("id", {
+            count: "exact",
+            head: true,
+          }),
 
-    const { count: applicationCount } = await supabase
-      .from("applications")
-      .select("*", { count: "exact", head: true });
+        supabase
+          .from("applications")
+          .select("id", {
+            count: "exact",
+            head: true,
+          }),
+      ]);
 
-    const { count: contractCount } = await supabase
-      .from("contracts")
-      .select("*", { count: "exact", head: true });
+      setStats({
+        totalUsers: totalUsers.count ?? 0,
+        freelancers: freelancers.count ?? 0,
+        clients: clients.count ?? 0,
+        jobs: jobs.count ?? 0,
+        applications: applications.count ?? 0,
 
-    setUsers(userCount || 0);
-    setFreelancers(freelancerCount || 0);
-    setClients(clientCount || 0);
-    setJobs(jobCount || 0);
-    setApplications(applicationCount || 0);
-    setContracts(contractCount || 0);
+        // Temporary estimated revenue
+        revenue: (jobs.count ?? 0) * 250,
+      });
 
-    setLoading(false);
-  };
+      // Recent Users
+      const { data: latestUsers } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", {
+          ascending: false,
+        })
+        .limit(5);
 
-  if (loading) return <LoadingSkeleton />;
+      setRecentUsers((latestUsers as UserProfile[]) ?? []);
+
+      // Recent Jobs
+      const { data: latestJobs } = await supabase
+        .from("jobs")
+        .select(`
+          id,
+          title,
+          budget,
+          status,
+          created_at,
+          profiles (
+            full_name
+          )
+        `)
+        .order("created_at", {
+          ascending: false,
+        })
+        .limit(5);
+
+      setRecentJobs(latestJobs ?? []);
+    } catch (error) {
+      console.error("Dashboard Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <main className="contracts-page">
+        <h1>Loading Dashboard...</h1>
+      </main>
+    );
+  }
 
   return (
-    <main className="dashboard-home">
-      <section className="dashboard-hero dark-card">
-        <div>
-          <p className="dashboard-badge">Administrator Panel</p>
+    <main className="contracts-page">
 
-<h1>Marketplace Control Centre</h1>
+      <DashboardHeader />
 
-<p>
-  Monitor platform growth, manage users, review reports and
-  maintain marketplace safety.
-</p>
-        </div>
-      </section>
+      <DashboardStats
+        totalUsers={stats.totalUsers}
+        freelancers={stats.freelancers}
+        clients={stats.clients}
+        jobs={stats.jobs}
+        applications={stats.applications}
+        revenue={stats.revenue}
+      />
 
-      <section className="dashboard-stats">
-        <div className="dark-card stat-card">
-          <h3>{users}</h3>
-          <p>Total Users</p>
-        </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "2fr 1fr",
+          gap: 20,
+          marginTop: 24,
+          alignItems: "start",
+        }}
+      >
+        <AnalyticsChart />
 
-        <div className="dark-card stat-card">
-          <h3>{freelancers}</h3>
-          <p>Freelancers</p>
-        </div>
+        <PlatformHealth />
+      </div>
 
-        <div className="dark-card stat-card">
-          <h3>{clients}</h3>
-          <p>Clients</p>
-        </div>
+      <RecentUsers users={recentUsers} />
 
-        <div className="dark-card stat-card">
-          <h3>{jobs}</h3>
-          <p>Jobs</p>
-        </div>
+      <RecentJobs jobs={recentJobs} />
 
-        <div className="dark-card stat-card">
-          <h3>{applications}</h3>
-          <p>Applications</p>
-        </div>
+      <DashboardActivity />
 
-        <div className="dark-card stat-card">
-          <h3>{contracts}</h3>
-          <p>Contracts</p>
-        </div>
-        <div className="dark-card stat-card">
-  <h3>Coming Soon</h3>
-  <p>Revenue Tracking</p>
-</div>
+      <DashboardQuickActions />
 
-<div className="dark-card stat-card">
-  <h3>Coming Soon</h3>
-  <p>Dispute Resolution</p>
-</div>
-      </section>
-      <section className="dashboard-quick-actions">
-  <a href="/dashboard/admin/users" className="dark-card quick-action-card">
-    <span>👥</span>
-    <h3>Manage Users</h3>
-    <p>View, suspend and unsuspend platform users.</p>
-  </a>
-
-  <a href="/dashboard/admin/reports" className="dark-card quick-action-card">
-    <span>🚩</span>
-    <h3>Review Reports</h3>
-    <p>Resolve or dismiss reports submitted by users.</p>
-  </a>
-
-  <a href="/dashboard/admin/moderation" className="dark-card quick-action-card">
-    <span>🛡️</span>
-    <h3>Moderation Center</h3>
-    <p>Review suspicious activity and safety issues.</p>
-  </a>
-</section>
-<section className="dark-card dashboard-activity">
-  <h2>Admin Tasks</h2>
-
-  <div className="activity-item">
-    <div className="activity-dot" />
-    <div>
-      <strong>User Management</strong>
-      <p>Review new registrations and account status.</p>
-    </div>
-  </div>
-
-  <div className="activity-item">
-    <div className="activity-dot" />
-    <div>
-      <strong>Reports Queue</strong>
-      <p>Check reported users and project disputes.</p>
-    </div>
-  </div>
-
-  <div className="activity-item">
-    <div className="activity-dot" />
-    <div>
-      <strong>Platform Monitoring</strong>
-      <p>Monitor jobs, applications and contracts.</p>
-    </div>
-  </div>
-</section>
     </main>
   );
 }

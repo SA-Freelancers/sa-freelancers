@@ -382,6 +382,38 @@ setCertifications(
       onChange={(e) => setLocation(e.target.value)}
       className="form-input"
     />
+    <label className="form-label">Years of Experience</label>
+<input
+  type="number"
+  min="0"
+  placeholder="Example: 6"
+  value={experience}
+  onChange={(e) => setExperience(e.target.value)}
+  className="form-input"
+/>
+
+<label className="form-label">Hourly Rate (ZAR)</label>
+<input
+  type="number"
+  min="0"
+  placeholder="Example: 350"
+  value={hourlyRate}
+  onChange={(e) => setHourlyRate(e.target.value)}
+  className="form-input"
+/>
+
+<label className="form-label">Skills</label>
+<input
+  type="text"
+  placeholder="Example: SolidWorks, Inventor, KeyCreator"
+  value={skills}
+  onChange={(e) => setSkills(e.target.value)}
+  className="form-input"
+/>
+
+<p style={{ marginTop: 6, fontSize: 14, opacity: 0.75 }}>
+  Separate multiple skills with commas.
+</p>
   </>
 )}
 

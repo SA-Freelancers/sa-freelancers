@@ -1,3 +1,5 @@
+"use client";
+
 type Props = {
   search: string;
   setSearch: (value: string) => void;
@@ -18,44 +20,71 @@ export default function UserFilters({
   setStatus,
 }: Props) {
   return (
-    <section className="dark-card" style={{ padding: 20 }}>
+    <div
+      className="dark-card"
+      style={{
+        padding: 20,
+        marginTop: 20,
+      }}
+    >
       <div
         style={{
-          display: "flex",
-          gap: 15,
-          flexWrap: "wrap",
+          display: "grid",
+          gap: 16,
+          gridTemplateColumns:
+            "2fr 1fr 1fr",
         }}
       >
         <input
-          className="profile-input"
-          placeholder="Search users..."
+          placeholder="Search user..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) =>
+            setSearch(e.target.value)
+          }
         />
 
         <select
-          className="profile-input"
           value={role}
-          onChange={(e) => setRole(e.target.value)}
+          onChange={(e) =>
+            setRole(e.target.value)
+          }
         >
-          <option value="all">All Roles</option>
-          <option value="freelancer">Freelancers</option>
-          <option value="client">Clients</option>
-          <option value="admin">Administrators</option>
+          <option value="all">
+            All Roles
+          </option>
+
+          <option value="freelancer">
+            Freelancer
+          </option>
+
+          <option value="client">
+            Client
+          </option>
+
+          <option value="admin">
+            Administrator
+          </option>
         </select>
 
         <select
-          className="profile-input"
           value={status}
-          onChange={(e) => setStatus(e.target.value)}
+          onChange={(e) =>
+            setStatus(e.target.value)
+          }
         >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="suspended">Suspended</option>
-          <option value="demo">Demo</option>
-          <option value="real">Real</option>
+          <option value="all">
+            All Status
+          </option>
+
+          <option value="active">
+            Active
+          </option>
+
+          <option value="suspended">
+            Suspended
+          </option>
         </select>
       </div>
-    </section>
+    </div>
   );
 }

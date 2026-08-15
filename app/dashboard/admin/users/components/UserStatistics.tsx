@@ -1,3 +1,5 @@
+"use client";
+
 type Props = {
   total: number;
   freelancers: number;
@@ -8,6 +10,46 @@ type Props = {
   verified: number;
 };
 
+function Card({
+  title,
+  value,
+}: {
+  title: string;
+  value: number;
+}) {
+  return (
+    <div
+      className="dark-card"
+      style={{
+        padding: 22,
+        borderRadius: 16,
+        minWidth: 180,
+        flex: 1,
+        textAlign: "center",
+      }}
+    >
+      <h3
+        style={{
+          fontSize: 15,
+          opacity: .75,
+          marginBottom: 10,
+        }}
+      >
+        {title}
+      </h3>
+
+      <div
+        style={{
+          fontSize: 34,
+          fontWeight: 700,
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
 export default function UserStatistics({
   total,
   freelancers,
@@ -17,24 +59,29 @@ export default function UserStatistics({
   suspended,
   verified,
 }: Props) {
-  const cards = [
-    { title: "Total Users", value: total },
-    { title: "Freelancers", value: freelancers },
-    { title: "Clients", value: clients },
-    { title: "Administrators", value: admins },
-    { title: "Demo Accounts", value: demo },
-    { title: "Suspended", value: suspended },
-    { title: "Verified", value: verified },
-  ];
-
   return (
-    <section className="dashboard-stats">
-      {cards.map((card) => (
-        <div key={card.title} className="dark-card stat-card">
-          <h2>{card.value}</h2>
-          <p>{card.title}</p>
-        </div>
-      ))}
+    <section
+      style={{
+        display: "grid",
+        gridTemplateColumns:
+          "repeat(auto-fit,minmax(180px,1fr))",
+        gap: 18,
+        marginTop: 25,
+      }}
+    >
+      <Card title="Total Users" value={total} />
+
+      <Card title="Freelancers" value={freelancers} />
+
+      <Card title="Clients" value={clients} />
+
+      <Card title="Administrators" value={admins} />
+
+      <Card title="Demo Users" value={demo} />
+
+      <Card title="Verified" value={verified} />
+
+      <Card title="Suspended" value={suspended} />
     </section>
   );
 }

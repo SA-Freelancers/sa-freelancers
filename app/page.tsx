@@ -54,6 +54,7 @@ export default function HomePage() {
           <Link href="/register" className="home-primary-btn">
             Hire Freelancers
           </Link>
+          
 
           <Link href="/search" className="home-secondary-btn">
             Find Work
