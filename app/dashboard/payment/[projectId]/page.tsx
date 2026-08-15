@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import {
+  useParams,
+  useSearchParams,
+} from "next/navigation";
+
 import { supabase } from "@/app/lib/supabase";
 import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 
@@ -25,26 +29,37 @@ type Milestone = {
   created_at?: string;
 };
 
+type PayFastCreateResponse = {
+  success?: boolean;
+  payfastUrl?: string;
+  fields?: Record<string, string>;
+  error?: string;
+};
+
 export default function PaymentPage() {
   const params = useParams();
-  const router = useRouter();
   const searchParams = useSearchParams();
 
-  const projectId = params.projectId as string;
-  const milestoneId = searchParams.get("milestoneId") ?? "";
+  const projectId =
+    params.projectId as string;
 
-  const [project, setProject] = useState<Project | null>(null);
-  const [milestone, setMilestone] = useState<Milestone | null>(null);
+  const milestoneId =
+    searchParams.get("milestoneId") ?? "";
 
-  const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
-  const [message, setMessage] = useState("");
+  const [project, setProject] =
+    useState<Project | null>(null);
 
-  /*
-   * --------------------------------------------------
-   * LOAD PAYMENT DETAILS
-   * --------------------------------------------------
-   */
+  const [milestone, setMilestone] =
+    useState<Milestone | null>(null);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [processing, setProcessing] =
+    useState(false);
+
+  const [message, setMessage] =
+    useState("");
 
   useEffect(() => {
     if (projectId) {
@@ -52,667 +67,493 @@ export default function PaymentPage() {
     }
   }, [projectId, milestoneId]);
 
-  const loadPaymentDetails = async () => {
-    setLoading(true);
-    setMessage("");
-    setProject(null);
-    setMilestone(null);
+  const loadPaymentDetails =
+    async () => {
+      setLoading(true);
+      setMessage("");
+      setProject(null);
+      setMilestone(null);
 
-    try {
-      /*
-       * --------------------------------------------------
-       * GET CURRENT USER
-       * --------------------------------------------------
-       */
+      try {
+        // ---------------------------------------------
+        // CURRENT USER
+        // ---------------------------------------------
 
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+        const {
+          data: { user },
+          error: userError,
+        } =
+          await supabase.auth.getUser();
 
-      if (userError) {
-        console.error(
-          "User loading error:",
-          JSON.stringify(userError, null, 2)
+        if (userError) {
+          console.error(
+            "User loading error:",
+            JSON.stringify(
+              userError,
+              null,
+              2
+            )
+          );
+
+          setMessage(
+            "Unable to verify your login."
+          );
+
+          return;
+        }
+
+        if (!user) {
+          setMessage(
+            "Please login first."
+          );
+
+          return;
+        }
+
+        // ---------------------------------------------
+        // LOAD PROJECT
+        // ---------------------------------------------
+
+        const {
+          data: projectData,
+          error: projectError,
+        } = await supabase
+          .from("projects")
+          .select(
+            `
+            id,
+            client_id,
+            freelancer_id,
+            status,
+            payment_status,
+            paid_at
+            `
+          )
+          .eq("id", projectId)
+          .maybeSingle();
+
+        if (projectError) {
+          console.error(
+            "Project loading error:",
+            JSON.stringify(
+              projectError,
+              null,
+              2
+            )
+          );
+
+          setMessage(
+            projectError.message ||
+              "Unable to load the project."
+          );
+
+          return;
+        }
+
+        if (!projectData) {
+          setMessage(
+            "Project not found."
+          );
+
+          return;
+        }
+
+        // ---------------------------------------------
+        // SECURITY
+        // ONLY PROJECT CLIENT CAN PAY
+        // ---------------------------------------------
+
+        if (
+          projectData.client_id !==
+          user.id
+        ) {
+          setMessage(
+            "You are not authorised to make this payment."
+          );
+
+          return;
+        }
+
+        setProject(
+          projectData as Project
         );
 
-        setMessage("Unable to verify your login.");
-        return;
-      }
+        // ---------------------------------------------
+        // MILESTONE ID REQUIRED
+        // ---------------------------------------------
 
-      if (!user) {
-        setMessage("Please login first.");
-        return;
-      }
+        if (!milestoneId) {
+          setMessage(
+            "No milestone was selected for payment."
+          );
 
-      /*
-       * --------------------------------------------------
-       * LOAD PROJECT
-       * --------------------------------------------------
-       */
+          return;
+        }
 
-      const {
-        data: projectData,
-        error: projectError,
-      } = await supabase
-        .from("projects")
-        .select(
-          `
-          id,
-          client_id,
-          freelancer_id,
-          status,
-          payment_status,
-          paid_at
-        `
-        )
-        .eq("id", projectId)
-        .maybeSingle();
+        // ---------------------------------------------
+        // LOAD MILESTONE
+        // ---------------------------------------------
 
-      if (projectError) {
+        const {
+          data: milestoneData,
+          error: milestoneError,
+        } = await supabase
+          .from("milestones")
+          .select(
+            `
+            id,
+            project_id,
+            contract_id,
+            title,
+            description,
+            amount,
+            status,
+            created_at
+            `
+          )
+          .eq("id", milestoneId)
+          .maybeSingle();
+
+        if (milestoneError) {
+          console.error(
+            "Milestone loading error:",
+            JSON.stringify(
+              milestoneError,
+              null,
+              2
+            )
+          );
+
+          setMessage(
+            milestoneError.message ||
+              "The selected milestone could not be loaded."
+          );
+
+          return;
+        }
+
+        if (!milestoneData) {
+          setMessage(
+            "The selected milestone could not be found."
+          );
+
+          return;
+        }
+
+        // ---------------------------------------------
+        // VERIFY MILESTONE BELONGS TO PROJECT
+        // ---------------------------------------------
+
+        if (
+          milestoneData.project_id !==
+          projectId
+        ) {
+          console.error(
+            "Milestone/project mismatch:",
+            {
+              milestoneId,
+              milestoneProjectId:
+                milestoneData.project_id,
+              urlProjectId:
+                projectId,
+            }
+          );
+
+          setMessage(
+            "This milestone is not linked to the selected project."
+          );
+
+          return;
+        }
+
+        setMilestone(
+          milestoneData as Milestone
+        );
+      } catch (error) {
         console.error(
-          "Project loading error:",
-          JSON.stringify(projectError, null, 2)
+          "Unexpected payment loading error:",
+          error
         );
 
         setMessage(
-          projectError.message ||
-            "Unable to load the project."
+          "An unexpected error occurred while loading the payment."
         );
-
-        return;
+      } finally {
+        setLoading(false);
       }
+    };
 
-      if (!projectData) {
-        setMessage("Project not found.");
-        return;
-      }
+  // --------------------------------------------------
+  // PAYMENT AMOUNT
+  // --------------------------------------------------
 
-      /*
-       * --------------------------------------------------
-       * SECURITY CHECK
-       *
-       * Only the client who owns the project
-       * can make the payment.
-       * --------------------------------------------------
-       */
+  const paymentAmount =
+    milestone?.amount
+      ? Number(milestone.amount)
+      : 0;
 
-      if (projectData.client_id !== user.id) {
+  // --------------------------------------------------
+  // SECURE PAYFAST PAYMENT
+  // --------------------------------------------------
+
+  const handlePayment =
+    async () => {
+      setMessage("");
+
+      if (!project) {
         setMessage(
-          "You are not authorised to make this payment."
+          "Project information is unavailable."
         );
 
         return;
       }
 
-      const loadedProject =
-        projectData as Project;
+      if (!milestone) {
+        setMessage(
+          "Please select a valid milestone."
+        );
 
-      setProject(loadedProject);
-
-      /*
-       * --------------------------------------------------
-       * LOAD MILESTONE
-       * --------------------------------------------------
-       */
+        return;
+      }
 
       if (!milestoneId) {
         setMessage(
-          "No milestone was selected for payment."
+          "Milestone ID is missing."
         );
 
         return;
       }
-
-      /*
-       * IMPORTANT:
-       *
-       * We first locate the milestone by ID only.
-       *
-       * We do NOT use .single().
-       *
-       * Then we manually verify that project_id
-       * matches the project in the URL.
-       */
-
-      const {
-        data: milestoneData,
-        error: milestoneError,
-      } = await supabase
-        .from("milestones")
-        .select(
-          `
-          id,
-          project_id,
-          contract_id,
-          title,
-          description,
-          amount,
-          status,
-          created_at
-        `
-        )
-        .eq("id", milestoneId)
-        .maybeSingle();
-
-      if (milestoneError) {
-        console.error(
-          "Milestone loading error:",
-          JSON.stringify(milestoneError, null, 2)
-        );
-
-        setMessage(
-          milestoneError.message ||
-            "The selected milestone could not be loaded."
-        );
-
-        return;
-      }
-
-      /*
-       * No milestone returned.
-       */
-
-      if (!milestoneData) {
-        console.error(
-          "Milestone not found:",
-          milestoneId
-        );
-
-        setMessage(
-          "The selected milestone could not be found."
-        );
-
-        return;
-      }
-
-      /*
-       * --------------------------------------------------
-       * VERIFY PROJECT LINK
-       * --------------------------------------------------
-       */
 
       if (
-        milestoneData.project_id !== projectId
+        !Number.isFinite(
+          paymentAmount
+        ) ||
+        paymentAmount <= 0
       ) {
-        console.error(
-          "Milestone/project mismatch:",
-          {
-            milestoneId,
-            milestoneProjectId:
-              milestoneData.project_id,
-            urlProjectId: projectId,
+        setMessage(
+          "The milestone amount must be greater than zero."
+        );
+
+        return;
+      }
+
+      const milestoneStatus =
+        milestone.status
+          ?.toLowerCase() ?? "";
+
+      if (
+        milestoneStatus ===
+          "paid" ||
+        milestoneStatus ===
+          "completed"
+      ) {
+        setMessage(
+          "This milestone has already been paid."
+        );
+
+        return;
+      }
+
+      if (
+        milestoneStatus !==
+        "approved"
+      ) {
+        setMessage(
+          "Only approved milestones can be paid."
+        );
+
+        return;
+      }
+
+      setProcessing(true);
+
+      try {
+        // ---------------------------------------------
+        // GET CURRENT SESSION
+        // ---------------------------------------------
+
+        const {
+          data: sessionData,
+          error: sessionError,
+        } =
+          await supabase.auth.getSession();
+
+        if (
+          sessionError ||
+          !sessionData.session
+        ) {
+          setMessage(
+            "Your login session could not be verified. Please login again."
+          );
+
+          setProcessing(false);
+          return;
+        }
+
+        // ---------------------------------------------
+        // SERVER PREPARES SIGNED PAYFAST PAYMENT
+        // ---------------------------------------------
+
+        const response =
+          await fetch(
+            "/api/payfast/create",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                Authorization:
+                  `Bearer ${sessionData.session.access_token}`,
+              },
+
+              body:
+                JSON.stringify({
+                  projectId,
+                  milestoneId,
+                }),
+            }
+          );
+
+        let result:
+          PayFastCreateResponse;
+
+        try {
+          result =
+            await response.json();
+        } catch {
+          setMessage(
+            "The payment server returned an invalid response."
+          );
+
+          setProcessing(false);
+          return;
+        }
+
+        if (!response.ok) {
+          console.error(
+            "Payment preparation error:",
+            result
+          );
+
+          setMessage(
+            result.error ||
+              "Unable to prepare the payment."
+          );
+
+          setProcessing(false);
+          return;
+        }
+
+        if (
+          !result.payfastUrl ||
+          !result.fields
+        ) {
+          console.error(
+            "Invalid PayFast create response:",
+            result
+          );
+
+          setMessage(
+            "Invalid payment information was returned by the server."
+          );
+
+          setProcessing(false);
+          return;
+        }
+
+        // ---------------------------------------------
+        // REMOVE OLD FORM IF PRESENT
+        // ---------------------------------------------
+
+        const oldForm =
+          document.getElementById(
+            "payfast-payment-form"
+          );
+
+        if (oldForm) {
+          oldForm.remove();
+        }
+
+        // ---------------------------------------------
+        // BUILD FORM FROM SERVER-SIGNED FIELDS
+        // ---------------------------------------------
+
+        const form =
+          document.createElement(
+            "form"
+          );
+
+        form.id =
+          "payfast-payment-form";
+
+        form.method =
+          "POST";
+
+        form.action =
+          result.payfastUrl;
+
+        form.target =
+          "_self";
+
+        form.style.display =
+          "none";
+
+        Object.entries(
+          result.fields
+        ).forEach(
+          ([name, value]) => {
+            const input =
+              document.createElement(
+                "input"
+              );
+
+            input.type =
+              "hidden";
+
+            input.name =
+              name;
+
+            input.value =
+              String(value);
+
+            form.appendChild(
+              input
+            );
           }
         );
 
+        document.body.appendChild(
+          form
+        );
+
+        // ---------------------------------------------
+        // SEND TO PAYFAST
+        // ---------------------------------------------
+
+        form.submit();
+      } catch (error) {
+        console.error(
+          "PayFast payment error:",
+          error
+        );
+
         setMessage(
-          "This milestone is not linked to the selected project."
+          "Unable to connect to the payment service. Please try again."
         );
 
-        return;
+        setProcessing(false);
       }
-
-      /*
-       * --------------------------------------------------
-       * SAVE MILESTONE
-       * --------------------------------------------------
-       */
-
-      setMilestone(
-        milestoneData as Milestone
-      );
-    } catch (error) {
-      console.error(
-        "Unexpected payment loading error:",
-        error
-      );
-
-      setMessage(
-        "An unexpected error occurred while loading the payment."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /*
-   * --------------------------------------------------
-   * PAYMENT AMOUNT
-   * --------------------------------------------------
-   */
-
-  const paymentAmount = milestone?.amount
-    ? Number(milestone.amount)
-    : 0;
-
-  /*
-   * --------------------------------------------------
-   * PAYFAST CONFIGURATION
-   * --------------------------------------------------
-   */
-
-  const merchantId =
-    process.env
-      .NEXT_PUBLIC_PAYFAST_MERCHANT_ID;
-
-  const merchantKey =
-    process.env
-      .NEXT_PUBLIC_PAYFAST_MERCHANT_KEY;
-
-  /*
-   * SANDBOX CHECKOUT URL
-   *
-   * IMPORTANT:
-   * This must be a normal URL string.
-   */
-
-  const payFastUrl =
-    "https://sandbox.payfast.co.za/eng/process";
-
-  /*
-   * --------------------------------------------------
-   * APPLICATION URL
-   * --------------------------------------------------
-   */
-
-  const origin =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : "";
-
-  /*
-   * --------------------------------------------------
-   * RETURN URL
-   * --------------------------------------------------
-   */
-
-  const returnUrl =
-    `${origin}/dashboard/payment-success` +
-    `?projectId=${encodeURIComponent(
-      projectId
-    )}` +
-    `&milestoneId=${encodeURIComponent(
-      milestoneId || ""
-    )}`;
-
-  /*
-   * --------------------------------------------------
-   * CANCEL URL
-   * --------------------------------------------------
-   */
-
-  const cancelUrl =
-    `${origin}/dashboard/client-contracts`;
-
-  /*
-   * --------------------------------------------------
-   * NOTIFY URL
-   * --------------------------------------------------
-   *
-   * IMPORTANT:
-   * localhost will not receive PayFast ITN
-   * notifications from the PayFast servers.
-   *
-   * This becomes important after deployment.
-   */
-
-  const notifyUrl =
-    `${origin}/api/payfast/notify`;
-
-  /*
-   * --------------------------------------------------
-   * START PAYFAST PAYMENT
-   * --------------------------------------------------
-   */
-
-  const handlePayment = async () => {
-    console.log(
-      "=============================="
-    );
-
-    console.log(
-      "PAY NOW CLICKED"
-    );
-
-    console.log(
-      "Project ID:",
-      projectId
-    );
-
-    console.log(
-      "Milestone ID:",
-      milestoneId
-    );
-
-    console.log(
-      "Milestone:",
-      milestone
-    );
-
-    console.log(
-      "Payment amount:",
-      paymentAmount
-    );
-
-    console.log(
-      "PayFast URL:",
-      payFastUrl
-    );
-
-    console.log(
-      "Return URL:",
-      returnUrl
-    );
-
-    console.log(
-      "Cancel URL:",
-      cancelUrl
-    );
-
-    console.log(
-      "Notify URL:",
-      notifyUrl
-    );
-
-    console.log(
-      "=============================="
-    );
-
-    setMessage("");
-
-    /*
-     * --------------------------------------------------
-     * VALIDATION
-     * --------------------------------------------------
-     */
-
-    if (!merchantId) {
-      setMessage(
-        "PayFast Merchant ID is missing."
-      );
-      return;
-    }
-
-    if (!merchantKey) {
-      setMessage(
-        "PayFast Merchant Key is missing."
-      );
-      return;
-    }
-
-    if (!project) {
-      setMessage(
-        "Project information is unavailable."
-      );
-      return;
-    }
-
-    if (!milestone) {
-      setMessage(
-        "Please select a valid milestone."
-      );
-      return;
-    }
-
-    if (paymentAmount <= 0) {
-      setMessage(
-        "The milestone amount must be greater than zero."
-      );
-      return;
-    }
-
-    /*
-     * --------------------------------------------------
-     * MILESTONE MUST BE APPROVED
-     * --------------------------------------------------
-     */
-
-    if (
-      milestone.status?.toLowerCase() !==
-      "approved"
-    ) {
-      setMessage(
-        "Only approved milestones can be paid."
-      );
-
-      return;
-    }
-
-    /*
-     * --------------------------------------------------
-     * IMPORTANT:
-     *
-     * DO NOT use project.payment_status here.
-     *
-     * The project can contain:
-     *
-     * payment_status = paid
-     *
-     * because another milestone was already paid.
-     *
-     * Each milestone needs its own payment status.
-     *
-     * We therefore only block this payment when
-     * THIS milestone itself has status = paid.
-     * --------------------------------------------------
-     */
-
-    if (
-      milestone.status?.toLowerCase() ===
-      "paid"
-    ) {
-      setMessage(
-        "This milestone has already been paid."
-      );
-
-      return;
-    }
-
-    /*
-     * --------------------------------------------------
-     * START PROCESSING
-     * --------------------------------------------------
-     */
-
-    setProcessing(true);
-
-    /*
-     * --------------------------------------------------
-     * CREATE PAYFAST FORM
-     * --------------------------------------------------
-     */
-
-    try {
-      /*
-       * Remove any old PayFast form.
-       */
-
-      const oldForm =
-        document.getElementById(
-          "payfast-payment-form"
-        );
-
-      if (oldForm) {
-        oldForm.remove();
-      }
-
-      /*
-       * Create form.
-       */
-
-      const form =
-        document.createElement("form");
-
-      form.id =
-        "payfast-payment-form";
-
-      form.method = "POST";
-
-      form.action =
-        payFastUrl;
-
-      form.target =
-        "_self";
-
-      form.style.display =
-        "none";
-
-      /*
-       * --------------------------------------------------
-       * PAYFAST FIELDS
-       * --------------------------------------------------
-       */
-
-      const fields: Record<
-        string,
-        string
-      > = {
-        merchant_id:
-          merchantId.trim(),
-
-        merchant_key:
-          merchantKey.trim(),
-
-        return_url:
-          returnUrl,
-
-        cancel_url:
-          cancelUrl,
-
-        notify_url:
-          notifyUrl,
-
-        name_first:
-          "Freelance Hub",
-
-        name_last:
-          "SA Client",
-
-        email_address:
-          "client@example.com",
-
-        m_payment_id:
-          milestoneId,
-
-        amount:
-          paymentAmount.toFixed(2),
-
-        item_name:
-          milestone.title ||
-          "Freelance Project Milestone",
-
-        item_description:
-          milestone.description ||
-          `Payment for ${
-            milestone.title ||
-            "project milestone"
-          }`,
-
-        custom_str1:
-          projectId,
-
-        custom_str2:
-          milestoneId,
-
-        custom_str3:
-          milestone.contract_id ||
-          "",
-
-        custom_str4:
-          "Freelance Hub SA",
-
-        custom_str5:
-          "Milestone Payment",
-      };
-
-      /*
-       * --------------------------------------------------
-       * ADD FIELDS TO FORM
-       * --------------------------------------------------
-       */
-
-      Object.entries(fields).forEach(
-        ([name, value]) => {
-          const input =
-            document.createElement(
-              "input"
-            );
-
-          input.type =
-            "hidden";
-
-          input.name =
-            name;
-
-          input.value =
-            value;
-
-          form.appendChild(
-            input
-          );
-        }
-      );
-
-      /*
-       * --------------------------------------------------
-       * ADD FORM TO PAGE
-       * --------------------------------------------------
-       */
-
-      document.body.appendChild(
-        form
-      );
-
-      /*
-       * --------------------------------------------------
-       * LOG FINAL FORM
-       * --------------------------------------------------
-       */
-
-      console.log(
-        "Submitting PayFast form..."
-      );
-
-      console.log(
-        "Form action:",
-        form.action
-      );
-
-      console.log(
-        "Form method:",
-        form.method
-      );
-
-      /*
-       * --------------------------------------------------
-       * SUBMIT
-       * --------------------------------------------------
-       */
-
-      form.submit();
-    } catch (error) {
-      console.error(
-        "PayFast redirect error:",
-        error
-      );
-
-      setProcessing(false);
-
-      setMessage(
-        "Unable to redirect to PayFast."
-      );
-    }
-  };
-
-  /*
-   * --------------------------------------------------
-   * LOADING
-   * --------------------------------------------------
-   */
+    };
+
+  // --------------------------------------------------
+  // LOADING
+  // --------------------------------------------------
 
   if (loading) {
     return (
-      <main>
+      <main className="dashboard-page">
         <section className="dark-card">
           <LoadingSkeleton />
         </section>
@@ -720,15 +561,16 @@ export default function PaymentPage() {
     );
   }
 
-  /*
-   * --------------------------------------------------
-   * ERROR
-   * --------------------------------------------------
-   */
+  // --------------------------------------------------
+  // PROJECT FAILED TO LOAD
+  // --------------------------------------------------
 
-  if (message && !project) {
+  if (
+    message &&
+    !project
+  ) {
     return (
-      <main>
+      <main className="dashboard-page">
         <section
           className="dark-card contract-card"
           style={{
@@ -745,8 +587,8 @@ export default function PaymentPage() {
           </h1>
 
           <p>
-            We could not load the payment
-            information.
+            We could not load the
+            payment information.
           </p>
         </section>
 
@@ -765,14 +607,15 @@ export default function PaymentPage() {
     );
   }
 
-  /*
-   * --------------------------------------------------
-   * MAIN PAGE
-   * --------------------------------------------------
-   */
+  // --------------------------------------------------
+  // PAGE
+  // --------------------------------------------------
 
   return (
-    <main>
+    <main className="dashboard-page">
+
+      {/* HEADER */}
+
       <section
         className="dark-card contract-card"
         style={{
@@ -781,7 +624,7 @@ export default function PaymentPage() {
         }}
       >
         <p className="dashboard-badge">
-          Make Payment
+          Secure Payment
         </p>
 
         <h1>
@@ -789,12 +632,13 @@ export default function PaymentPage() {
         </h1>
 
         <p>
-          Securely pay for your approved
-          project milestone.
+          Securely pay for your
+          approved project milestone
+          through PayFast.
         </p>
       </section>
 
-            {/* ERROR MESSAGE */}
+      {/* MESSAGE */}
 
       {message && (
         <section
@@ -810,7 +654,7 @@ export default function PaymentPage() {
         </section>
       )}
 
-            {/* PAYMENT SUMMARY */}
+      {/* PAYMENT SUMMARY */}
 
       <section
         className="dark-card hire-card"
@@ -823,9 +667,7 @@ export default function PaymentPage() {
           Payment Summary
         </h2>
 
-        <div
-          className="profile-divider"
-        />
+        <div className="profile-divider" />
 
         <div
           style={{
@@ -833,7 +675,7 @@ export default function PaymentPage() {
             gap: 15,
           }}
         >
-          {/* PROJECT ID */}
+          {/* PROJECT */}
 
           <div>
             <strong>
@@ -867,7 +709,9 @@ export default function PaymentPage() {
               </strong>
 
               <p>
-                {milestone.description}
+                {
+                  milestone.description
+                }
               </p>
             </div>
           )}
@@ -900,7 +744,8 @@ export default function PaymentPage() {
             </strong>
 
             <p>
-              {project?.payment_status ||
+              {project
+                ?.payment_status ||
                 "unpaid"}
             </p>
 
@@ -911,9 +756,9 @@ export default function PaymentPage() {
                 marginTop: 5,
               }}
             >
-              This is the overall project
-              payment status. Individual
-              milestones are checked separately.
+              Individual milestone
+              payments are tracked
+              separately.
             </p>
           </div>
 
@@ -946,61 +791,20 @@ export default function PaymentPage() {
           </div>
         </div>
 
-        <div
-          className="profile-divider"
-        />
+        <div className="profile-divider" />
 
-        {/* --------------------------------------------------
-            PAYFAST CONFIGURATION
-            -------------------------------------------------- */}
+        {/* PAYMENT ACTION */}
 
-        {!merchantId ? (
+        {!milestone ? (
           <div>
             <p className="upload-message">
-              PayFast Merchant ID is not
-              configured.
-            </p>
-
-            <p
-              style={{
-                marginTop: 10,
-                opacity: 0.8,
-              }}
-            >
-              Add
-              {" "}
-              NEXT_PUBLIC_PAYFAST_MERCHANT_ID
-              {" "}
-              to your environment variables.
+              Milestone information
+              is unavailable.
             </p>
           </div>
-        ) : !merchantKey ? (
-          <div>
-            <p className="upload-message">
-              PayFast Merchant Key is not
-              configured.
-            </p>
-
-            <p
-              style={{
-                marginTop: 10,
-                opacity: 0.8,
-              }}
-            >
-              Add
-              {" "}
-              NEXT_PUBLIC_PAYFAST_MERCHANT_KEY
-              {" "}
-              to your environment variables.
-            </p>
-          </div>
-                ) : !milestone ? (
-          <div>
-            <p className="upload-message">
-              Milestone information is unavailable.
-            </p>
-          </div>
-        ) : milestone.status?.toLowerCase() === "paid" ? (
+        ) : milestone.status
+            ?.toLowerCase() ===
+            "paid" ? (
           <div>
             <span className="contract-status completed">
               Payment Completed
@@ -1012,12 +816,36 @@ export default function PaymentPage() {
                 opacity: 0.8,
               }}
             >
-              This milestone has been successfully paid.
+              This milestone has been
+              successfully paid.
             </p>
           </div>
-        ) : milestone.status?.toLowerCase() !== "approved" ? (
+        ) : milestone.status
+            ?.toLowerCase() ===
+            "completed" ? (
           <div>
-            <p>This milestone is not ready for payment.</p>
+            <span className="contract-status completed">
+              Milestone Completed
+            </span>
+
+            <p
+              style={{
+                marginTop: 12,
+                opacity: 0.8,
+              }}
+            >
+              This milestone has already
+              been completed.
+            </p>
+          </div>
+        ) : milestone.status
+            ?.toLowerCase() !==
+            "approved" ? (
+          <div>
+            <p>
+              This milestone is not
+              ready for payment.
+            </p>
 
             <p
               style={{
@@ -1025,33 +853,33 @@ export default function PaymentPage() {
                 opacity: 0.8,
               }}
             >
-              The freelancer must approve the milestone before payment can be
-              made.
+              The freelancer must approve
+              the milestone before
+              payment can be made.
             </p>
           </div>
         ) : (
-          /*
-           * --------------------------------------------------
-           * PAY NOW BUTTON
-           * --------------------------------------------------
-           */
-
           <div>
             <button
               type="button"
-              onClick={handlePayment}
-              disabled={processing}
+              onClick={
+                handlePayment
+              }
+              disabled={
+                processing
+              }
               className="primary-action-btn"
               style={{
                 width: "100%",
                 marginTop: 10,
-                cursor: processing
-                  ? "wait"
-                  : "pointer",
+                cursor:
+                  processing
+                    ? "wait"
+                    : "pointer",
               }}
             >
               {processing
-                ? "Redirecting to PayFast..."
+                ? "Preparing secure payment..."
                 : `Pay Now — ZAR ${paymentAmount.toFixed(
                     2
                   )}`}
@@ -1060,13 +888,15 @@ export default function PaymentPage() {
             <p
               style={{
                 marginTop: 15,
-                textAlign: "center",
+                textAlign:
+                  "center",
                 fontSize: 14,
                 opacity: 0.75,
               }}
             >
-              You will be redirected to
-              the PayFast sandbox checkout.
+              You will be redirected
+              to PayFast to complete
+              your payment securely.
             </p>
           </div>
         )}
