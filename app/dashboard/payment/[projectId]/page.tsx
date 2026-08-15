@@ -794,11 +794,7 @@ export default function PaymentPage() {
         </p>
       </section>
 
-      /*
-       * --------------------------------------------------
-       * ERROR MESSAGE
-       * --------------------------------------------------
-       */
+            {/* ERROR MESSAGE */}
 
       {message && (
         <section
@@ -814,11 +810,7 @@ export default function PaymentPage() {
         </section>
       )}
 
-      /*
-       * --------------------------------------------------
-       * PAYMENT SUMMARY
-       * --------------------------------------------------
-       */
+            {/* PAYMENT SUMMARY */}
 
       <section
         className="dark-card hire-card"
@@ -1002,20 +994,30 @@ export default function PaymentPage() {
               to your environment variables.
             </p>
           </div>
-        ) : !milestone ? (
+                ) : !milestone ? (
           <div>
             <p className="upload-message">
-              Milestone information is
-              unavailable.
+              Milestone information is unavailable.
             </p>
           </div>
-        ) : milestone.status?.toLowerCase() !==
-          "approved" ? (
+        ) : milestone.status?.toLowerCase() === "paid" ? (
           <div>
-            <p>
-              This milestone is not ready
-              for payment.
+            <span className="contract-status completed">
+              Payment Completed
+            </span>
+
+            <p
+              style={{
+                marginTop: 12,
+                opacity: 0.8,
+              }}
+            >
+              This milestone has been successfully paid.
             </p>
+          </div>
+        ) : milestone.status?.toLowerCase() !== "approved" ? (
+          <div>
+            <p>This milestone is not ready for payment.</p>
 
             <p
               style={{
@@ -1023,17 +1025,9 @@ export default function PaymentPage() {
                 opacity: 0.8,
               }}
             >
-              The freelancer must approve
-              the milestone before payment
-              can be made.
+              The freelancer must approve the milestone before payment can be
+              made.
             </p>
-          </div>
-        ) : milestone.status?.toLowerCase() ===
-          "paid" ? (
-          <div>
-            <span className="contract-status completed">
-              Payment Completed
-            </span>
           </div>
         ) : (
           /*
