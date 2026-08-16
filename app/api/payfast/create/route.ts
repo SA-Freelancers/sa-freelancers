@@ -45,38 +45,61 @@ const supabase = createClient(
 
 /*
  * --------------------------------------------------
+ * PAYFAST ENCODING
+ * --------------------------------------------------
+ *
+ * PayFast signature generation follows
+ * PHP-style urlencode behaviour:
+ *
+ * spaces -> +
+ * ! ' ( ) * ~ -> percent encoded
+ */
+
+function payfastEncode(value: string) {
+  return encodeURIComponent(value.trim())
+    .replace(/%20/g, "+")
+    .replace(/!/g, "%21")
+    .replace(/'/g, "%27")
+    .replace(/\(/g, "%28")
+    .replace(/\)/g, "%29")
+    .replace(/\*/g, "%2A")
+    .replace(/~/g, "%7E");
+}
+
+/*
+ * --------------------------------------------------
  * PAYFAST SIGNATURE
  * --------------------------------------------------
  *
  * IMPORTANT:
- * Keep the payment fields in PayFast checkout order.
- * Do not alphabetically sort them.
+ * Do not alphabetically sort the fields.
+ *
+ * The insertion order of paymentData is used
+ * when building the signature.
  */
 
 function generateSignature(
   data: Record<string, string>,
   saltPassphrase?: string
 ) {
-  let parameterString = "";
+  const parts: string[] = [];
 
   for (const [key, value] of Object.entries(data)) {
     if (value !== "") {
-      parameterString +=
-        `${key}=${encodeURIComponent(value.trim())
-          .replace(/%20/g, "+")}&`;
+      parts.push(
+        `${key}=${payfastEncode(value)}`
+      );
     }
   }
 
-  // Remove the final "&"
-  parameterString =
-    parameterString.slice(0, -1);
+  let parameterString =
+    parts.join("&");
 
-  // Only add a passphrase if one is actually configured.
   if (saltPassphrase) {
     parameterString +=
-      `&passphrase=${encodeURIComponent(
-        saltPassphrase.trim()
-      ).replace(/%20/g, "+")}`;
+      `&passphrase=${payfastEncode(
+        saltPassphrase
+      )}`;
   }
 
   return crypto
@@ -97,11 +120,14 @@ export async function POST(
   try {
     /*
      * --------------------------------------------------
-     * CHECK SERVER CONFIGURATION
+     * SERVER CONFIGURATION
      * --------------------------------------------------
      */
 
-    if (!supabaseUrl || !serviceRoleKey) {
+    if (
+      !supabaseUrl ||
+      !serviceRoleKey
+    ) {
       return NextResponse.json(
         {
           error:
@@ -113,7 +139,10 @@ export async function POST(
       );
     }
 
-    if (!merchantId || !merchantKey) {
+    if (
+      !merchantId ||
+      !merchantKey
+    ) {
       return NextResponse.json(
         {
           error:
@@ -135,12 +164,19 @@ export async function POST(
       await request.json();
 
     const projectId =
-      String(body.projectId || "").trim();
+      String(
+        body.projectId || ""
+      ).trim();
 
     const milestoneId =
-      String(body.milestoneId || "").trim();
+      String(
+        body.milestoneId || ""
+      ).trim();
 
-    if (!projectId || !milestoneId) {
+    if (
+      !projectId ||
+      !milestoneId
+    ) {
       return NextResponse.json(
         {
           error:
@@ -154,15 +190,19 @@ export async function POST(
 
     /*
      * --------------------------------------------------
-     * VERIFY LOGGED-IN USER
+     * VERIFY CURRENT USER
      * --------------------------------------------------
      */
 
     const authorization =
-      request.headers.get("authorization");
+      request.headers.get(
+        "authorization"
+      );
 
     if (
-      !authorization?.startsWith("Bearer ")
+      !authorization?.startsWith(
+        "Bearer "
+      )
     ) {
       return NextResponse.json(
         {
@@ -181,9 +221,10 @@ export async function POST(
     const {
       data: userData,
       error: userError,
-    } = await supabase.auth.getUser(
-      accessToken
-    );
+    } =
+      await supabase.auth.getUser(
+        accessToken
+      );
 
     if (
       userError ||
@@ -249,12 +290,13 @@ export async function POST(
     /*
      * --------------------------------------------------
      * SECURITY:
-     * ONLY PROJECT CLIENT MAY PAY
+     * ONLY PROJECT CLIENT CAN PAY
      * --------------------------------------------------
      */
 
     if (
-      project.client_id !== user.id
+      project.client_id !==
+      user.id
     ) {
       return NextResponse.json(
         {
@@ -319,7 +361,8 @@ export async function POST(
      */
 
     if (
-      milestone.project_id !== projectId
+      milestone.project_id !==
+      projectId
     ) {
       return NextResponse.json(
         {
@@ -359,7 +402,8 @@ export async function POST(
     }
 
     if (
-      milestoneStatus !== "approved"
+      milestoneStatus !==
+      "approved"
     ) {
       return NextResponse.json(
         {
@@ -376,12 +420,15 @@ export async function POST(
      * --------------------------------------------------
      * VERIFY AMOUNT
      *
-     * Amount comes from Supabase, not the browser.
+     * Amount comes from Supabase,
+     * not from the browser.
      * --------------------------------------------------
      */
 
     const amount =
-      Number(milestone.amount);
+      Number(
+        milestone.amount
+      );
 
     if (
       !Number.isFinite(amount) ||
@@ -400,13 +447,14 @@ export async function POST(
 
     /*
      * --------------------------------------------------
-     * CANONICAL SITE URL
+     * SITE URL
      * --------------------------------------------------
      */
 
     const siteUrl =
       (
-        process.env.NEXT_PUBLIC_SITE_URL ||
+        process.env
+          .NEXT_PUBLIC_SITE_URL ||
         request.nextUrl.origin
       ).replace(/\/$/, "");
 
@@ -429,13 +477,17 @@ export async function POST(
      * --------------------------------------------------
      * PAYFAST PAYMENT DATA
      *
-     * Keep this exact insertion order.
+     * DO NOT CHANGE THE ORDER
+     * without also reviewing signature generation.
      * --------------------------------------------------
      */
 
     const paymentData:
       Record<string, string> = {
-        // Merchant details
+        /*
+         * Merchant details
+         */
+
         merchant_id:
           merchantId.trim(),
 
@@ -451,7 +503,10 @@ export async function POST(
         notify_url:
           notifyUrl,
 
-        // Buyer details
+        /*
+         * Customer details
+         */
+
         name_first:
           "Freelance Hub",
 
@@ -462,7 +517,10 @@ export async function POST(
           user.email ||
           "client@example.com",
 
-        // Transaction details
+        /*
+         * Transaction details
+         */
+
         m_payment_id:
           milestoneId,
 
@@ -472,19 +530,29 @@ export async function POST(
         item_name:
           String(
             milestone.title ||
-            "Freelance Project Milestone"
-          ).substring(0, 100),
+              "Freelance Project Milestone"
+          ).substring(
+            0,
+            100
+          ),
 
         item_description:
           String(
             milestone.description ||
-            `Payment for ${
-              milestone.title ||
-              "project milestone"
-            }`
-          ).substring(0, 255),
+              `Payment for ${
+                milestone.title ||
+                "project milestone"
+              }`
+          ).substring(
+            0,
+            255
+          ),
 
-        // Pass-through values
+        /*
+         * Custom values returned
+         * through PayFast.
+         */
+
         custom_str1:
           projectId,
 
@@ -492,8 +560,47 @@ export async function POST(
           milestoneId,
 
         custom_str3:
-          milestone.contract_id || "",
+          milestone.contract_id ||
+          "",
       };
+
+    /*
+     * --------------------------------------------------
+     * SAFE DIAGNOSTICS
+     *
+     * DO NOT log merchantKey itself.
+     * --------------------------------------------------
+     */
+
+    console.log(
+      "PayFast checkout diagnostics:",
+      {
+        sandbox,
+
+        merchantIdLength:
+          merchantId.trim().length,
+
+        merchantKeyLength:
+          merchantKey.trim().length,
+
+        amount:
+          paymentData.amount,
+
+        itemName:
+          paymentData.item_name,
+
+        returnUrl:
+          paymentData.return_url,
+
+        notifyUrl:
+          paymentData.notify_url,
+
+        hasPassphrase:
+          Boolean(
+            passphrase
+          ),
+      }
+    );
 
     /*
      * --------------------------------------------------
@@ -504,7 +611,8 @@ export async function POST(
     const signature =
       generateSignature(
         paymentData,
-        passphrase || undefined
+        passphrase ||
+          undefined
       );
 
     paymentData.signature =
@@ -523,14 +631,15 @@ export async function POST(
 
     /*
      * --------------------------------------------------
-     * RETURN SIGNED PAYMENT DATA
+     * RETURN PAYMENT DATA
      * --------------------------------------------------
      */
 
     return NextResponse.json({
       success: true,
       payfastUrl,
-      fields: paymentData,
+      fields:
+        paymentData,
     });
   } catch (error) {
     console.error(
