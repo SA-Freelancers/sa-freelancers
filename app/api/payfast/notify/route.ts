@@ -25,13 +25,28 @@ const supabase = createClient(
   }
 );
 
+/*
+ * --------------------------------------------------
+ * PAYFAST ENCODING
+ * --------------------------------------------------
+ */
+
 function payfastEncode(value: string) {
   return encodeURIComponent(value.trim())
     .replace(/%20/g, "+")
     .replace(/[!'()*]/g, (char) =>
-      `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+      `%${char
+        .charCodeAt(0)
+        .toString(16)
+        .toUpperCase()}`
     );
 }
+
+/*
+ * --------------------------------------------------
+ * PAYFAST SIGNATURE
+ * --------------------------------------------------
+ */
 
 function generateSignature(
   data: Record<string, string>,
@@ -47,7 +62,9 @@ function generateSignature(
       value !== ""
     ) {
       parts.push(
-        `${key}=${payfastEncode(String(value))}`
+        `${key}=${payfastEncode(
+          String(value)
+        )}`
       );
     }
   }
@@ -56,7 +73,9 @@ function generateSignature(
 
   if (passphrase) {
     parameterString +=
-      `&passphrase=${payfastEncode(passphrase)}`;
+      `&passphrase=${payfastEncode(
+        passphrase
+      )}`;
   }
 
   return crypto
@@ -64,6 +83,12 @@ function generateSignature(
     .update(parameterString)
     .digest("hex");
 }
+
+/*
+ * --------------------------------------------------
+ * POST - PAYFAST ITN
+ * --------------------------------------------------
+ */
 
 export async function POST(
   request: NextRequest
@@ -294,11 +319,196 @@ export async function POST(
 
     /*
      * --------------------------------------------------
-     * IDEMPOTENCY
-     *
-     * If milestone already paid, do not
-     * process the payment twice.
+     * LOAD PROJECT
      * --------------------------------------------------
+     *
+     * We need the client and freelancer before creating
+     * the payout record.
+     */
+
+    const {
+      data: project,
+      error: projectError,
+    } = await supabase
+      .from("projects")
+      .select(
+        `
+        id,
+        client_id,
+        freelancer_id,
+        status,
+        payment_status
+        `
+      )
+      .eq("id", projectId)
+      .maybeSingle();
+
+    if (
+      projectError ||
+      !project
+    ) {
+      console.error(
+        "ITN project lookup error:",
+        projectError
+      );
+
+      return new NextResponse(
+        "Project not found",
+        {
+          status: 404,
+        }
+      );
+    }
+
+    if (
+      !project.client_id ||
+      !project.freelancer_id
+    ) {
+      console.error(
+        "Project is missing client or freelancer.",
+        {
+          projectId,
+          clientId:
+            project.client_id,
+          freelancerId:
+            project.freelancer_id,
+        }
+      );
+
+      return new NextResponse(
+        "Project participants missing",
+        {
+          status: 400,
+        }
+      );
+    }
+
+    /*
+     * --------------------------------------------------
+     * CALCULATE PAYOUT
+     * --------------------------------------------------
+     *
+     * Development fee:
+     * 10% platform fee
+     *
+     * Example:
+     * R1000 gross
+     * R100 platform
+     * R900 freelancer
+     */
+
+    const platformFeePercent = 10;
+
+    const platformFee =
+      Number(
+        (
+          grossAmount *
+          (platformFeePercent / 100)
+        ).toFixed(2)
+      );
+
+    const freelancerAmount =
+      Number(
+        (
+          grossAmount -
+          platformFee
+        ).toFixed(2)
+      );
+
+    const paidAt =
+      new Date().toISOString();
+
+    const activityContractId =
+      milestone.contract_id ||
+      contractId ||
+      null;
+
+    /*
+     * --------------------------------------------------
+     * CREATE PAYOUT RECORD
+     * --------------------------------------------------
+     *
+     * The unique milestone_id index prevents two
+     * payout records for the same milestone.
+     */
+
+    const {
+      error: payoutError,
+    } = await supabase
+      .from("freelancer_payouts")
+      .upsert(
+        {
+          milestone_id:
+            milestoneId,
+
+          project_id:
+            projectId,
+
+          contract_id:
+            activityContractId,
+
+          freelancer_id:
+            project.freelancer_id,
+
+          client_id:
+            project.client_id,
+
+          gross_amount:
+            grossAmount,
+
+          platform_fee:
+            platformFee,
+
+          freelancer_amount:
+            freelancerAmount,
+
+          platform_fee_percent:
+            platformFeePercent,
+
+          status:
+            "held",
+
+          payment_received_at:
+            paidAt,
+
+          updated_at:
+            paidAt,
+        },
+        {
+          onConflict:
+            "milestone_id",
+
+          ignoreDuplicates:
+            true,
+        }
+      );
+
+    if (payoutError) {
+      console.error(
+        "Freelancer payout creation failed:",
+        payoutError
+      );
+
+      return new NextResponse(
+        "Payout record creation failed",
+        {
+          status: 500,
+        }
+      );
+    }
+
+    /*
+     * --------------------------------------------------
+     * IDEMPOTENCY
+     * --------------------------------------------------
+     *
+     * IMPORTANT:
+     *
+     * Payout creation happens BEFORE this check.
+     *
+     * This means that if PayFast sends the ITN again,
+     * the database can repair/create a missing payout
+     * without processing the milestone twice.
      */
 
     if (
@@ -316,9 +526,6 @@ export async function POST(
         }
       );
     }
-
-    const paidAt =
-      new Date().toISOString();
 
     /*
      * --------------------------------------------------
@@ -356,46 +563,13 @@ export async function POST(
      */
 
     const {
-      data: project,
-      error: projectError,
-    } = await supabase
-      .from("projects")
-      .select(
-        `
-        id,
-        client_id,
-        freelancer_id,
-        status,
-        payment_status
-        `
-      )
-      .eq("id", projectId)
-      .maybeSingle();
-
-    if (
-      projectError ||
-      !project
-    ) {
-      console.error(
-        "ITN project lookup error:",
-        projectError
-      );
-
-      return new NextResponse(
-        "Project not found",
-        {
-          status: 404,
-        }
-      );
-    }
-
-    const {
       error: projectUpdateError,
     } = await supabase
       .from("projects")
       .update({
         payment_status: "paid",
         paid_at: paidAt,
+
         status:
           project.status === "pending"
             ? "active"
@@ -423,19 +597,25 @@ export async function POST(
      * --------------------------------------------------
      */
 
-    const activityContractId =
-      milestone.contract_id ||
-      contractId;
-
     if (activityContractId) {
-      await supabase
+      const {
+        error: activityError,
+      } = await supabase
         .from("contract_activity")
         .insert({
           contract_id:
             activityContractId,
+
           action:
             `Payment received for milestone "${milestone.title || "Untitled"}"`,
         });
+
+      if (activityError) {
+        console.error(
+          "Contract activity insert error:",
+          activityError
+        );
+      }
     }
 
     /*
@@ -444,29 +624,52 @@ export async function POST(
      * --------------------------------------------------
      */
 
-    if (project.freelancer_id) {
-      await supabase
-        .from("notifications")
-        .insert({
-          user_id:
-            project.freelancer_id,
-          title:
-            "Payment Received",
-          body:
-            `Payment received for milestone "${milestone.title || "Untitled Milestone"}".`,
-          link:
-            activityContractId
-              ? `/dashboard/contracts/${activityContractId}/milestones`
-              : "/dashboard/projects",
-          is_read: false,
-        });
+    const {
+      error: notificationError,
+    } = await supabase
+      .from("notifications")
+      .insert({
+        user_id:
+          project.freelancer_id,
+
+        title:
+          "Payment Received",
+
+        body:
+          `Payment received for milestone "${milestone.title || "Untitled Milestone"}".`,
+
+        link:
+          activityContractId
+            ? `/dashboard/contracts/${activityContractId}/milestones`
+            : "/dashboard/projects",
+
+        is_read:
+          false,
+      });
+
+    if (notificationError) {
+      console.error(
+        "Freelancer notification error:",
+        notificationError
+      );
     }
+
+    /*
+     * --------------------------------------------------
+     * SUCCESS
+     * --------------------------------------------------
+     */
 
     console.log(
       "PayFast ITN processed successfully.",
       {
         projectId,
         milestoneId,
+        grossAmount,
+        platformFee,
+        freelancerAmount,
+        payoutStatus:
+          "held",
       }
     );
 
