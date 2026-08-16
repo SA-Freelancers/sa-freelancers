@@ -27,66 +27,85 @@ const supabase = createClient(
 
 /*
  * --------------------------------------------------
- * PAYFAST ENCODING
+ * PAYFAST PHP-STYLE URL ENCODING
  * --------------------------------------------------
  */
 
 function payfastEncode(value: string) {
-  return encodeURIComponent(value.trim())
+  return encodeURIComponent(value)
     .replace(/%20/g, "+")
-    .replace(/[!'()*]/g, (char) =>
-      `%${char
-        .charCodeAt(0)
-        .toString(16)
-        .toUpperCase()}`
-    );
+    .replace(/!/g, "%21")
+    .replace(/'/g, "%27")
+    .replace(/\(/g, "%28")
+    .replace(/\)/g, "%29")
+    .replace(/\*/g, "%2A")
+    .replace(/~/g, "%7E");
 }
 
 /*
  * --------------------------------------------------
- * PAYFAST SIGNATURE
+ * BUILD PAYFAST ITN PARAMETER STRING
+ * --------------------------------------------------
+ *
+ * IMPORTANT:
+ *
+ * For an incoming ITN we preserve:
+ *
+ * 1. PayFast's original field order.
+ * 2. Empty posted fields.
+ * 3. Every field before "signature".
+ *
+ * The signature itself is NOT included.
  * --------------------------------------------------
  */
 
-function generateSignature(
-  data: Record<string, string>,
-  passphrase?: string
+function buildPayfastParamString(
+  params: URLSearchParams
 ) {
   const parts: string[] = [];
 
-  for (const [key, value] of Object.entries(data)) {
-    if (
-      key !== "signature" &&
-      value !== undefined &&
-      value !== null &&
-      value !== ""
-    ) {
-      parts.push(
-        `${key}=${payfastEncode(
-          String(value)
-        )}`
-      );
+  for (const [key, value] of params.entries()) {
+    if (key === "signature") {
+      break;
     }
+
+    parts.push(
+      `${key}=${payfastEncode(value)}`
+    );
   }
 
-  let parameterString = parts.join("&");
+  return parts.join("&");
+}
+
+/*
+ * --------------------------------------------------
+ * GENERATE ITN SIGNATURE
+ * --------------------------------------------------
+ */
+
+function generateItnSignature(
+  parameterString: string,
+  passphrase?: string
+) {
+  let signatureString =
+    parameterString;
 
   if (passphrase) {
-    parameterString +=
+    signatureString +=
       `&passphrase=${payfastEncode(
-        passphrase
+        passphrase.trim()
       )}`;
   }
 
   return crypto
     .createHash("md5")
-    .update(parameterString)
+    .update(signatureString)
     .digest("hex");
 }
 
 /*
  * --------------------------------------------------
- * POST - PAYFAST ITN
+ * PAYFAST ITN
  * --------------------------------------------------
  */
 
@@ -94,20 +113,54 @@ export async function POST(
   request: NextRequest
 ) {
   try {
-    const rawBody = await request.text();
+    /*
+     * --------------------------------------------------
+     * READ ORIGINAL PAYFAST POST BODY
+     * --------------------------------------------------
+     */
+
+    const rawBody =
+      await request.text();
 
     const params =
       new URLSearchParams(rawBody);
 
-    const data: Record<string, string> = {};
+    const data:
+      Record<string, string> = {};
 
-    params.forEach((value, key) => {
-      data[key] = value;
-    });
+    params.forEach(
+      (value, key) => {
+        data[key] = value;
+      }
+    );
 
     console.log(
       "PayFast ITN received:",
-      data
+      {
+        m_payment_id:
+          data.m_payment_id,
+
+        pf_payment_id:
+          data.pf_payment_id,
+
+        payment_status:
+          data.payment_status,
+
+        amount_gross:
+          data.amount_gross,
+
+        merchant_id:
+          data.merchant_id,
+
+        custom_str1:
+          data.custom_str1,
+
+        custom_str2:
+          data.custom_str2,
+
+        custom_str3:
+          data.custom_str3,
+      }
     );
 
     /*
@@ -132,7 +185,9 @@ export async function POST(
       data.custom_str3;
 
     const grossAmount =
-      Number(data.amount_gross || 0);
+      Number(
+        data.amount_gross || 0
+      );
 
     if (
       !receivedSignature ||
@@ -153,14 +208,32 @@ export async function POST(
 
     /*
      * --------------------------------------------------
-     * VERIFY SIGNATURE
+     * BUILD ORIGINAL PAYFAST PARAMETER STRING
+     * --------------------------------------------------
+     *
+     * Unlike the payment checkout signature,
+     * incoming ITNs may contain empty fields.
+     *
+     * Those fields must remain in this string.
+     * --------------------------------------------------
+     */
+
+    const pfParamString =
+      buildPayfastParamString(
+        params
+      );
+
+    /*
+     * --------------------------------------------------
+     * VERIFY PAYFAST SIGNATURE
      * --------------------------------------------------
      */
 
     const calculatedSignature =
-      generateSignature(
-        data,
-        payfastPassphrase || undefined
+      generateItnSignature(
+        pfParamString,
+        payfastPassphrase ||
+          undefined
       );
 
     if (
@@ -172,6 +245,11 @@ export async function POST(
         {
           receivedSignature,
           calculatedSignature,
+
+          hasPassphrase:
+            Boolean(
+              payfastPassphrase
+            ),
         }
       );
 
@@ -182,6 +260,10 @@ export async function POST(
         }
       );
     }
+
+    console.log(
+      "PayFast signature verified."
+    );
 
     /*
      * --------------------------------------------------
@@ -204,8 +286,14 @@ export async function POST(
         status
         `
       )
-      .eq("id", milestoneId)
-      .eq("project_id", projectId)
+      .eq(
+        "id",
+        milestoneId
+      )
+      .eq(
+        "project_id",
+        projectId
+      )
       .maybeSingle();
 
     if (
@@ -232,11 +320,14 @@ export async function POST(
      */
 
     const expectedAmount =
-      Number(milestone.amount || 0);
+      Number(
+        milestone.amount || 0
+      );
 
     if (
       Math.abs(
-        expectedAmount - grossAmount
+        expectedAmount -
+          grossAmount
       ) > 0.01
     ) {
       console.error(
@@ -257,7 +348,11 @@ export async function POST(
 
     /*
      * --------------------------------------------------
-     * SERVER VALIDATION WITH PAYFAST
+     * SERVER CONFIRMATION WITH PAYFAST
+     * --------------------------------------------------
+     *
+     * Send the PayFast parameter string,
+     * excluding the signature field.
      * --------------------------------------------------
      */
 
@@ -267,20 +362,27 @@ export async function POST(
         : "https://www.payfast.co.za/eng/query/validate";
 
     const validationResponse =
-      await fetch(validationUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            "application/x-www-form-urlencoded",
-        },
-        body: rawBody,
-      });
+      await fetch(
+        validationUrl,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/x-www-form-urlencoded",
+          },
+
+          body:
+            pfParamString,
+        }
+      );
 
     const validationText =
       await validationResponse.text();
 
     if (
-      validationText.trim() !== "VALID"
+      validationText.trim() !==
+      "VALID"
     ) {
       console.error(
         "PayFast server validation failed:",
@@ -295,6 +397,10 @@ export async function POST(
       );
     }
 
+    console.log(
+      "PayFast server validation passed."
+    );
+
     /*
      * --------------------------------------------------
      * CHECK PAYMENT STATUS
@@ -302,7 +408,8 @@ export async function POST(
      */
 
     if (
-      paymentStatus !== "COMPLETE"
+      paymentStatus !==
+      "COMPLETE"
     ) {
       console.log(
         "ITN received but payment is not COMPLETE:",
@@ -321,9 +428,6 @@ export async function POST(
      * --------------------------------------------------
      * LOAD PROJECT
      * --------------------------------------------------
-     *
-     * We need the client and freelancer before creating
-     * the payout record.
      */
 
     const {
@@ -340,7 +444,10 @@ export async function POST(
         payment_status
         `
       )
-      .eq("id", projectId)
+      .eq(
+        "id",
+        projectId
+      )
       .maybeSingle();
 
     if (
@@ -360,6 +467,12 @@ export async function POST(
       );
     }
 
+    /*
+     * --------------------------------------------------
+     * PROJECT PARTICIPANTS
+     * --------------------------------------------------
+     */
+
     if (
       !project.client_id ||
       !project.freelancer_id
@@ -368,8 +481,10 @@ export async function POST(
         "Project is missing client or freelancer.",
         {
           projectId,
+
           clientId:
             project.client_id,
+
           freelancerId:
             project.freelancer_id,
         }
@@ -385,25 +500,32 @@ export async function POST(
 
     /*
      * --------------------------------------------------
-     * CALCULATE PAYOUT
+     * PAYOUT CALCULATION
      * --------------------------------------------------
      *
-     * Development fee:
-     * 10% platform fee
+     * Current development platform fee:
+     *
+     * 10%
      *
      * Example:
-     * R1000 gross
-     * R100 platform
-     * R900 freelancer
+     *
+     * Client pays R10
+     * Platform fee R1
+     * Freelancer balance R9
+     * --------------------------------------------------
      */
 
-    const platformFeePercent = 10;
+    const platformFeePercent =
+      10;
 
     const platformFee =
       Number(
         (
           grossAmount *
-          (platformFeePercent / 100)
+          (
+            platformFeePercent /
+            100
+          )
         ).toFixed(2)
       );
 
@@ -425,17 +547,20 @@ export async function POST(
 
     /*
      * --------------------------------------------------
-     * CREATE PAYOUT RECORD
+     * CREATE FREELANCER PAYOUT
      * --------------------------------------------------
      *
-     * The unique milestone_id index prevents two
-     * payout records for the same milestone.
+     * The unique milestone_id index prevents
+     * duplicate payout records.
+     * --------------------------------------------------
      */
 
     const {
       error: payoutError,
     } = await supabase
-      .from("freelancer_payouts")
+      .from(
+        "freelancer_payouts"
+      )
       .upsert(
         {
           milestone_id:
@@ -497,23 +622,37 @@ export async function POST(
       );
     }
 
+    console.log(
+      "Freelancer payout record confirmed.",
+      {
+        milestoneId,
+        grossAmount,
+        platformFee,
+        freelancerAmount,
+        status:
+          "held",
+      }
+    );
+
     /*
      * --------------------------------------------------
      * IDEMPOTENCY
      * --------------------------------------------------
      *
-     * IMPORTANT:
+     * The payout check happens before this.
      *
-     * Payout creation happens BEFORE this check.
-     *
-     * This means that if PayFast sends the ITN again,
-     * the database can repair/create a missing payout
-     * without processing the milestone twice.
+     * Therefore a PayFast retry can repair a
+     * missing payout record without sending
+     * duplicate notifications or reprocessing
+     * the milestone.
+     * --------------------------------------------------
      */
 
     if (
-      milestone.status === "paid" ||
-      milestone.status === "completed"
+      milestone.status ===
+        "paid" ||
+      milestone.status ===
+        "completed"
     ) {
       console.log(
         "Milestone already processed."
@@ -534,15 +673,22 @@ export async function POST(
      */
 
     const {
-      error: milestoneUpdateError,
+      error:
+        milestoneUpdateError,
     } = await supabase
       .from("milestones")
       .update({
-        status: "paid",
+        status:
+          "paid",
       })
-      .eq("id", milestoneId);
+      .eq(
+        "id",
+        milestoneId
+      );
 
-    if (milestoneUpdateError) {
+    if (
+      milestoneUpdateError
+    ) {
       console.error(
         "Milestone ITN update error:",
         milestoneUpdateError
@@ -563,21 +709,31 @@ export async function POST(
      */
 
     const {
-      error: projectUpdateError,
+      error:
+        projectUpdateError,
     } = await supabase
       .from("projects")
       .update({
-        payment_status: "paid",
-        paid_at: paidAt,
+        payment_status:
+          "paid",
+
+        paid_at:
+          paidAt,
 
         status:
-          project.status === "pending"
+          project.status ===
+          "pending"
             ? "active"
             : project.status,
       })
-      .eq("id", projectId);
+      .eq(
+        "id",
+        projectId
+      );
 
-    if (projectUpdateError) {
+    if (
+      projectUpdateError
+    ) {
       console.error(
         "Project ITN update error:",
         projectUpdateError
@@ -597,11 +753,16 @@ export async function POST(
      * --------------------------------------------------
      */
 
-    if (activityContractId) {
+    if (
+      activityContractId
+    ) {
       const {
-        error: activityError,
+        error:
+          activityError,
       } = await supabase
-        .from("contract_activity")
+        .from(
+          "contract_activity"
+        )
         .insert({
           contract_id:
             activityContractId,
@@ -610,7 +771,9 @@ export async function POST(
             `Payment received for milestone "${milestone.title || "Untitled"}"`,
         });
 
-      if (activityError) {
+      if (
+        activityError
+      ) {
         console.error(
           "Contract activity insert error:",
           activityError
@@ -625,7 +788,8 @@ export async function POST(
      */
 
     const {
-      error: notificationError,
+      error:
+        notificationError,
     } = await supabase
       .from("notifications")
       .insert({
@@ -647,7 +811,9 @@ export async function POST(
           false,
       });
 
-    if (notificationError) {
+    if (
+      notificationError
+    ) {
       console.error(
         "Freelancer notification error:",
         notificationError
