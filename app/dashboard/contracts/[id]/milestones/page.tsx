@@ -50,6 +50,14 @@ type Payout = {
   paid_out_at?: string | null;
 };
 
+type ApproveWorkResponse = {
+  success?: boolean;
+  milestoneStatus?: string;
+  payoutStatus?: string;
+  approvedAt?: string;
+  error?: string;
+};
+
 export default function MilestonesPage() {
   const params = useParams();
   const router = useRouter();
@@ -98,14 +106,14 @@ export default function MilestonesPage() {
   );
 
   useEffect(() => {
-    loadMilestones();
+    if (contractId) {
+      loadMilestones();
+    }
   }, [contractId]);
 
-  /*
-   * --------------------------------------------------
-   * LOAD PAGE
-   * --------------------------------------------------
-   */
+  // --------------------------------------------------
+  // LOAD PAGE
+  // --------------------------------------------------
 
   const loadMilestones =
     async () => {
@@ -113,6 +121,10 @@ export default function MilestonesPage() {
       setMessage("");
 
       try {
+        // ----------------------------------------------
+        // CURRENT USER
+        // ----------------------------------------------
+
         const {
           data: { user },
           error: userError,
@@ -130,11 +142,9 @@ export default function MilestonesPage() {
           return;
         }
 
-        /*
-         * ----------------------------------------------
-         * USER ROLE
-         * ----------------------------------------------
-         */
+        // ----------------------------------------------
+        // LOAD USER ROLE
+        // ----------------------------------------------
 
         const {
           data: profile,
@@ -157,11 +167,9 @@ export default function MilestonesPage() {
 
         setRole(userRole);
 
-        /*
-         * ----------------------------------------------
-         * CONTRACT
-         * ----------------------------------------------
-         */
+        // ----------------------------------------------
+        // LOAD CONTRACT
+        // ----------------------------------------------
 
         const {
           data: contractData,
@@ -202,13 +210,10 @@ export default function MilestonesPage() {
           currentContract
         );
 
-        /*
-         * ----------------------------------------------
-         * SECURITY
-         *
-         * User must belong to this contract.
-         * ----------------------------------------------
-         */
+        // ----------------------------------------------
+        // SECURITY
+        // USER MUST BELONG TO CONTRACT
+        // ----------------------------------------------
 
         if (
           currentContract.client_id !==
@@ -223,11 +228,9 @@ export default function MilestonesPage() {
           return;
         }
 
-        /*
-         * ----------------------------------------------
-         * FIND CONNECTED PROJECT
-         * ----------------------------------------------
-         */
+        // ----------------------------------------------
+        // FIND CONNECTED PROJECT
+        // ----------------------------------------------
 
         let connectedProject:
           Project | null = null;
@@ -287,11 +290,9 @@ export default function MilestonesPage() {
           }
         }
 
-        /*
-         * ----------------------------------------------
-         * LOAD MILESTONES
-         * ----------------------------------------------
-         */
+        // ----------------------------------------------
+        // LOAD MILESTONES
+        // ----------------------------------------------
 
         const {
           data: milestoneData,
@@ -327,23 +328,19 @@ export default function MilestonesPage() {
           (milestoneData as Milestone[]) ||
           [];
 
-        /*
-         * ----------------------------------------------
-         * REPAIR OLD MILESTONES WITHOUT PROJECT ID
-         * ----------------------------------------------
-         */
+        // ----------------------------------------------
+        // REPAIR OLD MILESTONES WITHOUT PROJECT ID
+        // ----------------------------------------------
 
         if (
           connectedProject &&
-          loadedMilestones.length >
-            0
+          loadedMilestones.length > 0
         ) {
-          const
-            milestonesWithoutProject =
-              loadedMilestones.filter(
-                (milestone) =>
-                  !milestone.project_id
-              );
+          const milestonesWithoutProject =
+            loadedMilestones.filter(
+              (milestone) =>
+                !milestone.project_id
+            );
 
           if (
             milestonesWithoutProject.length >
@@ -371,7 +368,11 @@ export default function MilestonesPage() {
             if (repairError) {
               console.error(
                 "Milestone project linking error:",
-                repairError
+                JSON.stringify(
+                  repairError,
+                  null,
+                  2
+                )
               );
             } else {
               loadedMilestones =
@@ -392,11 +393,9 @@ export default function MilestonesPage() {
           loadedMilestones
         );
 
-        /*
-         * ----------------------------------------------
-         * LOAD PAYOUT RECORDS
-         * ----------------------------------------------
-         */
+        // ----------------------------------------------
+        // LOAD PAYOUT RECORDS
+        // ----------------------------------------------
 
         const milestoneIds =
           loadedMilestones.map(
@@ -478,11 +477,9 @@ export default function MilestonesPage() {
       }
     };
 
-  /*
-   * --------------------------------------------------
-   * CREATE MILESTONE
-   * --------------------------------------------------
-   */
+  // --------------------------------------------------
+  // CREATE MILESTONE
+  // --------------------------------------------------
 
   const createMilestone =
     async () => {
@@ -541,11 +538,6 @@ export default function MilestonesPage() {
         return;
       }
 
-      /*
-       * Do not add new milestones to a
-       * completed contract.
-       */
-
       if (
         contract.status ===
         "completed"
@@ -600,9 +592,9 @@ export default function MilestonesPage() {
           return;
         }
 
-        /*
-         * ACTIVITY
-         */
+        // ----------------------------------------------
+        // ACTIVITY
+        // ----------------------------------------------
 
         if (
           milestoneData?.id
@@ -632,9 +624,9 @@ export default function MilestonesPage() {
           }
         }
 
-        /*
-         * NOTIFY FREELANCER
-         */
+        // ----------------------------------------------
+        // NOTIFY FREELANCER
+        // ----------------------------------------------
 
         if (
           contract.freelancer_id
@@ -682,16 +674,23 @@ export default function MilestonesPage() {
         );
 
         await loadMilestones();
+      } catch (error) {
+        console.error(
+          "Unexpected milestone creation error:",
+          error
+        );
+
+        setMessage(
+          "Unable to create the milestone."
+        );
       } finally {
         setSaving(false);
       }
     };
 
-  /*
-   * --------------------------------------------------
-   * FREELANCER APPROVES MILESTONE
-   * --------------------------------------------------
-   */
+  // --------------------------------------------------
+  // FREELANCER APPROVES MILESTONE
+  // --------------------------------------------------
 
   const approveMilestone =
     async (
@@ -727,6 +726,7 @@ export default function MilestonesPage() {
 
       try {
         const {
+          data: updatedMilestone,
           error,
         } = await supabase
           .from("milestones")
@@ -741,7 +741,9 @@ export default function MilestonesPage() {
           .eq(
             "status",
             "pending"
-          );
+          )
+          .select()
+          .maybeSingle();
 
         if (error) {
           console.error(
@@ -751,6 +753,16 @@ export default function MilestonesPage() {
 
           setMessage(
             error.message
+          );
+
+          return;
+        }
+
+        if (
+          !updatedMilestone
+        ) {
+          setMessage(
+            "The milestone could not be approved. Please refresh and try again."
           );
 
           return;
@@ -798,6 +810,15 @@ export default function MilestonesPage() {
         );
 
         await loadMilestones();
+      } catch (error) {
+        console.error(
+          "Unexpected milestone approval error:",
+          error
+        );
+
+        setMessage(
+          "Unable to approve the milestone."
+        );
       } finally {
         setUpdatingMilestoneId(
           null
@@ -805,157 +826,189 @@ export default function MilestonesPage() {
       }
     };
 
-  /*
-   * --------------------------------------------------
-   * FREELANCER SUBMITS WORK
-   *
-   * paid -> submitted
-   * payout remains held
-   * --------------------------------------------------
-   */
+  // --------------------------------------------------
+  // FREELANCER SUBMITS WORK
+  //
+  // paid -> submitted
+  // payout remains held
+  // --------------------------------------------------
 
-  const submitWork = async (
-  milestone: Milestone
-) => {
-  setMessage("");
+  const submitWork =
+    async (
+      milestone: Milestone
+    ) => {
+      setMessage("");
 
-  if (role !== "freelancer") {
-    setMessage(
-      "Only the freelancer can submit completed work."
-    );
-    return;
-  }
+      if (
+        role !==
+        "freelancer"
+      ) {
+        setMessage(
+          "Only the freelancer can submit completed work."
+        );
 
-  if (milestone.status !== "paid") {
-    setMessage(
-      "The milestone must be paid before work can be submitted."
-    );
-    return;
-  }
+        return;
+      }
 
-  setUpdatingMilestoneId(
-    milestone.id
-  );
+      if (
+        milestone.status !==
+        "paid"
+      ) {
+        setMessage(
+          "The milestone must be paid before work can be submitted."
+        );
 
-  try {
-    const {
-      data: updatedMilestone,
-      error,
-    } = await supabase
-      .from("milestones")
-      .update({
-        status: "submitted",
-      })
-      .eq("id", milestone.id)
-      .eq("status", "paid")
-      .select()
-      .maybeSingle();
+        return;
+      }
 
-    if (error) {
-      console.error(
-        "Work submission error:",
-        error
+      setUpdatingMilestoneId(
+        milestone.id
       );
 
-      setMessage(
-        error.message
-      );
-      return;
-    }
+      try {
+        const {
+          data: updatedMilestone,
+          error,
+        } = await supabase
+          .from("milestones")
+          .update({
+            status:
+              "submitted",
+          })
+          .eq(
+            "id",
+            milestone.id
+          )
+          .eq(
+            "status",
+            "paid"
+          )
+          .select()
+          .maybeSingle();
 
-    if (!updatedMilestone) {
-      setMessage(
-        "The milestone could not be submitted. Please refresh the page and try again."
-      );
-      return;
-    }
+        if (error) {
+          console.error(
+            "Work submission error:",
+            error
+          );
 
-    /*
-     * CONTRACT ACTIVITY
-     */
+          setMessage(
+            error.message
+          );
 
-    const {
-      error: activityError,
-    } = await supabase
-      .from("contract_activity")
-      .insert({
-        contract_id: contractId,
+          return;
+        }
 
-        action:
-          `Work submitted for milestone "${milestone.title || "Untitled"}"`,
-      });
+        if (
+          !updatedMilestone
+        ) {
+          setMessage(
+            "The milestone could not be submitted. Please refresh the page and try again."
+          );
 
-    if (activityError) {
-      console.error(
-        "Work submission activity error:",
-        activityError
-      );
-    }
+          return;
+        }
 
-    /*
-     * NOTIFY CLIENT
-     */
+        // ----------------------------------------------
+        // ACTIVITY
+        // ----------------------------------------------
 
-    if (contract?.client_id) {
-      const {
-        error: notificationError,
-      } = await supabase
-        .from("notifications")
-        .insert({
-          user_id:
-            contract.client_id,
+        const {
+          error: activityError,
+        } = await supabase
+          .from(
+            "contract_activity"
+          )
+          .insert({
+            contract_id:
+              contractId,
 
-          title:
-            "Work Submitted",
+            action:
+              `Work submitted for milestone "${milestone.title || "Untitled"}"`,
+          });
 
-          body:
-            `The freelancer submitted work for milestone "${milestone.title || "Untitled Milestone"}". Please review and approve it.`,
+        if (
+          activityError
+        ) {
+          console.error(
+            "Work submission activity error:",
+            activityError
+          );
+        }
 
-          link:
-            `/dashboard/contracts/${contractId}/milestones`,
+        // ----------------------------------------------
+        // NOTIFY CLIENT
+        // ----------------------------------------------
 
-          is_read: false,
-        });
+        if (
+          contract?.client_id
+        ) {
+          const {
+            error:
+              notificationError,
+          } = await supabase
+            .from(
+              "notifications"
+            )
+            .insert({
+              user_id:
+                contract.client_id,
 
-      if (notificationError) {
+              title:
+                "Work Submitted",
+
+              body:
+                `The freelancer submitted work for milestone "${milestone.title || "Untitled Milestone"}". Please review and approve it.`,
+
+              link:
+                `/dashboard/contracts/${contractId}/milestones`,
+
+              is_read:
+                false,
+            });
+
+          if (
+            notificationError
+          ) {
+            console.error(
+              "Work submission notification error:",
+              notificationError
+            );
+          }
+        }
+
+        setMessage(
+          "Work submitted successfully. Waiting for client approval."
+        );
+
+        await loadMilestones();
+      } catch (error) {
         console.error(
-          "Work submission notification error:",
-          notificationError
+          "Unexpected work submission error:",
+          error
+        );
+
+        setMessage(
+          "Unable to submit the work. Please try again."
+        );
+      } finally {
+        setUpdatingMilestoneId(
+          null
         );
       }
-    }
+    };
 
-    setMessage(
-      "Work submitted successfully. Waiting for client approval."
-    );
-
-    await loadMilestones();
-  } catch (error) {
-    console.error(
-      "Unexpected work submission error:",
-      error
-    );
-
-    setMessage(
-      "Unable to submit the work. Please try again."
-    );
-  } finally {
-    setUpdatingMilestoneId(
-      null
-    );
-  }
-};
-
-  /*
-   * --------------------------------------------------
-   * CLIENT APPROVES SUBMITTED WORK
-   *
-   * submitted -> completed
-   *
-   * payout:
-   * held -> ready_for_payout
-   * --------------------------------------------------
-   */
+  // --------------------------------------------------
+  // CLIENT APPROVES SUBMITTED WORK
+  //
+  // This now calls:
+  // POST /api/payouts/approve
+  //
+  // Server performs:
+  //
+  // submitted -> completed
+  // held -> ready_for_payout
+  // --------------------------------------------------
 
   const approveSubmittedWork =
     async (
@@ -985,268 +1038,127 @@ export default function MilestonesPage() {
         return;
       }
 
-      const {
-        data: { user },
-        error: userError,
-      } =
-        await supabase.auth.getUser();
-
-      if (
-        userError ||
-        !user
-      ) {
-        setMessage(
-          "Please login again."
-        );
-
-        return;
-      }
-
-      if (
-        contract?.client_id !==
-        user.id
-      ) {
-        setMessage(
-          "You are not authorised to approve this milestone."
-        );
-
-        return;
-      }
-
-      const payout =
-        payouts[
-          milestone.id
-        ];
-
-      if (!payout) {
-        setMessage(
-          "No payout record was found for this milestone."
-        );
-
-        return;
-      }
-
-      if (
-        payout.status ===
-        "paid_out"
-      ) {
-        setMessage(
-          "This freelancer payout has already been completed."
-        );
-
-        return;
-      }
-
-      if (
-        payout.status !==
-          "held" &&
-        payout.status !==
-          "ready_for_payout"
-      ) {
-        setMessage(
-          `This payout cannot be approved while its status is "${payout.status}".`
-        );
-
-        return;
-      }
-
       setUpdatingMilestoneId(
         milestone.id
       );
 
-      const approvedAt =
-        new Date().toISOString();
-
       try {
-        /*
-         * ----------------------------------------------
-         * STEP 1:
-         * MARK PAYOUT READY
-         * ----------------------------------------------
-         */
-
-        if (
-          payout.status ===
-          "held"
-        ) {
-          const {
-            error:
-              payoutError,
-          } = await supabase
-            .from(
-              "freelancer_payouts"
-            )
-            .update({
-              status:
-                "ready_for_payout",
-
-              approved_for_payout_at:
-                approvedAt,
-
-              updated_at:
-                approvedAt,
-            })
-            .eq(
-              "id",
-              payout.id
-            )
-            .eq(
-              "milestone_id",
-              milestone.id
-            )
-            .eq(
-              "client_id",
-              user.id
-            )
-            .eq(
-              "status",
-              "held"
-            );
-
-          if (
-            payoutError
-          ) {
-            console.error(
-              "Payout approval error:",
-              payoutError
-            );
-
-            setMessage(
-              payoutError.message
-            );
-
-            return;
-          }
-        }
-
-        /*
-         * ----------------------------------------------
-         * STEP 2:
-         * MARK MILESTONE COMPLETED
-         * ----------------------------------------------
-         */
+        // ----------------------------------------------
+        // GET CURRENT SESSION
+        // ----------------------------------------------
 
         const {
-          error:
-            milestoneError,
-        } = await supabase
-          .from("milestones")
-          .update({
-            status:
-              "completed",
-          })
-          .eq(
-            "id",
-            milestone.id
-          )
-          .eq(
-            "status",
-            "submitted"
-          );
+          data: sessionData,
+          error: sessionError,
+        } =
+          await supabase.auth.getSession();
 
         if (
-          milestoneError
+          sessionError ||
+          !sessionData.session
         ) {
-          console.error(
-            "Milestone completion error:",
-            milestoneError
-          );
-
-          /*
-           * Attempt to put payout
-           * back on hold if milestone
-           * completion failed.
-           */
-
-          if (
-            payout.status ===
-            "held"
-          ) {
-            await supabase
-              .from(
-                "freelancer_payouts"
-              )
-              .update({
-                status:
-                  "held",
-
-                approved_for_payout_at:
-                  null,
-
-                updated_at:
-                  new Date().toISOString(),
-              })
-              .eq(
-                "id",
-                payout.id
-              )
-              .eq(
-                "status",
-                "ready_for_payout"
-              );
-          }
-
           setMessage(
-            milestoneError.message
+            "Your login session could not be verified. Please login again."
           );
 
           return;
         }
 
-        /*
-         * ----------------------------------------------
-         * ACTIVITY
-         * ----------------------------------------------
-         */
+        // ----------------------------------------------
+        // SECURE SERVER APPROVAL
+        // ----------------------------------------------
 
-        await supabase
-          .from(
-            "contract_activity"
-          )
-          .insert({
-            contract_id:
-              contractId,
+        const response =
+          await fetch(
+            "/api/payouts/approve",
+            {
+              method:
+                "POST",
 
-            action:
-              `Client approved work for milestone "${milestone.title || "Untitled"}". Freelancer payout is ready.`,
-          });
+              headers: {
+                "Content-Type":
+                  "application/json",
 
-        /*
-         * ----------------------------------------------
-         * NOTIFY FREELANCER
-         * ----------------------------------------------
-         */
-
-        if (
-          contract?.freelancer_id
-        ) {
-          await supabase
-            .from(
-              "notifications"
-            )
-            .insert({
-              user_id:
-                contract.freelancer_id,
-
-              title:
-                "Work Approved",
+                Authorization:
+                  `Bearer ${sessionData.session.access_token}`,
+              },
 
               body:
-                `The client approved milestone "${milestone.title || "Untitled Milestone"}". Your payment is now ready for payout.`,
+                JSON.stringify({
+                  milestoneId:
+                    milestone.id,
 
-              link:
-                `/dashboard/contracts/${contractId}/milestones`,
+                  contractId,
+                }),
+            }
+          );
 
-              is_read:
-                false,
-            });
+        let result:
+          ApproveWorkResponse;
+
+        try {
+          result =
+            await response.json();
+        } catch {
+          setMessage(
+            "The server returned an invalid response."
+          );
+
+          return;
+        }
+
+        // ----------------------------------------------
+        // ERROR
+        // ----------------------------------------------
+
+        if (
+          !response.ok
+        ) {
+          console.error(
+            "Approve work API error:",
+            result
+          );
+
+          setMessage(
+            result.error ||
+              "Unable to approve the submitted work."
+          );
+
+          return;
+        }
+
+        // ----------------------------------------------
+        // VERIFY SUCCESS
+        // ----------------------------------------------
+
+        if (
+          !result.success
+        ) {
+          setMessage(
+            "The work approval could not be confirmed."
+          );
+
+          return;
         }
 
         setMessage(
           "Work approved successfully. Freelancer payout is now ready."
         );
 
+        // ----------------------------------------------
+        // REFRESH PAGE
+        // ----------------------------------------------
+
         await loadMilestones();
+      } catch (error) {
+        console.error(
+          "Unexpected work approval error:",
+          error
+        );
+
+        setMessage(
+          "Unable to approve the work. Please try again."
+        );
       } finally {
         setUpdatingMilestoneId(
           null
@@ -1254,11 +1166,9 @@ export default function MilestonesPage() {
       }
     };
 
-  /*
-   * --------------------------------------------------
-   * PAY MILESTONE
-   * --------------------------------------------------
-   */
+  // --------------------------------------------------
+  // PAY MILESTONE
+  // --------------------------------------------------
 
   const payMilestone =
     (
@@ -1292,21 +1202,17 @@ export default function MilestonesPage() {
       );
     };
 
-  /*
-   * --------------------------------------------------
-   * LOADING
-   * --------------------------------------------------
-   */
+  // --------------------------------------------------
+  // LOADING
+  // --------------------------------------------------
 
   if (loading) {
     return <LoadingSkeleton />;
   }
 
-  /*
-   * --------------------------------------------------
-   * PAGE
-   * --------------------------------------------------
-   */
+  // --------------------------------------------------
+  // PAGE
+  // --------------------------------------------------
 
   return (
     <main className="dashboard-page">
@@ -1319,8 +1225,8 @@ export default function MilestonesPage() {
         </h1>
 
         <p>
-          Break projects into professional milestone
-          payments and stages.
+          Break projects into professional
+          milestone payments and stages.
         </p>
       </section>
 
@@ -1377,6 +1283,7 @@ export default function MilestonesPage() {
         contract?.status !==
           "completed" && (
           <section className="dark-card hire-card">
+
             <h2>
               Create Milestone
             </h2>
@@ -1446,6 +1353,7 @@ export default function MilestonesPage() {
                 ? "Creating..."
                 : "Create Milestone"}
             </button>
+
           </section>
         )}
 
@@ -1456,10 +1364,9 @@ export default function MilestonesPage() {
           "completed" && (
           <section className="dark-card">
             <p>
-              This contract has
-              been completed. No
-              additional milestones
-              can be created.
+              This contract has been
+              completed. No additional
+              milestones can be created.
             </p>
           </section>
         )}
@@ -1488,6 +1395,7 @@ export default function MilestonesPage() {
           />
         ) : (
           <div className="contracts-grid">
+
             {milestones.map(
               (milestone) => {
                 const payout =
@@ -1506,7 +1414,11 @@ export default function MilestonesPage() {
                     }
                     className="dark-card contract-card"
                   >
+
+                    {/* TITLE + STATUS */}
+
                     <div className="contract-top">
+
                       <h2>
                         {milestone.title ||
                           "Untitled Milestone"}
@@ -1521,7 +1433,10 @@ export default function MilestonesPage() {
                         {milestone.status ||
                           "pending"}
                       </span>
+
                     </div>
+
+                    {/* AMOUNT */}
 
                     <p className="contract-budget">
                       Amount: ZAR{" "}
@@ -1532,6 +1447,8 @@ export default function MilestonesPage() {
                         2
                       )}
                     </p>
+
+                    {/* DESCRIPTION */}
 
                     <p className="contract-description">
                       {milestone.description ||
@@ -1558,8 +1475,7 @@ export default function MilestonesPage() {
                       >
                         <p>
                           <strong>
-                            Freelancer
-                            amount:
+                            Freelancer amount:
                           </strong>{" "}
                           ZAR{" "}
                           {Number(
@@ -1572,8 +1488,7 @@ export default function MilestonesPage() {
 
                         <p>
                           <strong>
-                            Platform
-                            fee:
+                            Platform fee:
                           </strong>{" "}
                           ZAR{" "}
                           {Number(
@@ -1586,8 +1501,7 @@ export default function MilestonesPage() {
 
                         <p>
                           <strong>
-                            Payout
-                            status:
+                            Payout status:
                           </strong>{" "}
                           {payout.status ||
                             "held"}
@@ -1608,8 +1522,7 @@ export default function MilestonesPage() {
                         }}
                       >
                         <strong>
-                          Payment
-                          link:
+                          Payment link:
                         </strong>{" "}
                         Not linked
                       </p>
@@ -1622,6 +1535,7 @@ export default function MilestonesPage() {
                       role ===
                         "freelancer" && (
                         <div className="contract-actions">
+
                           <button
                             type="button"
                             disabled={
@@ -1638,6 +1552,7 @@ export default function MilestonesPage() {
                               ? "Approving..."
                               : "Approve"}
                           </button>
+
                         </div>
                       )}
 
@@ -1646,11 +1561,11 @@ export default function MilestonesPage() {
                       role ===
                         "client" && (
                         <div className="contract-actions">
+
                           <span className="contract-status pending">
-                            Waiting for
-                            Freelancer
-                            Approval
+                            Waiting for Freelancer Approval
                           </span>
+
                         </div>
                       )}
 
@@ -1659,6 +1574,7 @@ export default function MilestonesPage() {
                     {milestone.status ===
                       "approved" && (
                       <div className="contract-actions">
+
                         {role ===
                           "client" &&
                           milestone.project_id && (
@@ -1679,20 +1595,18 @@ export default function MilestonesPage() {
                           "client" &&
                           !milestone.project_id && (
                             <span className="contract-status rejected">
-                              Payment
-                              unavailable:
-                              project not
-                              linked
+                              Payment unavailable:
+                              project not linked
                             </span>
                           )}
 
                         {role ===
                           "freelancer" && (
                             <span className="contract-status approved">
-                              Awaiting
-                              Payment
+                              Awaiting Payment
                             </span>
                           )}
+
                       </div>
                     )}
 
@@ -1706,8 +1620,7 @@ export default function MilestonesPage() {
                           "freelancer" && (
                           <>
                             <span className="contract-status approved">
-                              Payment
-                              Secured
+                              Payment Secured
                             </span>
 
                             <button
@@ -1732,11 +1645,10 @@ export default function MilestonesPage() {
                         {role ===
                           "client" && (
                             <span className="contract-status approved">
-                              Paid —
-                              Freelancer
-                              Working
+                              Paid — Freelancer Working
                             </span>
                           )}
+
                       </div>
                     )}
 
@@ -1749,9 +1661,7 @@ export default function MilestonesPage() {
                         {role ===
                           "freelancer" && (
                             <span className="contract-status pending">
-                              Awaiting
-                              Client
-                              Approval
+                              Awaiting Client Approval
                             </span>
                           )}
 
@@ -1759,8 +1669,7 @@ export default function MilestonesPage() {
                           "client" && (
                           <>
                             <span className="contract-status pending">
-                              Work
-                              Submitted
+                              Work Submitted
                             </span>
 
                             <button
@@ -1781,6 +1690,7 @@ export default function MilestonesPage() {
                             </button>
                           </>
                         )}
+
                       </div>
                     )}
 
@@ -1789,6 +1699,7 @@ export default function MilestonesPage() {
                     {milestone.status ===
                       "completed" && (
                       <div className="contract-actions">
+
                         <span className="contract-status completed">
                           Completed
                         </span>
@@ -1796,27 +1707,29 @@ export default function MilestonesPage() {
                         {payout?.status ===
                           "ready_for_payout" && (
                           <span className="contract-status approved">
-                            Ready for
-                            Payout
+                            Ready for Payout
                           </span>
                         )}
 
                         {payout?.status ===
                           "paid_out" && (
                           <span className="contract-status completed">
-                            Freelancer
-                            Paid Out
+                            Freelancer Paid Out
                           </span>
                         )}
+
                       </div>
                     )}
+
                   </div>
                 );
               }
             )}
+
           </div>
         )}
       </section>
+
     </main>
   );
 }
