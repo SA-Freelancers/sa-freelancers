@@ -814,151 +814,137 @@ export default function MilestonesPage() {
    * --------------------------------------------------
    */
 
-  const submitWork =
-    async (
-      milestone: Milestone
-    ) => {
-      setMessage("");
+  const submitWork = async (
+  milestone: Milestone
+) => {
+  setMessage("");
 
-      if (
-        role !==
-        "freelancer"
-      ) {
-        setMessage(
-          "Only the freelancer can submit completed work."
-        );
+  if (role !== "freelancer") {
+    setMessage(
+      "Only the freelancer can submit completed work."
+    );
+    return;
+  }
 
-        return;
-      }
+  if (milestone.status !== "paid") {
+    setMessage(
+      "The milestone must be paid before work can be submitted."
+    );
+    return;
+  }
 
-      if (
-        milestone.status !==
-        "paid"
-      ) {
-        setMessage(
-          "The milestone must be paid before work can be submitted."
-        );
+  setUpdatingMilestoneId(
+    milestone.id
+  );
 
-        return;
-      }
+  try {
+    const {
+      data: updatedMilestone,
+      error,
+    } = await supabase
+      .from("milestones")
+      .update({
+        status: "submitted",
+      })
+      .eq("id", milestone.id)
+      .eq("status", "paid")
+      .select()
+      .maybeSingle();
 
-      const payout =
-        payouts[
-          milestone.id
-        ];
-
-      if (!payout) {
-        setMessage(
-          "The payment record for this milestone could not be found."
-        );
-
-        return;
-      }
-
-      if (
-        payout.status !==
-          "held" &&
-        payout.status !==
-          "ready_for_payout"
-      ) {
-        setMessage(
-          "This milestone does not have a valid held payout."
-        );
-
-        return;
-      }
-
-      setUpdatingMilestoneId(
-        milestone.id
+    if (error) {
+      console.error(
+        "Work submission error:",
+        error
       );
 
-      try {
-        const {
-          error,
-        } = await supabase
-          .from("milestones")
-          .update({
-            status:
-              "submitted",
-          })
-          .eq(
-            "id",
-            milestone.id
-          )
-          .eq(
-            "status",
-            "paid"
-          );
+      setMessage(
+        error.message
+      );
+      return;
+    }
 
-        if (error) {
-          console.error(
-            "Work submission error:",
-            error
-          );
+    if (!updatedMilestone) {
+      setMessage(
+        "The milestone could not be submitted. Please refresh the page and try again."
+      );
+      return;
+    }
 
-          setMessage(
-            error.message
-          );
+    /*
+     * CONTRACT ACTIVITY
+     */
 
-          return;
-        }
+    const {
+      error: activityError,
+    } = await supabase
+      .from("contract_activity")
+      .insert({
+        contract_id: contractId,
 
-        /*
-         * ACTIVITY
-         */
+        action:
+          `Work submitted for milestone "${milestone.title || "Untitled"}"`,
+      });
 
-        await supabase
-          .from(
-            "contract_activity"
-          )
-          .insert({
-            contract_id:
-              contractId,
+    if (activityError) {
+      console.error(
+        "Work submission activity error:",
+        activityError
+      );
+    }
 
-            action:
-              `Work submitted for milestone "${milestone.title || "Untitled"}"`,
-          });
+    /*
+     * NOTIFY CLIENT
+     */
 
-        /*
-         * NOTIFY CLIENT
-         */
+    if (contract?.client_id) {
+      const {
+        error: notificationError,
+      } = await supabase
+        .from("notifications")
+        .insert({
+          user_id:
+            contract.client_id,
 
-        if (
-          contract?.client_id
-        ) {
-          await supabase
-            .from(
-              "notifications"
-            )
-            .insert({
-              user_id:
-                contract.client_id,
+          title:
+            "Work Submitted",
 
-              title:
-                "Work Submitted",
+          body:
+            `The freelancer submitted work for milestone "${milestone.title || "Untitled Milestone"}". Please review and approve it.`,
 
-              body:
-                `The freelancer submitted work for milestone "${milestone.title || "Untitled Milestone"}". Please review and approve it.`,
+          link:
+            `/dashboard/contracts/${contractId}/milestones`,
 
-              link:
-                `/dashboard/contracts/${contractId}/milestones`,
+          is_read: false,
+        });
 
-              is_read:
-                false,
-            });
-        }
-
-        setMessage(
-          "Work submitted successfully. Waiting for client approval."
-        );
-
-        await loadMilestones();
-      } finally {
-        setUpdatingMilestoneId(
-          null
+      if (notificationError) {
+        console.error(
+          "Work submission notification error:",
+          notificationError
         );
       }
-    };
+    }
+
+    setMessage(
+      "Work submitted successfully. Waiting for client approval."
+    );
+
+    await loadMilestones();
+  } catch (error) {
+    console.error(
+      "Unexpected work submission error:",
+      error
+    );
+
+    setMessage(
+      "Unable to submit the work. Please try again."
+    );
+  } finally {
+    setUpdatingMilestoneId(
+      null
+    );
+  }
+};
 
   /*
    * --------------------------------------------------
