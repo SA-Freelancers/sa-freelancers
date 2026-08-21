@@ -1,0 +1,719 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+
+export const runtime = "nodejs";
+
+type NextPayoutStatus =
+  | "processing"
+  | "paid_out";
+
+export async function POST(
+  request: NextRequest
+) {
+  try {
+    // --------------------------------------------------
+    // ENVIRONMENT VARIABLES
+    // --------------------------------------------------
+
+    const supabaseUrl =
+      process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+    const serviceRoleKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (
+      !supabaseUrl ||
+      !serviceRoleKey
+    ) {
+      console.error(
+        "Missing Supabase server environment variables."
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Server configuration is incomplete.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    // --------------------------------------------------
+    // AUTHORIZATION
+    // --------------------------------------------------
+
+    const authorization =
+      request.headers.get(
+        "authorization"
+      );
+
+    if (
+      !authorization ||
+      !authorization.startsWith(
+        "Bearer "
+      )
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Authentication required.",
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
+    const accessToken =
+      authorization.substring(7);
+
+    // --------------------------------------------------
+    // SUPABASE ADMIN CLIENT
+    // --------------------------------------------------
+
+    const admin =
+      createClient(
+        supabaseUrl,
+        serviceRoleKey,
+        {
+          auth: {
+            autoRefreshToken:
+              false,
+
+            persistSession:
+              false,
+          },
+        }
+      );
+
+    // --------------------------------------------------
+    // VERIFY LOGGED-IN USER
+    // --------------------------------------------------
+
+    const {
+      data: userData,
+      error: userError,
+    } =
+      await admin.auth.getUser(
+        accessToken
+      );
+
+    if (
+      userError ||
+      !userData.user
+    ) {
+      console.error(
+        "Admin payout authentication error:",
+        userError
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Unable to verify your login session.",
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
+    const adminUser =
+      userData.user;
+
+    // --------------------------------------------------
+    // VERIFY ADMIN
+    // --------------------------------------------------
+
+    const {
+      data: profile,
+      error: profileError,
+    } = await admin
+      .from("profiles")
+      .select(
+        `
+        id,
+        is_admin
+        `
+      )
+      .eq(
+        "id",
+        adminUser.id
+      )
+      .maybeSingle();
+
+    if (profileError) {
+      console.error(
+        "Admin verification error:",
+        profileError
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Unable to verify administrator access.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    if (
+      !profile ||
+      !profile.is_admin
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Administrator access required.",
+        },
+        {
+          status: 403,
+        }
+      );
+    }
+
+    // --------------------------------------------------
+    // READ REQUEST BODY
+    // --------------------------------------------------
+
+    let body: {
+      payoutId?: string;
+      status?: NextPayoutStatus;
+    };
+
+    try {
+      body =
+        await request.json();
+    } catch {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Invalid request body.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    const payoutId =
+      String(
+        body.payoutId || ""
+      ).trim();
+
+    const nextStatus =
+      body.status;
+
+    if (!payoutId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Payout ID is required.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    if (
+      nextStatus !==
+        "processing" &&
+      nextStatus !==
+        "paid_out"
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Invalid payout status.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    // --------------------------------------------------
+    // LOAD PAYOUT
+    // --------------------------------------------------
+
+    const {
+      data: payout,
+      error: payoutError,
+    } = await admin
+      .from(
+        "freelancer_payouts"
+      )
+      .select(
+        `
+        id,
+        milestone_id,
+        project_id,
+        contract_id,
+        freelancer_id,
+        client_id,
+        gross_amount,
+        platform_fee,
+        freelancer_amount,
+        status,
+        payout_requested_at,
+        processing_started_at,
+        processed_by,
+        payout_reference,
+        payout_notes,
+        paid_out_at
+        `
+      )
+      .eq(
+        "id",
+        payoutId
+      )
+      .maybeSingle();
+
+    if (payoutError) {
+      console.error(
+        "Admin payout lookup error:",
+        payoutError
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Unable to load payout.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    if (!payout) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Payout record not found.",
+        },
+        {
+          status: 404,
+        }
+      );
+    }
+
+    // --------------------------------------------------
+    // LOAD FREELANCER PAYOUT METHOD
+    // --------------------------------------------------
+
+    const {
+      data: payoutMethod,
+      error: payoutMethodError,
+    } = await admin
+      .from(
+        "freelancer_payout_methods"
+      )
+      .select(
+        `
+        id,
+        freelancer_id,
+        account_holder_name,
+        bank_name,
+        account_number,
+        account_type,
+        branch_code,
+        status,
+        verified_at
+        `
+      )
+      .eq(
+        "freelancer_id",
+        payout.freelancer_id
+      )
+      .maybeSingle();
+
+    if (payoutMethodError) {
+      console.error(
+        "Payout method lookup error:",
+        payoutMethodError
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Unable to verify freelancer banking details.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    if (!payoutMethod) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "The freelancer has not configured banking details.",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+
+    // --------------------------------------------------
+    // BANKING DETAILS MUST BE COMPLETE
+    // --------------------------------------------------
+
+    if (
+      !payoutMethod.account_holder_name ||
+      !payoutMethod.bank_name ||
+      !payoutMethod.account_number ||
+      !payoutMethod.account_type ||
+      !payoutMethod.branch_code
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "The freelancer banking details are incomplete.",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+
+    // --------------------------------------------------
+    // BANKING DETAILS MUST BE VERIFIED
+    // --------------------------------------------------
+
+    if (
+      payoutMethod.status !==
+      "verified"
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "The freelancer banking details must be verified before processing this payout.",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+
+    // --------------------------------------------------
+    // VALIDATE STATUS TRANSITION
+    // --------------------------------------------------
+
+    if (
+      nextStatus ===
+        "processing" &&
+      payout.status !==
+        "payout_requested"
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Only requested payouts can be moved to processing.",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+
+    if (
+      nextStatus ===
+        "paid_out" &&
+      payout.status !==
+        "processing"
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Only processing payouts can be marked as paid out.",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+
+    const now =
+      new Date().toISOString();
+
+    // --------------------------------------------------
+    // BUILD UPDATE
+    // --------------------------------------------------
+
+    const updateData: {
+      status: string;
+      updated_at: string;
+      processing_started_at?: string;
+      processed_by?: string;
+      paid_out_at?: string;
+    } = {
+      status:
+        nextStatus,
+
+      updated_at:
+        now,
+    };
+
+    // --------------------------------------------------
+    // START PROCESSING
+    // --------------------------------------------------
+
+    if (
+      nextStatus ===
+      "processing"
+    ) {
+      updateData.processing_started_at =
+        now;
+
+      updateData.processed_by =
+        adminUser.id;
+    }
+
+    // --------------------------------------------------
+    // MARK PAID OUT
+    // --------------------------------------------------
+
+    if (
+      nextStatus ===
+      "paid_out"
+    ) {
+      updateData.paid_out_at =
+        now;
+
+      updateData.processed_by =
+        adminUser.id;
+    }
+
+    // --------------------------------------------------
+    // UPDATE PAYOUT
+    //
+    // Match current state as well as ID.
+    // This prevents stale/double updates.
+    // --------------------------------------------------
+
+    const {
+      data: updatedPayout,
+      error: updateError,
+    } = await admin
+      .from(
+        "freelancer_payouts"
+      )
+      .update(
+        updateData
+      )
+      .eq(
+        "id",
+        payout.id
+      )
+      .eq(
+        "status",
+        payout.status
+      )
+      .select(
+        `
+        id,
+        milestone_id,
+        freelancer_id,
+        freelancer_amount,
+        status,
+        payout_requested_at,
+        processing_started_at,
+        processed_by,
+        paid_out_at,
+        updated_at
+        `
+      )
+      .maybeSingle();
+
+    if (updateError) {
+      console.error(
+        "Admin payout update error:",
+        updateError
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Unable to update payout.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    if (!updatedPayout) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "The payout status changed before this request completed. Refresh and try again.",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+
+    // --------------------------------------------------
+    // CONTRACT ACTIVITY
+    // --------------------------------------------------
+
+    if (
+      payout.contract_id
+    ) {
+      const activity =
+        nextStatus ===
+        "processing"
+          ? `Freelancer payout of ZAR ${Number(
+              payout.freelancer_amount ||
+                0
+            ).toFixed(
+              2
+            )} moved to processing`
+          : `Freelancer payout of ZAR ${Number(
+              payout.freelancer_amount ||
+                0
+            ).toFixed(
+              2
+            )} marked as paid out`;
+
+      const {
+        error: activityError,
+      } = await admin
+        .from(
+          "contract_activity"
+        )
+        .insert({
+          contract_id:
+            payout.contract_id,
+
+          action:
+            activity,
+        });
+
+      if (activityError) {
+        console.error(
+          "Payout activity logging error:",
+          activityError
+        );
+      }
+    }
+
+    // --------------------------------------------------
+    // NOTIFY FREELANCER
+    // --------------------------------------------------
+
+    const notificationTitle =
+      nextStatus ===
+      "processing"
+        ? "Payout Processing"
+        : "Payout Sent";
+
+    const notificationBody =
+      nextStatus ===
+      "processing"
+        ? `Your payout of ZAR ${Number(
+            payout.freelancer_amount ||
+              0
+          ).toFixed(
+            2
+          )} is being processed.`
+        : `Your payout of ZAR ${Number(
+            payout.freelancer_amount ||
+              0
+          ).toFixed(
+            2
+          )} has been marked as paid.`;
+
+    const {
+      error:
+        notificationError,
+    } = await admin
+      .from(
+        "notifications"
+      )
+      .insert({
+        user_id:
+          payout.freelancer_id,
+
+        title:
+          notificationTitle,
+
+        body:
+          notificationBody,
+
+        link:
+          "/dashboard/freelancer/earnings",
+
+        is_read:
+          false,
+      });
+
+    if (
+      notificationError
+    ) {
+      console.error(
+        "Payout notification error:",
+        notificationError
+      );
+    }
+
+    // --------------------------------------------------
+    // SUCCESS
+    // --------------------------------------------------
+
+    return NextResponse.json(
+      {
+        success: true,
+
+        payout:
+          updatedPayout,
+      },
+      {
+        status: 200,
+      }
+    );
+  } catch (error) {
+    console.error(
+      "Unexpected admin payout update error:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "An unexpected server error occurred.",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+}

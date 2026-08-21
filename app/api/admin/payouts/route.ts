@@ -3,102 +3,190 @@ import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 
-export async function GET(request: NextRequest) {
+function maskAccountNumber(
+  accountNumber?: string | null
+) {
+  if (!accountNumber) {
+    return null;
+  }
+
+  const clean =
+    String(accountNumber)
+      .replace(/\s+/g, "")
+      .trim();
+
+  if (!clean) {
+    return null;
+  }
+
+  if (clean.length <= 4) {
+    return clean;
+  }
+
+  return `•••• ${clean.slice(-4)}`;
+}
+
+export async function GET(
+  request: NextRequest
+) {
   try {
+    // --------------------------------------------------
+    // ENVIRONMENT VARIABLES
+    // --------------------------------------------------
+
     const supabaseUrl =
       process.env.NEXT_PUBLIC_SUPABASE_URL;
 
     const serviceRoleKey =
       process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!supabaseUrl || !serviceRoleKey) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Server configuration is incomplete.",
-        },
-        { status: 500 }
-      );
-    }
-
-    const authorization =
-      request.headers.get("authorization");
-
     if (
-      !authorization ||
-      !authorization.startsWith("Bearer ")
+      !supabaseUrl ||
+      !serviceRoleKey
     ) {
       return NextResponse.json(
         {
           success: false,
-          error: "Authentication required.",
+          error:
+            "Server configuration is incomplete.",
         },
-        { status: 401 }
+        {
+          status: 500,
+        }
+      );
+    }
+
+    // --------------------------------------------------
+    // AUTHORIZATION
+    // --------------------------------------------------
+
+    const authorization =
+      request.headers.get(
+        "authorization"
+      );
+
+    if (
+      !authorization ||
+      !authorization.startsWith(
+        "Bearer "
+      )
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Authentication required.",
+        },
+        {
+          status: 401,
+        }
       );
     }
 
     const accessToken =
       authorization.substring(7);
 
-    const admin = createClient(
-      supabaseUrl,
-      serviceRoleKey,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
+    // --------------------------------------------------
+    // SUPABASE ADMIN CLIENT
+    // --------------------------------------------------
 
-    // VERIFY USER
+    const admin =
+      createClient(
+        supabaseUrl,
+        serviceRoleKey,
+        {
+          auth: {
+            autoRefreshToken:
+              false,
+
+            persistSession:
+              false,
+          },
+        }
+      );
+
+    // --------------------------------------------------
+    // VERIFY LOGGED-IN USER
+    // --------------------------------------------------
 
     const {
       data: userData,
       error: userError,
-    } = await admin.auth.getUser(
-      accessToken
-    );
+    } =
+      await admin.auth.getUser(
+        accessToken
+      );
 
     if (
       userError ||
       !userData.user
     ) {
+      console.error(
+        "Admin payout user verification error:",
+        userError
+      );
+
       return NextResponse.json(
         {
           success: false,
           error:
             "Unable to verify your login session.",
         },
-        { status: 401 }
+        {
+          status: 401,
+        }
       );
     }
 
+    // --------------------------------------------------
     // VERIFY ADMIN
+    // --------------------------------------------------
 
     const {
       data: profile,
       error: profileError,
     } = await admin
       .from("profiles")
-      .select("id, is_admin")
+      .select(
+        `
+        id,
+        is_admin
+        `
+      )
       .eq(
         "id",
         userData.user.id
       )
       .maybeSingle();
 
-    if (
-      profileError ||
-      !profile
-    ) {
+    if (profileError) {
+      console.error(
+        "Admin profile lookup error:",
+        profileError
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Unable to verify administrator access.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    if (!profile) {
       return NextResponse.json(
         {
           success: false,
           error:
             "Admin profile could not be found.",
         },
-        { status: 404 }
+        {
+          status: 404,
+        }
       );
     }
 
@@ -106,19 +194,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Admin access required.",
+          error:
+            "Admin access required.",
         },
-        { status: 403 }
+        {
+          status: 403,
+        }
       );
     }
 
+    // --------------------------------------------------
     // LOAD PAYOUTS
+    // --------------------------------------------------
 
     const {
       data: payouts,
       error: payoutError,
     } = await admin
-      .from("freelancer_payouts")
+      .from(
+        "freelancer_payouts"
+      )
       .select(
         `
         id,
@@ -135,6 +230,10 @@ export async function GET(request: NextRequest) {
         payment_received_at,
         approved_for_payout_at,
         payout_requested_at,
+        processing_started_at,
+        payout_reference,
+        payout_notes,
+        processed_by,
         paid_out_at,
         created_at,
         updated_at
@@ -156,16 +255,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Unable to load payouts.",
+          error:
+            "Unable to load payouts.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
 
     const payoutRows =
       payouts || [];
 
+    // --------------------------------------------------
     // LOAD MILESTONES
+    // --------------------------------------------------
 
     const milestoneIds = [
       ...new Set(
@@ -178,29 +282,40 @@ export async function GET(request: NextRequest) {
       ),
     ];
 
-    let milestoneMap: Record<
-      string,
-      {
-        id: string;
-        title: string | null;
-      }
-    > = {};
+    let milestoneMap:
+      Record<
+        string,
+        {
+          id: string;
+          title: string | null;
+          status?: string | null;
+        }
+      > = {};
 
     if (
-      milestoneIds.length > 0
+      milestoneIds.length >
+      0
     ) {
       const {
         data: milestoneRows,
         error: milestoneError,
       } = await admin
         .from("milestones")
-        .select("id, title")
+        .select(
+          `
+          id,
+          title,
+          status
+          `
+        )
         .in(
           "id",
           milestoneIds
         );
 
-      if (milestoneError) {
+      if (
+        milestoneError
+      ) {
         console.error(
           "Admin milestone loading error:",
           milestoneError
@@ -217,7 +332,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // --------------------------------------------------
     // LOAD FREELANCER PROFILES
+    // --------------------------------------------------
 
     const freelancerIds = [
       ...new Set(
@@ -230,34 +347,38 @@ export async function GET(request: NextRequest) {
       ),
     ];
 
-    let freelancerMap: Record<
-      string,
-      {
-        id: string;
-        full_name?: string | null;
-      }
-    > = {};
+    let freelancerMap:
+      Record<
+        string,
+        {
+          id: string;
+          full_name?: string | null;
+        }
+      > = {};
 
     if (
-      freelancerIds.length > 0
+      freelancerIds.length >
+      0
     ) {
-      /*
-       * We deliberately select only id and full_name here.
-       * If your profiles table uses a different name column,
-       * we'll adjust it after the first build/database test.
-       */
       const {
         data: freelancerRows,
         error: freelancerError,
       } = await admin
         .from("profiles")
-        .select("id, full_name")
+        .select(
+          `
+          id,
+          full_name
+          `
+        )
         .in(
           "id",
           freelancerIds
         );
 
-      if (freelancerError) {
+      if (
+        freelancerError
+      ) {
         console.error(
           "Freelancer profile loading error:",
           freelancerError
@@ -274,7 +395,87 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // --------------------------------------------------
+    // LOAD PAYOUT METHODS
+    // --------------------------------------------------
+
+    let payoutMethodMap:
+      Record<
+        string,
+        {
+          id: string;
+          freelancer_id: string;
+          account_holder_name:
+            string;
+          bank_name: string;
+          account_number:
+            string;
+          account_type:
+            string;
+          branch_code:
+            string;
+          status: string;
+          verified_at?:
+            string | null;
+          updated_at?:
+            string | null;
+        }
+      > = {};
+
+    if (
+      freelancerIds.length >
+      0
+    ) {
+      const {
+        data:
+          payoutMethodRows,
+        error:
+          payoutMethodError,
+      } = await admin
+        .from(
+          "freelancer_payout_methods"
+        )
+        .select(
+          `
+          id,
+          freelancer_id,
+          account_holder_name,
+          bank_name,
+          account_number,
+          account_type,
+          branch_code,
+          status,
+          verified_at,
+          updated_at
+          `
+        )
+        .in(
+          "freelancer_id",
+          freelancerIds
+        );
+
+      if (
+        payoutMethodError
+      ) {
+        console.error(
+          "Admin payout method loading error:",
+          payoutMethodError
+        );
+      }
+
+      for (
+        const method of
+        payoutMethodRows || []
+      ) {
+        payoutMethodMap[
+          method.freelancer_id
+        ] = method;
+      }
+    }
+
+    // --------------------------------------------------
     // CALCULATE SUMMARY
+    // --------------------------------------------------
 
     let totalHeld = 0;
     let totalReady = 0;
@@ -296,45 +497,127 @@ export async function GET(request: NextRequest) {
         payout.status
       ) {
         case "held":
-          totalHeld += amount;
+          totalHeld +=
+            amount;
           break;
 
         case "ready_for_payout":
-          totalReady += amount;
+          totalReady +=
+            amount;
           break;
 
         case "payout_requested":
-          totalRequested += amount;
+          totalRequested +=
+            amount;
           break;
 
         case "processing":
-          totalProcessing += amount;
+          totalProcessing +=
+            amount;
           break;
 
         case "paid_out":
-          totalPaid += amount;
+          totalPaid +=
+            amount;
           break;
       }
     }
 
+    // --------------------------------------------------
+    // SAFE ADMIN RESPONSE
+    // --------------------------------------------------
+
     const safePayouts =
       payoutRows.map(
-        (payout) => ({
-          ...payout,
-
-          milestone_title:
-            milestoneMap[
-              payout.milestone_id
-            ]?.title ||
-            "Project Milestone",
-
-          freelancer_name:
-            freelancerMap[
+        (payout) => {
+          const method =
+            payoutMethodMap[
               payout.freelancer_id
-            ]?.full_name ||
-            "Freelancer",
-        })
+            ];
+
+          return {
+            ...payout,
+
+            // ------------------------------------------
+            // MILESTONE
+            // ------------------------------------------
+
+            milestone_title:
+              milestoneMap[
+                payout.milestone_id
+              ]?.title ||
+              "Project Milestone",
+
+            milestone_status:
+              milestoneMap[
+                payout.milestone_id
+              ]?.status ||
+              null,
+
+            // ------------------------------------------
+            // FREELANCER
+            // ------------------------------------------
+
+            freelancer_name:
+              freelancerMap[
+                payout.freelancer_id
+              ]?.full_name ||
+              "Freelancer",
+
+            // ------------------------------------------
+            // PAYOUT METHOD
+            // ------------------------------------------
+
+            payout_method_id:
+              method?.id ||
+              null,
+
+            account_holder_name:
+              method
+                ?.account_holder_name ||
+              null,
+
+            bank_name:
+              method
+                ?.bank_name ||
+              null,
+
+            account_number_masked:
+              maskAccountNumber(
+                method
+                  ?.account_number
+              ),
+
+            account_type:
+              method
+                ?.account_type ||
+              null,
+
+            branch_code:
+              method
+                ?.branch_code ||
+              null,
+
+            banking_status:
+              method?.status ||
+              "not_configured",
+
+            banking_verified_at:
+              method
+                ?.verified_at ||
+              null,
+
+            banking_updated_at:
+              method
+                ?.updated_at ||
+              null,
+          };
+        }
       );
+
+    // --------------------------------------------------
+    // RETURN RESPONSE
+    // --------------------------------------------------
 
     return NextResponse.json(
       {
@@ -344,18 +627,25 @@ export async function GET(request: NextRequest) {
           safePayouts,
 
         summary: {
-          held: totalHeld,
+          held:
+            totalHeld,
+
           ready:
             totalReady,
+
           requested:
             totalRequested,
+
           processing:
             totalProcessing,
+
           paid:
             totalPaid,
         },
       },
-      { status: 200 }
+      {
+        status: 200,
+      }
     );
   } catch (error) {
     console.error(
@@ -366,10 +656,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
+
         error:
           "An unexpected server error occurred.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }
