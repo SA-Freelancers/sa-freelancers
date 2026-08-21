@@ -1,17 +1,25 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
 import { supabase } from "@/app/lib/supabase";
 import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 import EmptyState from "@/app/components/EmptyState";
+
+type MilestoneInfo = {
+  id: string;
+  title?: string;
+  status?: string;
+};
 
 type Payout = {
   id: string;
   milestone_id: string;
   project_id: string;
   contract_id?: string | null;
-  freelancer_id: string;
-  client_id: string;
 
   gross_amount: number;
   platform_fee: number;
@@ -26,21 +34,32 @@ type Payout = {
   paid_out_at?: string | null;
 
   created_at?: string;
+
+  milestone?: MilestoneInfo | null;
 };
 
-type Milestone = {
-  id: string;
-  title?: string;
-  status?: string;
+type EarningsTotals = {
+  held: number;
+  available: number;
+  requested: number;
+  processing: number;
+  paidOut: number;
+  platformFees: number;
+  totalEarned: number;
+};
+
+type EarningsResponse = {
+  success?: boolean;
+
+  totals?: EarningsTotals;
+
+  payouts?: Payout[];
+
+  error?: string;
 };
 
 type RequestPayoutResponse = {
   success?: boolean;
-  payoutId?: string;
-  milestoneId?: string;
-  status?: string;
-  freelancerAmount?: number;
-  payoutRequestedAt?: string;
   error?: string;
 };
 
@@ -48,8 +67,16 @@ export default function FreelancerEarningsPage() {
   const [payouts, setPayouts] =
     useState<Payout[]>([]);
 
-  const [milestones, setMilestones] =
-    useState<Record<string, Milestone>>({});
+  const [totals, setTotals] =
+    useState<EarningsTotals>({
+      held: 0,
+      available: 0,
+      requested: 0,
+      processing: 0,
+      paidOut: 0,
+      platformFees: 0,
+      totalEarned: 0,
+    });
 
   const [loading, setLoading] =
     useState(true);
@@ -60,254 +87,127 @@ export default function FreelancerEarningsPage() {
   const [
     requestingPayoutId,
     setRequestingPayoutId,
-  ] = useState<string | null>(null);
+  ] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     loadEarnings();
   }, []);
 
-  // --------------------------------------------------
-  // LOAD EARNINGS
-  // --------------------------------------------------
+  // ---------------------------------------------
+  // LOAD EARNINGS THROUGH SECURE SERVER API
+  // ---------------------------------------------
 
-  const loadEarnings = async () => {
-    setLoading(true);
-    setMessage("");
+  const loadEarnings =
+    async () => {
+      setLoading(true);
 
-    try {
-      const {
-        data: { user },
-        error: userError,
-      } =
-        await supabase.auth.getUser();
-
-      if (
-        userError ||
-        !user
-      ) {
-        setMessage(
-          "Please login first."
-        );
-
-        return;
-      }
-
-      // ----------------------------------------------
-      // LOAD PAYOUTS
-      // ----------------------------------------------
-
-      const {
-        data: payoutData,
-        error: payoutError,
-      } = await supabase
-        .from("freelancer_payouts")
-        .select(
-          `
-          id,
-          milestone_id,
-          project_id,
-          contract_id,
-          freelancer_id,
-          client_id,
-          gross_amount,
-          platform_fee,
-          freelancer_amount,
-          platform_fee_percent,
-          status,
-          payment_received_at,
-          approved_for_payout_at,
-          payout_requested_at,
-          paid_out_at,
-          created_at
-          `
-        )
-        .eq(
-          "freelancer_id",
-          user.id
-        )
-        .order(
-          "created_at",
-          {
-            ascending: false,
-          }
-        );
-
-      if (payoutError) {
-        console.error(
-          "Earnings loading error:",
-          payoutError
-        );
-
-        setMessage(
-          "Unable to load your earnings."
-        );
-
-        return;
-      }
-
-      const loadedPayouts =
-        (payoutData as Payout[]) ||
-        [];
-
-      setPayouts(
-        loadedPayouts
-      );
-
-      // ----------------------------------------------
-      // LOAD MILESTONE TITLES
-      // ----------------------------------------------
-
-      const milestoneIds =
-        loadedPayouts.map(
-          (payout) =>
-            payout.milestone_id
-        );
-
-      if (
-        milestoneIds.length >
-        0
-      ) {
+      try {
         const {
-          data: milestoneData,
-          error: milestoneError,
-        } = await supabase
-          .from("milestones")
-          .select(
-            `
-            id,
-            title,
-            status
-            `
-          )
-          .in(
-            "id",
-            milestoneIds
+          data: sessionData,
+          error: sessionError,
+        } =
+          await supabase.auth.getSession();
+
+        if (
+          sessionError ||
+          !sessionData.session
+        ) {
+          setMessage(
+            "Please login first."
           );
 
-        if (milestoneError) {
-          console.error(
-            "Milestone title loading error:",
-            milestoneError
-          );
+          return;
         }
 
-        const map:
-          Record<
-            string,
-            Milestone
-          > = {};
+        const response =
+          await fetch(
+            "/api/payouts/earnings",
+            {
+              method: "GET",
 
-        (
-          (milestoneData as Milestone[]) ||
-          []
-        ).forEach(
-          (milestone) => {
-            map[
-              milestone.id
-            ] = milestone;
-          }
+              headers: {
+                Authorization:
+                  `Bearer ${sessionData.session.access_token}`,
+              },
+
+              cache:
+                "no-store",
+            }
+          );
+
+        const responseText =
+          await response.text();
+
+        let result:
+          EarningsResponse = {};
+
+        try {
+          result =
+            responseText
+              ? JSON.parse(
+                  responseText
+                )
+              : {};
+        } catch {
+          console.error(
+            "Earnings API non-JSON response:",
+            responseText
+          );
+
+          setMessage(
+            `Unable to load earnings. Server error ${response.status}.`
+          );
+
+          return;
+        }
+
+        if (
+          !response.ok ||
+          !result.success
+        ) {
+          setMessage(
+            result.error ||
+              "Unable to load earnings."
+          );
+
+          return;
+        }
+
+        setPayouts(
+          result.payouts ||
+            []
         );
 
-        setMilestones(map);
-      } else {
-        setMilestones({});
+        setTotals(
+          result.totals || {
+            held: 0,
+            available: 0,
+            requested: 0,
+            processing: 0,
+            paidOut: 0,
+            platformFees: 0,
+            totalEarned: 0,
+          }
+        );
+      } catch (error) {
+        console.error(
+          "Unexpected earnings page error:",
+          error
+        );
+
+        setMessage(
+          "Unable to load earnings."
+        );
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error(
-        "Unexpected earnings loading error:",
-        error
-      );
+    };
 
-      setMessage(
-        "An unexpected error occurred while loading your earnings."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // --------------------------------------------------
-  // TOTALS
-  // --------------------------------------------------
-
-  const totals =
-    useMemo(() => {
-      let held = 0;
-      let available = 0;
-      let requested = 0;
-      let processing = 0;
-      let paidOut = 0;
-      let platformFees = 0;
-      let totalEarned = 0;
-
-      for (
-        const payout of payouts
-      ) {
-        const freelancerAmount =
-          Number(
-            payout.freelancer_amount ||
-              0
-          );
-
-        const platformFee =
-          Number(
-            payout.platform_fee ||
-              0
-          );
-
-        totalEarned +=
-          freelancerAmount;
-
-        platformFees +=
-          platformFee;
-
-        switch (
-          payout.status
-        ) {
-          case "held":
-            held +=
-              freelancerAmount;
-            break;
-
-          case "ready_for_payout":
-            available +=
-              freelancerAmount;
-            break;
-
-          case "payout_requested":
-            requested +=
-              freelancerAmount;
-            break;
-
-          case "processing":
-            processing +=
-              freelancerAmount;
-            break;
-
-          case "paid_out":
-            paidOut +=
-              freelancerAmount;
-            break;
-
-          default:
-            break;
-        }
-      }
-
-      return {
-        held,
-        available,
-        requested,
-        processing,
-        paidOut,
-        platformFees,
-        totalEarned,
-      };
-    }, [payouts]);
-
-  // --------------------------------------------------
+  // ---------------------------------------------
   // REQUEST PAYOUT
-  // --------------------------------------------------
+  // ---------------------------------------------
 
   const requestPayout =
     async (
@@ -320,7 +220,7 @@ export default function FreelancerEarningsPage() {
         "ready_for_payout"
       ) {
         setMessage(
-          "This payout is not currently available for withdrawal."
+          "This payout is not currently available."
         );
 
         return;
@@ -342,7 +242,7 @@ export default function FreelancerEarningsPage() {
           !sessionData.session
         ) {
           setMessage(
-            "Your login session could not be verified. Please login again."
+            "Please login again."
           );
 
           return;
@@ -385,11 +285,6 @@ export default function FreelancerEarningsPage() {
                 )
               : {};
         } catch {
-          console.error(
-            "Payout request non-JSON response:",
-            responseText
-          );
-
           setMessage(
             `Server error (${response.status}).`
           );
@@ -398,21 +293,12 @@ export default function FreelancerEarningsPage() {
         }
 
         if (
-          !response.ok
+          !response.ok ||
+          !result.success
         ) {
           setMessage(
             result.error ||
               "Unable to request payout."
-          );
-
-          return;
-        }
-
-        if (
-          !result.success
-        ) {
-          setMessage(
-            "The payout request could not be confirmed."
           );
 
           return;
@@ -430,7 +316,7 @@ export default function FreelancerEarningsPage() {
         );
 
         setMessage(
-          "Unable to request payout. Please try again."
+          "Unable to request payout."
         );
       } finally {
         setRequestingPayoutId(
@@ -439,11 +325,11 @@ export default function FreelancerEarningsPage() {
       }
     };
 
-  // --------------------------------------------------
+  // ---------------------------------------------
   // STATUS LABEL
-  // --------------------------------------------------
+  // ---------------------------------------------
 
-  const payoutStatusLabel =
+  const getStatusLabel =
     (
       status: string
     ) => {
@@ -474,19 +360,11 @@ export default function FreelancerEarningsPage() {
       }
     };
 
-  // --------------------------------------------------
-  // LOADING
-  // --------------------------------------------------
-
   if (loading) {
     return (
       <LoadingSkeleton />
     );
   }
-
-  // --------------------------------------------------
-  // PAGE
-  // --------------------------------------------------
 
   return (
     <main className="dashboard-page">
@@ -509,8 +387,6 @@ export default function FreelancerEarningsPage() {
         </p>
       </section>
 
-      {/* MESSAGE */}
-
       {message && (
         <p className="upload-message">
           {message}
@@ -532,95 +408,69 @@ export default function FreelancerEarningsPage() {
         <div
           style={{
             display: "grid",
+
             gridTemplateColumns:
               "repeat(auto-fit, minmax(180px, 1fr))",
+
             gap: 15,
+
             marginTop: 20,
           }}
         >
 
-          <div className="dark-card">
-            <p>
-              Available for Payout
-            </p>
+          <SummaryCard
+            label="Available for Payout"
+            amount={
+              totals.available
+            }
+          />
 
-            <h2>
-              ZAR{" "}
-              {totals.available.toFixed(
-                2
-              )}
-            </h2>
-          </div>
+          <SummaryCard
+            label="Held"
+            amount={
+              totals.held
+            }
+          />
 
-          <div className="dark-card">
-            <p>
-              Held
-            </p>
+          <SummaryCard
+            label="Requested"
+            amount={
+              totals.requested
+            }
+          />
 
-            <h2>
-              ZAR{" "}
-              {totals.held.toFixed(
-                2
-              )}
-            </h2>
-          </div>
+          <SummaryCard
+            label="Processing"
+            amount={
+              totals.processing
+            }
+          />
 
-          <div className="dark-card">
-            <p>
-              Requested
-            </p>
+          <SummaryCard
+            label="Paid Out"
+            amount={
+              totals.paidOut
+            }
+          />
 
-            <h2>
-              ZAR{" "}
-              {totals.requested.toFixed(
-                2
-              )}
-            </h2>
-          </div>
+          <SummaryCard
+            label="Total Earned"
+            amount={
+              totals.totalEarned
+            }
+          />
 
-          <div className="dark-card">
-            <p>
-              Processing
-            </p>
-
-            <h2>
-              ZAR{" "}
-              {totals.processing.toFixed(
-                2
-              )}
-            </h2>
-          </div>
-
-          <div className="dark-card">
-            <p>
-              Paid Out
-            </p>
-
-            <h2>
-              ZAR{" "}
-              {totals.paidOut.toFixed(
-                2
-              )}
-            </h2>
-          </div>
-
-          <div className="dark-card">
-            <p>
-              Platform Fees
-            </p>
-
-            <h2>
-              ZAR{" "}
-              {totals.platformFees.toFixed(
-                2
-              )}
-            </h2>
-          </div>
+          <SummaryCard
+            label="Platform Fees"
+            amount={
+              totals.platformFees
+            }
+          />
 
         </div>
       </section>
 
-      {/* PAYOUT LIST */}
+      {/* PAYMENT HISTORY */}
 
       <section>
         <h2
@@ -643,11 +493,6 @@ export default function FreelancerEarningsPage() {
 
             {payouts.map(
               (payout) => {
-                const milestone =
-                  milestones[
-                    payout.milestone_id
-                  ];
-
                 const isRequesting =
                   requestingPayoutId ===
                   payout.id;
@@ -659,17 +504,20 @@ export default function FreelancerEarningsPage() {
                     }
                     className="dark-card contract-card"
                   >
+
                     <div className="contract-top">
 
                       <h2>
-                        {milestone?.title ||
+                        {payout
+                          .milestone
+                          ?.title ||
                           "Project Milestone"}
                       </h2>
 
                       <span
                         className={`contract-status ${payout.status}`}
                       >
-                        {payoutStatusLabel(
+                        {getStatusLabel(
                           payout.status
                         )}
                       </span>
@@ -729,7 +577,7 @@ export default function FreelancerEarningsPage() {
                     {payout.approved_for_payout_at && (
                       <p>
                         <strong>
-                          Approved:
+                          Approved for Payout:
                         </strong>{" "}
                         {new Date(
                           payout.approved_for_payout_at
@@ -740,7 +588,7 @@ export default function FreelancerEarningsPage() {
                     {payout.payout_requested_at && (
                       <p>
                         <strong>
-                          Payout Requested:
+                          Requested:
                         </strong>{" "}
                         {new Date(
                           payout.payout_requested_at
@@ -759,30 +607,25 @@ export default function FreelancerEarningsPage() {
                       </p>
                     )}
 
+                    {/* HELD */}
+
                     {payout.status ===
                       "held" && (
-                      <div
-                        className="contract-actions"
-                        style={{
-                          marginTop:
-                            15,
-                        }}
-                      >
+                      <div className="contract-actions">
                         <span className="contract-status pending">
-                          Waiting for Client Approval
+                          Funds Secured —
+                          Waiting for
+                          Client Approval
                         </span>
                       </div>
                     )}
 
+                    {/* READY */}
+
                     {payout.status ===
                       "ready_for_payout" && (
-                      <div
-                        className="contract-actions"
-                        style={{
-                          marginTop:
-                            15,
-                        }}
-                      >
+                      <div className="contract-actions">
+
                         <button
                           type="button"
                           disabled={
@@ -804,48 +647,39 @@ export default function FreelancerEarningsPage() {
                                 2
                               )}`}
                         </button>
+
                       </div>
                     )}
+
+                    {/* REQUESTED */}
 
                     {payout.status ===
                       "payout_requested" && (
-                      <div
-                        className="contract-actions"
-                        style={{
-                          marginTop:
-                            15,
-                        }}
-                      >
+                      <div className="contract-actions">
                         <span className="contract-status pending">
-                          Payout Request Submitted
+                          Payout Request
+                          Submitted
                         </span>
                       </div>
                     )}
+
+                    {/* PROCESSING */}
 
                     {payout.status ===
                       "processing" && (
-                      <div
-                        className="contract-actions"
-                        style={{
-                          marginTop:
-                            15,
-                        }}
-                      >
+                      <div className="contract-actions">
                         <span className="contract-status approved">
-                          Payout Processing
+                          Payout
+                          Processing
                         </span>
                       </div>
                     )}
 
+                    {/* PAID */}
+
                     {payout.status ===
                       "paid_out" && (
-                      <div
-                        className="contract-actions"
-                        style={{
-                          marginTop:
-                            15,
-                        }}
-                      >
+                      <div className="contract-actions">
                         <span className="contract-status completed">
                           Payment Sent
                         </span>
@@ -862,5 +696,30 @@ export default function FreelancerEarningsPage() {
       </section>
 
     </main>
+  );
+}
+
+function SummaryCard({
+  label,
+  amount,
+}: {
+  label: string;
+  amount: number;
+}) {
+  return (
+    <div className="dark-card">
+
+      <p>
+        {label}
+      </p>
+
+      <h2>
+        ZAR{" "}
+        {Number(
+          amount || 0
+        ).toFixed(2)}
+      </h2>
+
+    </div>
   );
 }
