@@ -33,8 +33,10 @@ type Payout = {
   approved_for_payout_at?: string | null;
   payout_requested_at?: string | null;
   processing_started_at?: string | null;
+
   payout_reference?: string | null;
   payout_notes?: string | null;
+
   processed_by?: string | null;
   paid_out_at?: string | null;
 
@@ -89,6 +91,11 @@ type VerificationResponse = {
   };
 };
 
+type PaymentForm = {
+  reference: string;
+  notes: string;
+};
+
 export default function AdminPayoutsPage() {
   const [payouts, setPayouts] =
     useState<Payout[]>([]);
@@ -121,6 +128,13 @@ export default function AdminPayoutsPage() {
   ] = useState<string | null>(
     null
   );
+
+  const [
+    paymentForms,
+    setPaymentForms,
+  ] = useState<
+    Record<string, PaymentForm>
+  >({});
 
   // --------------------------------------------------
   // LOAD PAYOUTS
@@ -159,8 +173,7 @@ export default function AdminPayoutsPage() {
                   `Bearer ${sessionData.session.access_token}`,
               },
 
-              cache:
-                "no-store",
+              cache: "no-store",
             }
           );
 
@@ -173,9 +186,7 @@ export default function AdminPayoutsPage() {
         try {
           result =
             text
-              ? JSON.parse(
-                  text
-                )
+              ? JSON.parse(text)
               : {};
         } catch {
           setMessage(
@@ -227,6 +238,44 @@ export default function AdminPayoutsPage() {
   useEffect(() => {
     loadPayouts();
   }, [loadPayouts]);
+
+  // --------------------------------------------------
+  // PAYMENT FORM HELPERS
+  // --------------------------------------------------
+
+  const getPaymentForm = (
+    payoutId: string
+  ): PaymentForm => {
+    return (
+      paymentForms[payoutId] || {
+        reference: "",
+        notes: "",
+      }
+    );
+  };
+
+  const updatePaymentForm = (
+    payoutId: string,
+    field: keyof PaymentForm,
+    value: string
+  ) => {
+    setPaymentForms(
+      (current) => ({
+        ...current,
+
+        [payoutId]: {
+          ...(
+            current[payoutId] || {
+              reference: "",
+              notes: "",
+            }
+          ),
+
+          [field]: value,
+        },
+      })
+    );
+  };
 
   // --------------------------------------------------
   // VERIFY / REJECT BANKING DETAILS
@@ -307,9 +356,7 @@ export default function AdminPayoutsPage() {
         try {
           result =
             text
-              ? JSON.parse(
-                  text
-                )
+              ? JSON.parse(text)
               : {};
         } catch {
           setMessage(
@@ -368,18 +415,45 @@ export default function AdminPayoutsPage() {
       setMessage("");
 
       // ----------------------------------------------
-      // SECURITY:
-      // ADMIN MUST VERIFY BANKING BEFORE PROCESSING
+      // BANKING MUST REMAIN VERIFIED
       // ----------------------------------------------
 
       if (
-        status ===
-          "processing" &&
         payout.banking_status !==
-          "verified"
+        "verified"
       ) {
         setMessage(
-          "Verify the freelancer banking details before processing this payout."
+          "The freelancer banking details must be verified before this payout can continue."
+        );
+
+        return;
+      }
+
+      // ----------------------------------------------
+      // PAYMENT DETAILS
+      // ----------------------------------------------
+
+      const paymentForm =
+        getPaymentForm(
+          payout.id
+        );
+
+      const payoutReference =
+        paymentForm.reference.trim();
+
+      const payoutNotes =
+        paymentForm.notes.trim();
+
+      // ----------------------------------------------
+      // REFERENCE REQUIRED FOR FINAL PAYMENT
+      // ----------------------------------------------
+
+      if (
+        status === "paid_out" &&
+        !payoutReference
+      ) {
+        setMessage(
+          "Enter the bank payment reference before confirming payment."
         );
 
         return;
@@ -407,6 +481,30 @@ export default function AdminPayoutsPage() {
           return;
         }
 
+        const requestBody: {
+          payoutId: string;
+          status:
+            | "processing"
+            | "paid_out";
+          payoutReference?: string;
+          payoutNotes?: string;
+        } = {
+          payoutId:
+            payout.id,
+
+          status,
+        };
+
+        if (
+          status === "paid_out"
+        ) {
+          requestBody.payoutReference =
+            payoutReference;
+
+          requestBody.payoutNotes =
+            payoutNotes;
+        }
+
         const response =
           await fetch(
             "/api/admin/payouts/update",
@@ -422,12 +520,9 @@ export default function AdminPayoutsPage() {
               },
 
               body:
-                JSON.stringify({
-                  payoutId:
-                    payout.id,
-
-                  status,
-                }),
+                JSON.stringify(
+                  requestBody
+                ),
             }
           );
 
@@ -440,9 +535,7 @@ export default function AdminPayoutsPage() {
         try {
           result =
             text
-              ? JSON.parse(
-                  text
-                )
+              ? JSON.parse(text)
               : {};
         } catch {
           setMessage(
@@ -464,12 +557,32 @@ export default function AdminPayoutsPage() {
           return;
         }
 
-        setMessage(
+        if (
           status ===
-            "processing"
-            ? "Payout moved to processing."
-            : "Payout marked as paid out."
-        );
+          "processing"
+        ) {
+          setMessage(
+            "Payout moved to processing. Complete the bank transfer, then enter the payment reference below."
+          );
+        } else {
+          setMessage(
+            "Payment confirmed and payout marked as paid out."
+          );
+
+          setPaymentForms(
+            (current) => {
+              const next = {
+                ...current,
+              };
+
+              delete next[
+                payout.id
+              ];
+
+              return next;
+            }
+          );
+        }
 
         await loadPayouts();
       } catch (error) {
@@ -578,8 +691,8 @@ export default function AdminPayoutsPage() {
         <p>
           Verify freelancer banking
           details, review payout
-          requests and track manual
-          payment processing.
+          requests and securely track
+          manual bank transfers.
         </p>
       </section>
 
@@ -607,37 +720,27 @@ export default function AdminPayoutsPage() {
       >
         <SummaryCard
           title="Held"
-          amount={
-            summary.held
-          }
+          amount={summary.held}
         />
 
         <SummaryCard
           title="Ready"
-          amount={
-            summary.ready
-          }
+          amount={summary.ready}
         />
 
         <SummaryCard
           title="Requested"
-          amount={
-            summary.requested
-          }
+          amount={summary.requested}
         />
 
         <SummaryCard
           title="Processing"
-          amount={
-            summary.processing
-          }
+          amount={summary.processing}
         />
 
         <SummaryCard
           title="Paid Out"
-          amount={
-            summary.paid
-          }
+          amount={summary.paid}
         />
       </section>
 
@@ -684,11 +787,14 @@ export default function AdminPayoutsPage() {
                   payout.banking_status ===
                   "verified";
 
+                const paymentForm =
+                  getPaymentForm(
+                    payout.id
+                  );
+
                 return (
                   <article
-                    key={
-                      payout.id
-                    }
+                    key={payout.id}
                     className="dark-card contract-card"
                   >
 
@@ -788,13 +894,13 @@ export default function AdminPayoutsPage() {
                         border:
                           "1px solid rgba(255,255,255,0.10)",
 
-                        borderRadius:
-                          12,
+                        borderRadius: 12,
                       }}
                     >
                       <div
                         style={{
-                          display: "flex",
+                          display:
+                            "flex",
 
                           justifyContent:
                             "space-between",
@@ -1025,9 +1131,27 @@ export default function AdminPayoutsPage() {
                       <div
                         style={{
                           marginTop:
-                            20,
+                            22,
+
+                          padding:
+                            18,
+
+                          border:
+                            "1px solid rgba(255,255,255,0.10)",
+
+                          borderRadius:
+                            12,
                         }}
                       >
+                        <h3
+                          style={{
+                            marginBottom:
+                              12,
+                          }}
+                        >
+                          Confirm Bank Transfer
+                        </h3>
+
                         <p>
                           <strong>
                             Processing Started:
@@ -1040,7 +1164,10 @@ export default function AdminPayoutsPage() {
                         <p
                           style={{
                             marginTop:
-                              12,
+                              10,
+
+                            marginBottom:
+                              18,
                           }}
                         >
                           Transfer{" "}
@@ -1049,10 +1176,167 @@ export default function AdminPayoutsPage() {
                               payout.freelancer_amount
                             )}
                           </strong>{" "}
-                          manually to the
-                          verified bank account
-                          before marking this
-                          payout as paid.
+                          to the verified
+                          freelancer bank account.
+                          After the transfer has
+                          actually been completed,
+                          enter the bank payment
+                          reference below.
+                        </p>
+
+                        <div
+                          style={{
+                            marginBottom:
+                              15,
+                          }}
+                        >
+                          <label
+                            htmlFor={`reference-${payout.id}`}
+                            style={{
+                              display:
+                                "block",
+
+                              fontWeight:
+                                600,
+
+                              marginBottom:
+                                7,
+                            }}
+                          >
+                            Payment Reference *
+                          </label>
+
+                          <input
+                            id={`reference-${payout.id}`}
+                            type="text"
+                            value={
+                              paymentForm.reference
+                            }
+                            maxLength={
+                              120
+                            }
+                            disabled={
+                              isUpdating
+                            }
+                            onChange={(
+                              event
+                            ) =>
+                              updatePaymentForm(
+                                payout.id,
+                                "reference",
+                                event.target.value
+                              )
+                            }
+                            placeholder="e.g. FNB-TRX-458921"
+                            style={{
+                              width:
+                                "100%",
+
+                              padding:
+                                "12px 14px",
+
+                              borderRadius:
+                                8,
+
+                              border:
+                                "1px solid rgba(255,255,255,0.15)",
+
+                              background:
+                                "rgba(255,255,255,0.05)",
+
+                              color:
+                                "inherit",
+                            }}
+                          />
+                        </div>
+
+                        <div
+                          style={{
+                            marginBottom:
+                              16,
+                          }}
+                        >
+                          <label
+                            htmlFor={`notes-${payout.id}`}
+                            style={{
+                              display:
+                                "block",
+
+                              fontWeight:
+                                600,
+
+                              marginBottom:
+                                7,
+                            }}
+                          >
+                            Admin Notes
+                            (optional)
+                          </label>
+
+                          <textarea
+                            id={`notes-${payout.id}`}
+                            value={
+                              paymentForm.notes
+                            }
+                            maxLength={
+                              1000
+                            }
+                            rows={4}
+                            disabled={
+                              isUpdating
+                            }
+                            onChange={(
+                              event
+                            ) =>
+                              updatePaymentForm(
+                                payout.id,
+                                "notes",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Optional internal notes about this payout..."
+                            style={{
+                              width:
+                                "100%",
+
+                              padding:
+                                "12px 14px",
+
+                              borderRadius:
+                                8,
+
+                              border:
+                                "1px solid rgba(255,255,255,0.15)",
+
+                              background:
+                                "rgba(255,255,255,0.05)",
+
+                              color:
+                                "inherit",
+
+                              resize:
+                                "vertical",
+                            }}
+                          />
+                        </div>
+
+                        <p
+                          style={{
+                            marginBottom:
+                              14,
+
+                            fontSize:
+                              14,
+
+                            opacity:
+                              0.8,
+                          }}
+                        >
+                          Only confirm after the
+                          money has actually been
+                          transferred. This action
+                          records the payout as
+                          paid.
                         </p>
 
                         <button
@@ -1060,7 +1344,8 @@ export default function AdminPayoutsPage() {
                           className="primary-action-btn"
                           disabled={
                             isUpdating ||
-                            !bankingVerified
+                            !bankingVerified ||
+                            !paymentForm.reference.trim()
                           }
                           onClick={() =>
                             updatePayout(
@@ -1070,8 +1355,8 @@ export default function AdminPayoutsPage() {
                           }
                         >
                           {isUpdating
-                            ? "Updating..."
-                            : "Mark Paid Out"}
+                            ? "Confirming..."
+                            : "Confirm Payment Sent"}
                         </button>
                       </div>
                     )}
@@ -1083,9 +1368,27 @@ export default function AdminPayoutsPage() {
                       <div
                         style={{
                           marginTop:
-                            20,
+                            22,
+
+                          padding:
+                            18,
+
+                          border:
+                            "1px solid rgba(255,255,255,0.10)",
+
+                          borderRadius:
+                            12,
                         }}
                       >
+                        <h3
+                          style={{
+                            marginBottom:
+                              12,
+                          }}
+                        >
+                          Payment Completed
+                        </h3>
+
                         <p>
                           <strong>
                             Paid Out:
@@ -1095,13 +1398,33 @@ export default function AdminPayoutsPage() {
                           )}
                         </p>
 
+                        <p>
+                          <strong>
+                            Amount:
+                          </strong>{" "}
+                          {money(
+                            payout.freelancer_amount
+                          )}
+                        </p>
+
                         {payout.payout_reference && (
                           <p>
                             <strong>
-                              Reference:
+                              Payment Reference:
                             </strong>{" "}
                             {
                               payout.payout_reference
+                            }
+                          </p>
+                        )}
+
+                        {payout.payout_notes && (
+                          <p>
+                            <strong>
+                              Admin Notes:
+                            </strong>{" "}
+                            {
+                              payout.payout_notes
                             }
                           </p>
                         )}
