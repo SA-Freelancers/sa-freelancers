@@ -12,49 +12,141 @@ type SidebarLink = {
 };
 
 const clientLinks: SidebarLink[] = [
-  { href: "/dashboard", label: "Overview", icon: "📊" },
-
-  { href: "/freelancers", label: "Browse Freelancers", icon: "👨‍💻" },
-
-  { href: "/dashboard/post-job", label: "Post Job", icon: "➕" },
-  { href: "/dashboard/jobs", label: "My Jobs", icon: "💼" },
-  { href: "/dashboard/client-contracts", label: "Sent Contracts", icon: "📨" },
-  { href: "/dashboard/notifications", label: "Notifications", icon: "🔔" },
-  { href: "/dashboard/profile", label: "Profile Settings", icon: "👤" },
+  {
+    href: "/dashboard",
+    label: "Overview",
+    icon: "📊",
+  },
+  {
+    href: "/freelancers",
+    label: "Browse Freelancers",
+    icon: "👨‍💻",
+  },
+  {
+    href: "/dashboard/post-job",
+    label: "Post Job",
+    icon: "➕",
+  },
+  {
+    href: "/dashboard/jobs",
+    label: "My Jobs",
+    icon: "💼",
+  },
+  {
+    href: "/dashboard/client-contracts",
+    label: "Sent Contracts",
+    icon: "📨",
+  },
+  {
+    href: "/dashboard/notifications",
+    label: "Notifications",
+    icon: "🔔",
+  },
+  {
+    href: "/dashboard/profile",
+    label: "Profile Settings",
+    icon: "👤",
+  },
 ];
 
 const freelancerLinks: SidebarLink[] = [
-  { href: "/dashboard", label: "Overview", icon: "📊" },
-  { href: "/search", label: "Browse Jobs", icon: "💼" },
-  { href: "/dashboard/contracts", label: "Contracts", icon: "📄" },
-  { href: "/dashboard/favorites", label: "Favorites", icon: "❤️" },
-  { href: "/dashboard/notifications", label: "Notifications", icon: "🔔" },
-  { href: "/dashboard/profile", label: "Profile Settings", icon: "👤" },
-  { href: "/dashboard/upload", label: "Upload", icon: "⬆️" },
   {
-  href: "/dashboard/portfolio",
-  label: "Portfolio",
-  icon: "🖼️",
-},
+    href: "/dashboard",
+    label: "Overview",
+    icon: "📊",
+  },
+  {
+    href: "/search",
+    label: "Browse Jobs",
+    icon: "💼",
+  },
+  {
+    href: "/dashboard/contracts",
+    label: "Contracts",
+    icon: "📄",
+  },
+  {
+    href: "/dashboard/freelancer/earnings",
+    label: "My Earnings",
+    icon: "💰",
+  },
+  {
+    href: "/dashboard/favorites",
+    label: "Favorites",
+    icon: "❤️",
+  },
+  {
+    href: "/dashboard/notifications",
+    label: "Notifications",
+    icon: "🔔",
+  },
+  {
+    href: "/dashboard/profile",
+    label: "Profile Settings",
+    icon: "👤",
+  },
+  {
+    href: "/dashboard/upload",
+    label: "Upload",
+    icon: "⬆️",
+  },
+  {
+    href: "/dashboard/portfolio",
+    label: "Portfolio",
+    icon: "🖼️",
+  },
 ];
 
 const adminLinks: SidebarLink[] = [
-  { href: "/dashboard/admin", label: "Analytics", icon: "📊" },
-  { href: "/dashboard/admin/users", label: "Users", icon: "👥" },
-  { href: "/dashboard/admin/reports", label: "Reports", icon: "🚩" },
-  { href: "/dashboard/admin/moderation", label: "Moderation", icon: "🛡️" },
-  { href: "/dashboard/admin/messages", label: "Messages", icon: "✉️" },
-  { href: "/dashboard/admin/jobs", label: "Jobs", icon: "💼" },
-  { href: "/dashboard/admin/marketplace-health", label: "Marketplace Health", icon: "📊" },
+  {
+    href: "/dashboard/admin",
+    label: "Analytics",
+    icon: "📊",
+  },
+  {
+    href: "/dashboard/admin/users",
+    label: "Users",
+    icon: "👥",
+  },
+  {
+    href: "/dashboard/admin/reports",
+    label: "Reports",
+    icon: "🚩",
+  },
+  {
+    href: "/dashboard/admin/moderation",
+    label: "Moderation",
+    icon: "🛡️",
+  },
+  {
+    href: "/dashboard/admin/messages",
+    label: "Messages",
+    icon: "✉️",
+  },
+  {
+    href: "/dashboard/admin/jobs",
+    label: "Jobs",
+    icon: "💼",
+  },
+  {
+    href: "/dashboard/admin/marketplace-health",
+    label: "Marketplace Health",
+    icon: "📊",
+  },
 ];
 
 export default function DashboardSidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const [role, setRole] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [role, setRole] =
+    useState("");
+
+  const [isAdmin, setIsAdmin] =
+    useState(false);
+
+  const [loading, setLoading] =
+    useState(true);
 
   useEffect(() => {
     loadProfile();
@@ -63,59 +155,96 @@ export default function DashboardSidebar() {
   const loadProfile = async () => {
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } =
+      await supabase.auth.getUser();
 
     if (!user) {
       setLoading(false);
       return;
     }
 
-    const { data: profile } = await supabase
+    const {
+      data: profile,
+      error,
+    } = await supabase
       .from("profiles")
       .select("role, is_admin")
       .eq("id", user.id)
       .single();
 
-    setRole(profile?.role || "");
-    setIsAdmin(profile?.is_admin || false);
+    if (error) {
+      console.error(
+        "Sidebar profile loading error:",
+        error
+      );
+    }
+
+    setRole(
+      profile?.role || ""
+    );
+
+    setIsAdmin(
+      profile?.is_admin || false
+    );
+
     setLoading(false);
   };
 
   const getLinks = () => {
-    let baseLinks: SidebarLink[] = [];
+    let baseLinks:
+      SidebarLink[] = [];
 
-    if (role === "client") {
-      baseLinks = clientLinks;
+    if (
+      role === "client"
+    ) {
+      baseLinks =
+        clientLinks;
     }
 
-    if (role === "freelancer") {
-      baseLinks = freelancerLinks;
+    if (
+      role === "freelancer"
+    ) {
+      baseLinks =
+        freelancerLinks;
     }
 
     if (isAdmin) {
-      baseLinks = [...baseLinks, ...adminLinks];
+      baseLinks = [
+        ...baseLinks,
+        ...adminLinks,
+      ];
     }
 
     return baseLinks;
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/login");
-  };
+  const handleLogout =
+    async () => {
+      await supabase.auth.signOut();
+
+      router.push(
+        "/login"
+      );
+    };
 
   if (loading) {
     return (
       <aside className="dashboard-sidebar dark-card">
-        <p>Loading menu...</p>
+        <p>
+          Loading menu...
+        </p>
       </aside>
     );
   }
 
   return (
     <aside className="dashboard-sidebar dark-card">
+
       <div>
-        <h2>Dashboard</h2>
+        <h2>
+          Dashboard
+        </h2>
+
         <p>
           {role === "client"
             ? "Client workspace"
@@ -126,27 +255,56 @@ export default function DashboardSidebar() {
       </div>
 
       <nav className="dashboard-sidebar-nav">
-        {getLinks().map((link) => {
-          const isActive =
-            pathname === link.href ||
-            (link.href !== "/dashboard" && pathname.startsWith(link.href));
 
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={isActive ? "active" : ""}
-            >
-              <span>{link.icon}</span>
-              {link.label}
-            </Link>
-          );
-        })}
+        {getLinks().map(
+          (link) => {
+            const isActive =
+              pathname ===
+                link.href ||
+              (
+                link.href !==
+                  "/dashboard" &&
+                pathname.startsWith(
+                  link.href
+                )
+              );
+
+            return (
+              <Link
+                key={
+                  link.href
+                }
+                href={
+                  link.href
+                }
+                className={
+                  isActive
+                    ? "active"
+                    : ""
+                }
+              >
+                <span>
+                  {link.icon}
+                </span>
+
+                {link.label}
+              </Link>
+            );
+          }
+        )}
+
       </nav>
 
-      <button onClick={handleLogout} className="dashboard-logout-btn">
+      <button
+        type="button"
+        onClick={
+          handleLogout
+        }
+        className="dashboard-logout-btn"
+      >
         🚪 Logout
       </button>
+
     </aside>
   );
 }
