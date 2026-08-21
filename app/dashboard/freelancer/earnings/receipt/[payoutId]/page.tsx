@@ -1,84 +1,36 @@
 "use client";
 
-import {
-  useEffect,
-  useState,
-} from "react";
-
-import {
-  useParams,
-  useRouter,
-} from "next/navigation";
-
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 
 type BankingDetails = {
-  accountHolderName:
-    string | null;
-
-  bankName:
-    string | null;
-
-  accountNumberMasked:
-    string | null;
-
-  accountType:
-    string | null;
-
-  branchCode:
-    string | null;
+  accountHolderName: string | null;
+  bankName: string | null;
+  accountNumberMasked: string | null;
+  accountType: string | null;
+  branchCode: string | null;
 };
 
 type Receipt = {
   payoutId: string;
-
-  milestoneId:
-    string | null;
-
-  milestoneTitle:
-    string;
-
-  projectId:
-    string | null;
-
-  contractId:
-    string | null;
-
-  freelancerName:
-    string;
-
-  grossAmount:
-    number;
-
-  platformFee:
-    number;
-
-  freelancerAmount:
-    number;
-
-  platformFeePercent:
-    number;
-
-  payoutReference:
-    string | null;
-
-  paymentReceivedAt:
-    string | null;
-
-  approvedForPayoutAt:
-    string | null;
-
-  payoutRequestedAt:
-    string | null;
-
-  processingStartedAt:
-    string | null;
-
-  paidOutAt:
-    string | null;
-
-  bankingDetails:
-    BankingDetails | null;
+  milestoneId: string | null;
+  milestoneTitle: string;
+  projectId: string | null;
+  contractId: string | null;
+  freelancerName: string;
+  grossAmount: number;
+  platformFee: number;
+  freelancerAmount: number;
+  platformFeePercent: number;
+  payoutReference: string | null;
+  paymentReceivedAt: string | null;
+  approvedForPayoutAt: string | null;
+  payoutRequestedAt: string | null;
+  processingStartedAt: string | null;
+  paidOutAt: string | null;
+  bankingDetails: BankingDetails | null;
 };
 
 type ReceiptResponse = {
@@ -88,36 +40,21 @@ type ReceiptResponse = {
 };
 
 export default function PayoutReceiptPage() {
-  const params =
-    useParams();
-
-  const router =
-    useRouter();
+  const params = useParams();
+  const router = useRouter();
 
   const payoutId =
-    typeof params.payoutId ===
-    "string"
+    typeof params.payoutId === "string"
       ? params.payoutId
       : "";
 
-  const [
-    receipt,
-    setReceipt,
-  ] =
-    useState<Receipt | null>(
-      null
-    );
+  const [receipt, setReceipt] =
+    useState<Receipt | null>(null);
 
-  const [
-    loading,
-    setLoading,
-  ] =
+  const [loading, setLoading] =
     useState(true);
 
-  const [
-    error,
-    setError,
-  ] =
+  const [error, setError] =
     useState("");
 
   useEffect(() => {
@@ -126,98 +63,87 @@ export default function PayoutReceiptPage() {
     }
   }, [payoutId]);
 
-  const loadReceipt =
-    async () => {
-      setLoading(true);
-      setError("");
+  const loadReceipt = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const {
+        data: sessionData,
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (
+        sessionError ||
+        !sessionData.session
+      ) {
+        setError(
+          "Please login again."
+        );
+        return;
+      }
+
+      const response = await fetch(
+        `/api/payouts/receipt?payoutId=${encodeURIComponent(
+          payoutId
+        )}`,
+        {
+          method: "GET",
+
+          headers: {
+            Authorization:
+              `Bearer ${sessionData.session.access_token}`,
+          },
+
+          cache: "no-store",
+        }
+      );
+
+      const text =
+        await response.text();
+
+      let result: ReceiptResponse =
+        {};
 
       try {
-        const {
-          data: sessionData,
-          error:
-            sessionError,
-        } =
-          await supabase.auth.getSession();
-
-        if (
-          sessionError ||
-          !sessionData.session
-        ) {
-          setError(
-            "Please login again."
-          );
-
-          return;
-        }
-
-        const response =
-          await fetch(
-            `/api/payouts/receipt?payoutId=${encodeURIComponent(
-              payoutId
-            )}`,
-            {
-              method: "GET",
-
-              headers: {
-                Authorization:
-                  `Bearer ${sessionData.session.access_token}`,
-              },
-
-              cache:
-                "no-store",
-            }
-          );
-
-        const text =
-          await response.text();
-
-        let result:
-          ReceiptResponse = {};
-
-        try {
-          result =
-            text
-              ? JSON.parse(
-                  text
-                )
-              : {};
-        } catch {
-          setError(
-            `Server returned an invalid response (${response.status}).`
-          );
-
-          return;
-        }
-
-        if (
-          !response.ok ||
-          !result.success ||
-          !result.receipt
-        ) {
-          setError(
-            result.error ||
-              "Unable to load payout receipt."
-          );
-
-          return;
-        }
-
-        setReceipt(
-          result.receipt
-        );
-      } catch (error) {
-        console.error(
-          "Receipt loading error:",
-          error
-        );
-
+        result = text
+          ? JSON.parse(text)
+          : {};
+      } catch {
         setError(
-          "Unable to load payout receipt."
+          `Server returned an invalid response (${response.status}).`
         );
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
+
+      if (
+        !response.ok ||
+        !result.success ||
+        !result.receipt
+      ) {
+        setError(
+          result.error ||
+            "Unable to load payout receipt."
+        );
+        return;
+      }
+
+      setReceipt(
+        result.receipt
+      );
+    } catch (error) {
+      console.error(
+        "Receipt loading error:",
+        error
+      );
+
+      setError(
+        "Unable to load payout receipt."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const money = (
     value: number
@@ -241,13 +167,28 @@ export default function PayoutReceiptPage() {
     ).toLocaleString(
       "en-ZA",
       {
-        dateStyle:
-          "medium",
-
-        timeStyle:
-          "short",
+        dateStyle: "medium",
+        timeStyle: "short",
       }
     );
+  };
+
+  /*
+   * Generate a permanent readable remittance
+   * number from the payout UUID.
+   *
+   * The same payout will always generate
+   * the same remittance number.
+   */
+  const getReceiptNumber = (
+    id: string
+  ) => {
+    const shortId = id
+      .replace(/-/g, "")
+      .slice(0, 10)
+      .toUpperCase();
+
+    return `FHSA-REM-${shortId}`;
   };
 
   if (loading) {
@@ -270,7 +211,6 @@ export default function PayoutReceiptPage() {
   ) {
     return (
       <main className="dashboard-page">
-
         <section className="dark-card">
           <h1>
             Payout Receipt
@@ -296,41 +236,36 @@ export default function PayoutReceiptPage() {
             Back to My Earnings
           </button>
         </section>
-
       </main>
     );
   }
+
+  const receiptNumber =
+    getReceiptNumber(
+      receipt.payoutId
+    );
 
   return (
     <main
       className="dashboard-page"
       style={{
-        maxWidth:
-          1000,
-
-        margin:
-          "0 auto",
+        maxWidth: 1000,
+        margin: "0 auto",
       }}
     >
-
-      {/* PAGE ACTIONS */}
+      {/* =====================================
+          PAGE ACTIONS
+          ===================================== */}
 
       <div
         className="receipt-actions"
         style={{
-          display:
-            "flex",
-
+          display: "flex",
           justifyContent:
             "space-between",
-
           gap: 12,
-
-          flexWrap:
-            "wrap",
-
-          marginBottom:
-            20,
+          flexWrap: "wrap",
+          marginBottom: 20,
         }}
       >
         <button
@@ -356,81 +291,76 @@ export default function PayoutReceiptPage() {
         </button>
       </div>
 
-      {/* RECEIPT */}
+      {/* =====================================
+          REMITTANCE DOCUMENT
+          ===================================== */}
 
       <section
         id="payout-receipt"
         style={{
-          background:
-            "#ffffff",
-
-          color:
-            "#111827",
-
-          borderRadius:
-            14,
-
-          overflow:
-            "hidden",
-
+          background: "#ffffff",
+          color: "#111827",
+          borderRadius: 14,
+          overflow: "hidden",
           boxShadow:
             "0 12px 35px rgba(0,0,0,0.18)",
         }}
       >
-
-        {/* TOP */}
+        {/* ===================================
+            DOCUMENT HEADER
+            =================================== */}
 
         <div
           style={{
             padding:
               "32px 36px",
-
             borderBottom:
               "4px solid #22c55e",
           }}
         >
           <div
             style={{
-              display:
-                "flex",
-
+              display: "flex",
               justifyContent:
                 "space-between",
-
               alignItems:
                 "flex-start",
-
-              gap: 20,
-
-              flexWrap:
-                "wrap",
+              gap: 24,
+              flexWrap: "wrap",
             }}
           >
-            <div>
-              <h1
-                style={{
-                  margin:
-                    0,
-
-                  fontSize:
-                    30,
-
-                  color:
-                    "#111827",
-                }}
-              >
-                Freelance Hub SA
-              </h1>
-
-              <p
-  className="receipt-muted"
+            <div
+  className="receipt-brand"
   style={{
-    margin: "6px 0 0",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
   }}
 >
-  Trusted Work
-</p>
-            </div>
+  <Image
+    src="/freelancehubsa-navbar-dark.png"
+    alt="Freelance Hub SA"
+    width={430}
+    height={100}
+    priority
+    className="receipt-logo"
+    style={{
+      width: "250px",
+      height: "auto",
+      objectFit: "contain",
+    }}
+  />
+
+  <p
+    className="receipt-muted"
+    style={{
+      margin: "10px 0 0",
+      fontSize: 12,
+    }}
+  >
+    Freelancer Marketplace & Payment Platform
+  </p>
+</div>
 
             <div
               style={{
@@ -440,29 +370,57 @@ export default function PayoutReceiptPage() {
             >
               <h2
                 style={{
-                  margin:
-                    0,
-
-                  fontSize:
-                    24,
+                  margin: 0,
+                  fontSize: 25,
+                  fontWeight: 800,
                 }}
               >
-                Payout Receipt
+                Remittance Advice
               </h2>
 
               <p
-  className="receipt-paid"
-  style={{
-    margin: "6px 0 0",
-  }}
->
-  ✓ PAID
-</p>
+                className="receipt-paid"
+                style={{
+                  margin:
+                    "7px 0 10px",
+                }}
+              >
+                ✓ PAYMENT COMPLETED
+              </p>
+
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 13,
+                }}
+              >
+                <strong>
+                  Receipt No:
+                </strong>{" "}
+                {receiptNumber}
+              </p>
+
+              <p
+                style={{
+                  margin:
+                    "5px 0 0",
+                  fontSize: 13,
+                }}
+              >
+                <strong>
+                  Payment Date:
+                </strong>{" "}
+                {formatDate(
+                  receipt.paidOutAt
+                )}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* RECEIPT INFO */}
+        {/* ===================================
+            DOCUMENT CONTENT
+            =================================== */}
 
         <div
           style={{
@@ -470,19 +428,18 @@ export default function PayoutReceiptPage() {
               "28px 36px",
           }}
         >
+          {/* SUMMARY */}
+
           <div
             style={{
-              display:
-                "grid",
+              display: "grid",
 
               gridTemplateColumns:
-                "repeat(auto-fit, minmax(220px, 1fr))",
+                "repeat(auto-fit, minmax(200px, 1fr))",
 
-              gap:
-                24,
+              gap: 24,
 
-              marginBottom:
-                30,
+              marginBottom: 30,
             }}
           >
             <ReceiptInfo
@@ -493,11 +450,9 @@ export default function PayoutReceiptPage() {
             />
 
             <ReceiptInfo
-              label="Paid Date"
+              label="Remittance Number"
               value={
-                formatDate(
-                  receipt.paidOutAt
-                )
+                receiptNumber
               }
             />
 
@@ -517,38 +472,18 @@ export default function PayoutReceiptPage() {
             />
           </div>
 
-          {/* PROJECT */}
+          {/* =================================
+              PROJECT / MILESTONE
+              ================================= */}
 
           <div
-            style={{
-              padding:
-                20,
-
-              border:
-                "1px solid #e5e7eb",
-
-              borderRadius:
-                10,
-
-              marginBottom:
-                28,
-            }}
+            className="receipt-section"
           >
-            <h3
-              style={{
-                margin:
-                  "0 0 14px",
-              }}
-            >
+            <h3>
               Project / Milestone
             </h3>
 
-            <p
-              style={{
-                margin:
-                  "6px 0",
-              }}
-            >
+            <p>
               <strong>
                 Milestone:
               </strong>{" "}
@@ -557,49 +492,35 @@ export default function PayoutReceiptPage() {
               }
             </p>
 
-            <p
-              style={{
-                margin:
-                  "6px 0",
-              }}
-            >
+            <p>
               <strong>
                 Milestone ID:
               </strong>{" "}
-              {
-                receipt.milestoneId ||
-                "—"
-              }
+              {receipt.milestoneId ||
+                "—"}
             </p>
 
-            <p
-              style={{
-                margin:
-                  "6px 0",
-              }}
-            >
+            <p>
               <strong>
                 Contract ID:
               </strong>{" "}
-              {
-                receipt.contractId ||
-                "—"
-              }
+              {receipt.contractId ||
+                "—"}
             </p>
           </div>
 
-          {/* PAYMENT BREAKDOWN */}
+          {/* =================================
+              PAYMENT BREAKDOWN
+              ================================= */}
 
           <div
             style={{
-              marginBottom:
-                28,
+              marginBottom: 28,
             }}
           >
             <h3
               style={{
-                marginBottom:
-                  14,
+                marginBottom: 14,
               }}
             >
               Payment Breakdown
@@ -609,12 +530,8 @@ export default function PayoutReceiptPage() {
               style={{
                 border:
                   "1px solid #e5e7eb",
-
-                borderRadius:
-                  10,
-
-                overflow:
-                  "hidden",
+                borderRadius: 10,
+                overflow: "hidden",
               }}
             >
               <ReceiptRow
@@ -639,28 +556,7 @@ export default function PayoutReceiptPage() {
               />
 
               <div
-                style={{
-                  display:
-                    "flex",
-
-                  justifyContent:
-                    "space-between",
-
-                  gap:
-                    20,
-
-                  padding:
-                    "18px 20px",
-
-                  background:
-                    "#f3f4f6",
-
-                  fontSize:
-                    19,
-
-                  fontWeight:
-                    700,
-                }}
+                className="receipt-total"
               >
                 <span>
                   Net Amount Paid
@@ -675,43 +571,26 @@ export default function PayoutReceiptPage() {
             </div>
           </div>
 
-          {/* DESTINATION */}
+          {/* =================================
+              PAYOUT DESTINATION
+              ================================= */}
 
           {receipt.bankingDetails && (
             <div
-              style={{
-                padding:
-                  20,
-
-                border:
-                  "1px solid #e5e7eb",
-
-                borderRadius:
-                  10,
-
-                marginBottom:
-                  28,
-              }}
+              className="receipt-section"
             >
-              <h3
-                style={{
-                  margin:
-                    "0 0 14px",
-                }}
-              >
+              <h3>
                 Payout Destination
               </h3>
 
               <div
                 style={{
-                  display:
-                    "grid",
+                  display: "grid",
 
                   gridTemplateColumns:
-                    "repeat(auto-fit, minmax(190px, 1fr))",
+                    "repeat(auto-fit, minmax(170px, 1fr))",
 
-                  gap:
-                    18,
+                  gap: 18,
                 }}
               >
                 <ReceiptInfo
@@ -767,29 +646,14 @@ export default function PayoutReceiptPage() {
             </div>
           )}
 
-          {/* TIMELINE */}
+          {/* =================================
+              PAYOUT TIMELINE
+              ================================= */}
 
           <div
-            style={{
-              padding:
-                20,
-
-              border:
-                "1px solid #e5e7eb",
-
-              borderRadius:
-                10,
-
-              marginBottom:
-                28,
-            }}
+            className="receipt-section"
           >
-            <h3
-              style={{
-                margin:
-                  "0 0 14px",
-              }}
-            >
+            <h3>
               Payout Timeline
             </h3>
 
@@ -839,63 +703,145 @@ export default function PayoutReceiptPage() {
             />
           </div>
 
-          {/* FOOTER */}
+          {/* =================================
+              DOCUMENT FOOTER
+              ================================= */}
 
           <div
             style={{
               borderTop:
                 "1px solid #e5e7eb",
 
-              paddingTop:
-                20,
+              paddingTop: 22,
 
-              color:
-                "#6b7280",
-
-              fontSize:
-                13,
-
-              lineHeight:
-                1.6,
+              marginTop: 10,
             }}
           >
-            <p
+            <div
               style={{
-                margin:
-                  "0 0 5px",
-              }}
-            >
-              This receipt confirms
-              that Freelance Hub SA
-              recorded the freelancer
-              payout shown above as
-              completed.
-            </p>
+                display: "flex",
 
-            <p
-              style={{
-                margin:
-                  0,
+                justifyContent:
+                  "space-between",
+
+                gap: 24,
+
+                flexWrap:
+                  "wrap",
               }}
             >
-              Keep this receipt for
-              your records.
-            </p>
+              <div
+                style={{
+                  maxWidth: 620,
+                }}
+              >
+                <p
+                  style={{
+                    margin:
+                      "0 0 8px",
+
+                    fontWeight:
+                      700,
+                  }}
+                >
+                  Payment Confirmation
+                </p>
+
+                <p
+                  className="receipt-muted"
+                  style={{
+                    margin: 0,
+
+                    fontSize:
+                      13,
+
+                    lineHeight:
+                      1.6,
+                  }}
+                >
+                  This remittance advice
+                  confirms that Freelance
+                  Hub SA recorded the
+                  freelancer payout shown
+                  above as completed. The
+                  payment reference shown
+                  on this document should
+                  be used when reconciling
+                  the payment with the
+                  receiving bank account.
+                </p>
+              </div>
+
+              <div
+                style={{
+                  textAlign:
+                    "right",
+                }}
+              >
+                <p
+                  className="receipt-muted"
+                  style={{
+                    margin: 0,
+                    fontSize: 12,
+                  }}
+                >
+                  Document Reference
+                </p>
+
+                <strong
+                  style={{
+                    fontSize: 13,
+                  }}
+                >
+                  {receiptNumber}
+                </strong>
+              </div>
+            </div>
+
+            <div
+              style={{
+                marginTop: 24,
+
+                paddingTop: 16,
+
+                borderTop:
+                  "1px solid #e5e7eb",
+
+                display: "flex",
+
+                justifyContent:
+                  "space-between",
+
+                gap: 12,
+
+                flexWrap:
+                  "wrap",
+
+                fontSize: 11,
+              }}
+            >
+              <span className="receipt-muted">
+                Freelance Hub SA •
+                Trusted Work
+              </span>
+
+              <span className="receipt-muted">
+                Generated electronically
+                — no signature required
+              </span>
+            </div>
           </div>
         </div>
-
       </section>
 
-      {/* PRINT CSS */}
+      {/* =====================================
+          RECEIPT + PRINT STYLING
+          ===================================== */}
 
       <style jsx global>{`
-  /* ================================================
-     PAYOUT RECEIPT
-
-     The receipt is intentionally always light.
-     Global website dark-mode styles must not
-     override the document.
-     ================================================ */
+  /* =========================================
+     BASE RECEIPT
+     ========================================= */
 
   #payout-receipt {
     background: #ffffff !important;
@@ -903,6 +849,17 @@ export default function PayoutReceiptPage() {
   }
 
   #payout-receipt * {
+    box-sizing: border-box;
+  }
+
+  #payout-receipt h1,
+  #payout-receipt h2,
+  #payout-receipt h3,
+  #payout-receipt h4,
+  #payout-receipt p,
+  #payout-receipt span,
+  #payout-receipt div,
+  #payout-receipt strong {
     color: #111827;
   }
 
@@ -914,47 +871,213 @@ export default function PayoutReceiptPage() {
     color: #111827 !important;
   }
 
-  #payout-receipt p,
-  #payout-receipt span,
-  #payout-receipt div {
-    color: inherit;
+  /* =========================================
+     LOGO / BRAND
+     ========================================= */
+
+  #payout-receipt .receipt-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 250px;
   }
 
-  /* Secondary / label text */
+  #payout-receipt .receipt-logo {
+    display: block !important;
+
+    width: 250px !important;
+    height: auto !important;
+
+    max-width: 100% !important;
+
+    object-fit: contain !important;
+
+    object-position: left center !important;
+  }
+
+  /* =========================================
+     MUTED TEXT
+     ========================================= */
 
   #payout-receipt .receipt-muted {
     color: #6b7280 !important;
   }
 
-  /* PAID status */
+  /* =========================================
+     PAYMENT STATUS
+     ========================================= */
 
   #payout-receipt .receipt-paid {
     color: #16a34a !important;
-    font-weight: 700;
+    font-weight: 800;
   }
 
-  /* Keep receipt readable when website uses dark mode */
+  /* =========================================
+     RECEIPT SECTIONS
+     ========================================= */
+
+  #payout-receipt .receipt-section {
+    padding: 20px;
+
+    border:
+      1px solid #e5e7eb;
+
+    border-radius: 10px;
+
+    margin-bottom: 28px;
+
+    background:
+      #ffffff !important;
+  }
+
+  #payout-receipt
+    .receipt-section
+    h3 {
+    margin: 0 0 14px;
+
+    font-size: 18px;
+  }
+
+  #payout-receipt
+    .receipt-section
+    p {
+    margin: 6px 0;
+  }
+
+  /* =========================================
+     NET PAYOUT TOTAL
+     ========================================= */
+
+  #payout-receipt .receipt-total {
+    display: flex;
+
+    justify-content:
+      space-between;
+
+    align-items: center;
+
+    gap: 20px;
+
+    padding:
+      18px 20px;
+
+    background:
+      #f3f4f6 !important;
+
+    font-size: 19px;
+
+    font-weight: 800;
+  }
+
+  /* =========================================
+     DARK MODE PROTECTION
+
+     The website may be dark, but the
+     remittance document must remain white.
+     ========================================= */
 
   html.dark #payout-receipt,
   body.dark #payout-receipt,
-  [data-theme="dark"] #payout-receipt {
-    background: #ffffff !important;
-    color: #111827 !important;
+  [data-theme="dark"]
+    #payout-receipt {
+    background:
+      #ffffff !important;
+
+    color:
+      #111827 !important;
   }
 
-  html.dark #payout-receipt *,
-  body.dark #payout-receipt *,
-  [data-theme="dark"] #payout-receipt * {
+  html.dark
+    #payout-receipt *,
+  body.dark
+    #payout-receipt *,
+  [data-theme="dark"]
+    #payout-receipt * {
     color: #111827;
   }
 
-  /* ================================================
+  html.dark
+    #payout-receipt
+    .receipt-muted,
+  body.dark
+    #payout-receipt
+    .receipt-muted,
+  [data-theme="dark"]
+    #payout-receipt
+    .receipt-muted {
+    color:
+      #6b7280 !important;
+  }
+
+  html.dark
+    #payout-receipt
+    .receipt-paid,
+  body.dark
+    #payout-receipt
+    .receipt-paid,
+  [data-theme="dark"]
+    #payout-receipt
+    .receipt-paid {
+    color:
+      #16a34a !important;
+  }
+
+  /* =========================================
+     MOBILE
+     ========================================= */
+
+  @media (max-width: 700px) {
+    #payout-receipt {
+      border-radius:
+        10px !important;
+    }
+
+    #payout-receipt
+      > div:first-child {
+      padding:
+        24px 20px !important;
+    }
+
+    #payout-receipt
+      > div:nth-child(2) {
+      padding:
+        24px 20px !important;
+    }
+
+    #payout-receipt
+      .receipt-brand {
+      min-width: 0;
+
+      width: 100%;
+    }
+
+    #payout-receipt
+      .receipt-logo {
+      width:
+        210px !important;
+
+      max-width:
+        100% !important;
+
+      height:
+        auto !important;
+    }
+
+    #payout-receipt
+      .receipt-total {
+      font-size: 17px;
+    }
+  }
+
+  /* =========================================
      PRINT / SAVE AS PDF
-     ================================================ */
+     ========================================= */
 
   @media print {
+    html,
     body {
-      background: #ffffff !important;
+      background:
+        #ffffff !important;
     }
 
     header,
@@ -963,52 +1086,151 @@ export default function PayoutReceiptPage() {
     footer,
     .dashboard-sidebar,
     .receipt-actions {
-      display: none !important;
+      display:
+        none !important;
     }
 
     .dashboard-page {
-      margin: 0 !important;
-      padding: 0 !important;
-      max-width: none !important;
-      width: 100% !important;
+      margin:
+        0 !important;
+
+      padding:
+        0 !important;
+
+      max-width:
+        none !important;
+
+      width:
+        100% !important;
     }
 
     #payout-receipt {
-      background: #ffffff !important;
-      color: #111827 !important;
+      background:
+        #ffffff !important;
 
-      box-shadow: none !important;
-      border-radius: 0 !important;
+      color:
+        #111827 !important;
 
-      width: 100% !important;
-      max-width: none !important;
+      box-shadow:
+        none !important;
+
+      border-radius:
+        0 !important;
+
+      width:
+        100% !important;
+
+      max-width:
+        none !important;
     }
 
     #payout-receipt * {
-      color: #111827 !important;
+      color:
+        #111827 !important;
 
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
+      -webkit-print-color-adjust:
+        exact !important;
+
+      print-color-adjust:
+        exact !important;
     }
 
-    #payout-receipt .receipt-muted {
-      color: #6b7280 !important;
+    /* Keep grey secondary text */
+
+    #payout-receipt
+      .receipt-muted {
+      color:
+        #6b7280 !important;
     }
 
-    #payout-receipt .receipt-paid {
-      color: #16a34a !important;
+    /* Keep payment status green */
+
+    #payout-receipt
+      .receipt-paid {
+      color:
+        #16a34a !important;
+    }
+
+    /* Logo */
+
+    #payout-receipt
+      .receipt-logo {
+      display:
+        block !important;
+
+      width:
+        220px !important;
+
+      height:
+        auto !important;
+
+      max-width:
+        220px !important;
+
+      object-fit:
+        contain !important;
+
+      object-position:
+        left center !important;
+
+      -webkit-print-color-adjust:
+        exact !important;
+
+      print-color-adjust:
+        exact !important;
+    }
+
+    #payout-receipt
+      .receipt-brand {
+      min-width:
+        220px !important;
+    }
+
+    /* Preserve total background */
+
+    #payout-receipt
+      .receipt-total {
+      background:
+        #f3f4f6 !important;
+    }
+
+    /* Try to keep each section
+       together on the same page */
+
+    #payout-receipt
+      .receipt-section {
+      break-inside:
+        avoid;
+
+      page-break-inside:
+        avoid;
+    }
+
+    /* Keep payment breakdown together */
+
+    #payout-receipt
+      .receipt-total {
+      break-inside:
+        avoid;
+
+      page-break-inside:
+        avoid;
     }
 
     @page {
       size: A4;
+
       margin: 12mm;
     }
   }
 `}</style>
-
     </main>
   );
 }
+
+/* ===========================================
+   RECEIPT INFO
+   =========================================== */
 
 function ReceiptInfo({
   label,
@@ -1020,18 +1242,15 @@ function ReceiptInfo({
   return (
     <div>
       <p
+        className="receipt-muted"
         style={{
           margin:
             "0 0 5px",
 
-          fontSize:
-            12,
+          fontSize: 12,
 
           textTransform:
             "uppercase",
-
-          color:
-            "#6b7280",
 
           letterSpacing:
             "0.04em",
@@ -1042,11 +1261,9 @@ function ReceiptInfo({
 
       <p
         style={{
-          margin:
-            0,
+          margin: 0,
 
-          fontWeight:
-            600,
+          fontWeight: 600,
 
           wordBreak:
             "break-word",
@@ -1058,6 +1275,10 @@ function ReceiptInfo({
   );
 }
 
+/* ===========================================
+   PAYMENT ROW
+   =========================================== */
+
 function ReceiptRow({
   label,
   value,
@@ -1068,14 +1289,12 @@ function ReceiptRow({
   return (
     <div
       style={{
-        display:
-          "flex",
+        display: "flex",
 
         justifyContent:
           "space-between",
 
-        gap:
-          20,
+        gap: 20,
 
         padding:
           "14px 20px",
@@ -1095,6 +1314,10 @@ function ReceiptRow({
   );
 }
 
+/* ===========================================
+   PAYOUT TIMELINE ROW
+   =========================================== */
+
 function ReceiptTimeline({
   label,
   value,
@@ -1105,20 +1328,21 @@ function ReceiptTimeline({
   return (
     <div
       style={{
-        display:
-          "flex",
+        display: "flex",
 
         justifyContent:
           "space-between",
 
-        gap:
-          20,
+        gap: 20,
 
         flexWrap:
           "wrap",
 
         padding:
           "8px 0",
+
+        borderBottom:
+          "1px solid #f3f4f6",
       }}
     >
       <span>
