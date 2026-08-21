@@ -1592,13 +1592,32 @@ export default function FreelancerEarningsPage() {
                     {/* PAID */}
 
                     {payout.status ===
-                      "paid_out" && (
-                      <div className="contract-actions">
-                        <span className="contract-status completed">
-                          Payment Sent
-                        </span>
-                      </div>
-                    )}
+  "paid_out" && (
+  <div
+    className="contract-actions"
+    style={{
+      display: "flex",
+      gap: 12,
+      flexWrap: "wrap",
+      alignItems: "center",
+    }}
+  >
+    <span className="contract-status completed">
+      Payment Sent
+    </span>
+
+    <a
+      href={`/dashboard/freelancer/earnings/receipt/${payout.id}`}
+      className="primary-action-btn"
+      style={{
+        textDecoration:
+          "none",
+      }}
+    >
+      📄 View Payout Receipt
+    </a>
+  </div>
+)}
 
                   </div>
                 );
