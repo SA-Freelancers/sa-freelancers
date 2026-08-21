@@ -266,6 +266,293 @@ export default function AdminPayoutsPage() {
   useEffect(() => {
     loadPayouts();
   }, [loadPayouts]);
+    // --------------------------------------------------
+  // DOWNLOAD PAYOUT CSV REPORT
+  // --------------------------------------------------
+
+  const downloadCsvReport =
+    async () => {
+      setMessage("");
+
+      try {
+        const {
+          data: sessionData,
+          error: sessionError,
+        } =
+          await supabase.auth.getSession();
+
+        if (
+          sessionError ||
+          !sessionData.session
+        ) {
+          setMessage(
+            "Please login again."
+          );
+
+          return;
+        }
+
+        const response =
+          await fetch(
+            "/api/admin/payouts/export",
+            {
+              method: "GET",
+
+              headers: {
+                Authorization:
+                  `Bearer ${sessionData.session.access_token}`,
+              },
+
+              cache:
+                "no-store",
+            }
+          );
+
+        const text =
+          await response.text();
+
+        let result: {
+          success?: boolean;
+
+          payouts?: Array<{
+            id: string;
+
+            milestone_id?: string | null;
+
+            freelancer_id?: string | null;
+
+            gross_amount?: number | null;
+
+            platform_fee?: number | null;
+
+            freelancer_amount?: number | null;
+
+            status?: string | null;
+
+            payout_reference?: string | null;
+
+            payout_notes?: string | null;
+
+            payment_received_at?: string | null;
+
+            approved_for_payout_at?: string | null;
+
+            payout_requested_at?: string | null;
+
+            processing_started_at?: string | null;
+
+            paid_out_at?: string | null;
+
+            processed_by?: string | null;
+
+            created_at?: string | null;
+          }>;
+
+          error?: string;
+        } = {};
+
+        try {
+          result =
+            text
+              ? JSON.parse(text)
+              : {};
+        } catch {
+          setMessage(
+            `Server returned an invalid response (${response.status}).`
+          );
+
+          return;
+        }
+
+        if (
+          !response.ok ||
+          !result.success
+        ) {
+          setMessage(
+            result.error ||
+              "Unable to export payout report."
+          );
+
+          return;
+        }
+
+        const rows =
+          result.payouts || [];
+
+        if (
+          rows.length ===
+          0
+        ) {
+          setMessage(
+            "There are no payout records to export."
+          );
+
+          return;
+        }
+
+        // Prevent CSV formatting problems
+        // when values contain commas,
+        // quotation marks or line breaks.
+
+        const escapeCsv = (
+          value:
+            | string
+            | number
+            | null
+            | undefined
+        ) => {
+          const textValue =
+            value === null ||
+            value === undefined
+              ? ""
+              : String(value);
+
+          return `"${textValue.replace(
+            /"/g,
+            '""'
+          )}"`;
+        };
+
+        const headers = [
+          "Payout ID",
+          "Milestone ID",
+          "Freelancer ID",
+          "Gross Amount (ZAR)",
+          "Platform Fee (ZAR)",
+          "Freelancer Amount (ZAR)",
+          "Status",
+          "Payment Reference",
+          "Payout Notes",
+          "Payment Received At",
+          "Approved For Payout At",
+          "Payout Requested At",
+          "Processing Started At",
+          "Paid Out At",
+          "Processed By",
+          "Created At",
+        ];
+
+        const csvRows = [
+          headers
+            .map(escapeCsv)
+            .join(","),
+
+          ...rows.map(
+            (row) =>
+              [
+                row.id,
+
+                row.milestone_id,
+
+                row.freelancer_id,
+
+                Number(
+                  row.gross_amount ||
+                    0
+                ).toFixed(2),
+
+                Number(
+                  row.platform_fee ||
+                    0
+                ).toFixed(2),
+
+                Number(
+                  row.freelancer_amount ||
+                    0
+                ).toFixed(2),
+
+                row.status,
+
+                row.payout_reference,
+
+                row.payout_notes,
+
+                row.payment_received_at,
+
+                row.approved_for_payout_at,
+
+                row.payout_requested_at,
+
+                row.processing_started_at,
+
+                row.paid_out_at,
+
+                row.processed_by,
+
+                row.created_at,
+              ]
+                .map(
+                  escapeCsv
+                )
+                .join(",")
+          ),
+        ];
+
+        // UTF-8 BOM helps Microsoft Excel
+        // recognise the CSV encoding correctly.
+
+        const csv =
+          "\uFEFF" +
+          csvRows.join("\r\n");
+
+        const blob =
+          new Blob(
+            [csv],
+            {
+              type:
+                "text/csv;charset=utf-8;",
+            }
+          );
+
+        const url =
+          URL.createObjectURL(
+            blob
+          );
+
+        const link =
+          document.createElement(
+            "a"
+          );
+
+        const date =
+          new Date()
+            .toISOString()
+            .slice(0, 10);
+
+        link.href =
+          url;
+
+        link.download =
+          `freelance-hub-sa-payout-report-${date}.csv`;
+
+        document.body.appendChild(
+          link
+        );
+
+        link.click();
+
+        document.body.removeChild(
+          link
+        );
+
+        URL.revokeObjectURL(
+          url
+        );
+
+        setMessage(
+          "Payout CSV report downloaded successfully."
+        );
+      } catch (error) {
+        console.error(
+          "Payout CSV export error:",
+          error
+        );
+
+        setMessage(
+          "Unable to export payout report."
+        );
+      }
+    };
 
   // --------------------------------------------------
   // PAYMENT FORM HELPERS
@@ -873,21 +1160,52 @@ export default function AdminPayoutsPage() {
 
       {/* HEADER */}
 
+            {/* HEADER */}
+
       <section className="dashboard-header">
         <p className="dashboard-badge">
           Administration
         </p>
 
-        <h1>
-          Payout Management
-        </h1>
+        <div
+          style={{
+            display: "flex",
 
-        <p>
-          Verify banking details,
-          process freelancer payouts
-          and maintain a complete
-          payout history.
-        </p>
+            justifyContent:
+              "space-between",
+
+            alignItems:
+              "flex-start",
+
+            gap: 20,
+
+            flexWrap:
+              "wrap",
+          }}
+        >
+          <div>
+            <h1>
+              Payout Management
+            </h1>
+
+            <p>
+              Verify banking details,
+              process freelancer payouts
+              and maintain a complete
+              payout history.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className="primary-action-btn"
+            onClick={
+              downloadCsvReport
+            }
+          >
+            ⬇️ Download CSV Report
+          </button>
+        </div>
       </section>
 
       {/* MESSAGE */}
