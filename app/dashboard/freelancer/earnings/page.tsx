@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  FormEvent,
   useEffect,
   useState,
 } from "react";
@@ -50,11 +51,8 @@ type EarningsTotals = {
 
 type EarningsResponse = {
   success?: boolean;
-
   totals?: EarningsTotals;
-
   payouts?: Payout[];
-
   error?: string;
 };
 
@@ -63,20 +61,43 @@ type RequestPayoutResponse = {
   error?: string;
 };
 
+type PayoutMethod = {
+  id?: string;
+  accountHolderName: string;
+  bankName: string;
+  accountNumberMasked: string;
+  accountType: string;
+  branchCode: string;
+  status: string;
+  verifiedAt?: string | null;
+  updatedAt?: string | null;
+};
+
+type PayoutMethodResponse = {
+  success?: boolean;
+  message?: string;
+  method?: PayoutMethod | null;
+  error?: string;
+};
+
+const emptyTotals: EarningsTotals = {
+  held: 0,
+  available: 0,
+  requested: 0,
+  processing: 0,
+  paidOut: 0,
+  platformFees: 0,
+  totalEarned: 0,
+};
+
 export default function FreelancerEarningsPage() {
   const [payouts, setPayouts] =
     useState<Payout[]>([]);
 
   const [totals, setTotals] =
-    useState<EarningsTotals>({
-      held: 0,
-      available: 0,
-      requested: 0,
-      processing: 0,
-      paidOut: 0,
-      platformFees: 0,
-      totalEarned: 0,
-    });
+    useState<EarningsTotals>(
+      emptyTotals
+    );
 
   const [loading, setLoading] =
     useState(true);
@@ -91,29 +112,109 @@ export default function FreelancerEarningsPage() {
     null
   );
 
+  // ---------------------------------------------
+  // BANKING DETAILS STATE
+  // ---------------------------------------------
+
+  const [
+    payoutMethod,
+    setPayoutMethod,
+  ] =
+    useState<PayoutMethod | null>(
+      null
+    );
+
+  const [
+    accountHolderName,
+    setAccountHolderName,
+  ] = useState("");
+
+  const [
+    bankName,
+    setBankName,
+  ] = useState("");
+
+  const [
+    accountNumber,
+    setAccountNumber,
+  ] = useState("");
+
+  const [
+    accountType,
+    setAccountType,
+  ] = useState("");
+
+  const [
+    branchCode,
+    setBranchCode,
+  ] = useState("");
+
+  const [
+    savingBankDetails,
+    setSavingBankDetails,
+  ] = useState(false);
+
+  const [
+    editingBankDetails,
+    setEditingBankDetails,
+  ] = useState(false);
+
   useEffect(() => {
-    loadEarnings();
+    loadPage();
   }, []);
 
   // ---------------------------------------------
-  // LOAD EARNINGS THROUGH SECURE SERVER API
+  // LOAD PAGE
   // ---------------------------------------------
 
-  const loadEarnings =
+  const loadPage =
     async () => {
       setLoading(true);
 
       try {
-        const {
-          data: sessionData,
-          error: sessionError,
-        } =
-          await supabase.auth.getSession();
+        await Promise.all([
+          loadEarnings(),
+          loadPayoutMethod(),
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-        if (
-          sessionError ||
-          !sessionData.session
-        ) {
+  // ---------------------------------------------
+  // GET SESSION
+  // ---------------------------------------------
+
+  const getAccessToken =
+    async () => {
+      const {
+        data: sessionData,
+        error: sessionError,
+      } =
+        await supabase.auth.getSession();
+
+      if (
+        sessionError ||
+        !sessionData.session
+      ) {
+        return null;
+      }
+
+      return sessionData.session
+        .access_token;
+    };
+
+  // ---------------------------------------------
+  // LOAD EARNINGS
+  // ---------------------------------------------
+
+  const loadEarnings =
+    async () => {
+      try {
+        const accessToken =
+          await getAccessToken();
+
+        if (!accessToken) {
           setMessage(
             "Please login first."
           );
@@ -129,7 +230,7 @@ export default function FreelancerEarningsPage() {
 
               headers: {
                 Authorization:
-                  `Bearer ${sessionData.session.access_token}`,
+                  `Bearer ${accessToken}`,
               },
 
               cache:
@@ -176,20 +277,12 @@ export default function FreelancerEarningsPage() {
         }
 
         setPayouts(
-          result.payouts ||
-            []
+          result.payouts || []
         );
 
         setTotals(
-          result.totals || {
-            held: 0,
-            available: 0,
-            requested: 0,
-            processing: 0,
-            paidOut: 0,
-            platformFees: 0,
-            totalEarned: 0,
-          }
+          result.totals ||
+            emptyTotals
         );
       } catch (error) {
         console.error(
@@ -200,8 +293,262 @@ export default function FreelancerEarningsPage() {
         setMessage(
           "Unable to load earnings."
         );
+      }
+    };
+
+  // ---------------------------------------------
+  // LOAD PAYOUT METHOD
+  // ---------------------------------------------
+
+  const loadPayoutMethod =
+    async () => {
+      try {
+        const accessToken =
+          await getAccessToken();
+
+        if (!accessToken) {
+          return;
+        }
+
+        const response =
+          await fetch(
+            "/api/payouts/method",
+            {
+              method: "GET",
+
+              headers: {
+                Authorization:
+                  `Bearer ${accessToken}`,
+              },
+
+              cache:
+                "no-store",
+            }
+          );
+
+        const responseText =
+          await response.text();
+
+        let result:
+          PayoutMethodResponse =
+            {};
+
+        try {
+          result =
+            responseText
+              ? JSON.parse(
+                  responseText
+                )
+              : {};
+        } catch {
+          console.error(
+            "Payout method API returned non-JSON:",
+            responseText
+          );
+
+          return;
+        }
+
+        if (
+          !response.ok ||
+          !result.success
+        ) {
+          console.error(
+            "Unable to load payout method:",
+            result.error
+          );
+
+          return;
+        }
+
+        if (!result.method) {
+          setPayoutMethod(null);
+          setEditingBankDetails(
+            true
+          );
+
+          return;
+        }
+
+        setPayoutMethod(
+          result.method
+        );
+
+        setAccountHolderName(
+          result.method
+            .accountHolderName ||
+            ""
+        );
+
+        setBankName(
+          result.method.bankName ||
+            ""
+        );
+
+        setAccountType(
+          result.method
+            .accountType ||
+            ""
+        );
+
+        setBranchCode(
+          result.method
+            .branchCode ||
+            ""
+        );
+
+        setAccountNumber("");
+
+        setEditingBankDetails(
+          false
+        );
+      } catch (error) {
+        console.error(
+          "Unexpected payout method loading error:",
+          error
+        );
+      }
+    };
+
+  // ---------------------------------------------
+  // SAVE BANKING DETAILS
+  // ---------------------------------------------
+
+  const saveBankDetails =
+    async (
+      event: FormEvent
+    ) => {
+      event.preventDefault();
+
+      setMessage("");
+
+      if (
+        !accountHolderName.trim() ||
+        !bankName.trim() ||
+        !accountNumber.trim() ||
+        !accountType ||
+        !branchCode.trim()
+      ) {
+        setMessage(
+          "Please complete all banking details."
+        );
+
+        return;
+      }
+
+      setSavingBankDetails(
+        true
+      );
+
+      try {
+        const accessToken =
+          await getAccessToken();
+
+        if (!accessToken) {
+          setMessage(
+            "Please login again."
+          );
+
+          return;
+        }
+
+        const response =
+          await fetch(
+            "/api/payouts/method",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                Authorization:
+                  `Bearer ${accessToken}`,
+              },
+
+              body:
+                JSON.stringify({
+                  accountHolderName:
+                    accountHolderName.trim(),
+
+                  bankName:
+                    bankName.trim(),
+
+                  accountNumber:
+                    accountNumber.trim(),
+
+                  accountType,
+
+                  branchCode:
+                    branchCode.trim(),
+                }),
+            }
+          );
+
+        const responseText =
+          await response.text();
+
+        let result:
+          PayoutMethodResponse =
+            {};
+
+        try {
+          result =
+            responseText
+              ? JSON.parse(
+                  responseText
+                )
+              : {};
+        } catch {
+          setMessage(
+            `Server returned an invalid response (${response.status}).`
+          );
+
+          return;
+        }
+
+        if (
+          !response.ok ||
+          !result.success
+        ) {
+          setMessage(
+            result.error ||
+              "Unable to save banking details."
+          );
+
+          return;
+        }
+
+        if (result.method) {
+          setPayoutMethod(
+            result.method
+          );
+        }
+
+        setAccountNumber("");
+
+        setEditingBankDetails(
+          false
+        );
+
+        setMessage(
+          "Banking details saved successfully."
+        );
+
+        await loadPayoutMethod();
+      } catch (error) {
+        console.error(
+          "Unexpected banking details save error:",
+          error
+        );
+
+        setMessage(
+          "Unable to save banking details."
+        );
       } finally {
-        setLoading(false);
+        setSavingBankDetails(
+          false
+        );
       }
     };
 
@@ -226,21 +573,63 @@ export default function FreelancerEarningsPage() {
         return;
       }
 
+      /*
+       * Require payout details before
+       * allowing a payout request.
+       */
+
+      if (!payoutMethod) {
+        setMessage(
+          "Please add your banking details before requesting a payout."
+        );
+
+        setEditingBankDetails(
+          true
+        );
+
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+
+        return;
+      }
+
+      if (
+        payoutMethod.status ===
+        "disabled"
+      ) {
+        setMessage(
+          "Your payout method is currently disabled. Please update your banking details."
+        );
+
+        return;
+      }
+
+      if (
+        payoutMethod.status ===
+        "rejected"
+      ) {
+        setMessage(
+          "Your banking details require an update before you can request a payout."
+        );
+
+        setEditingBankDetails(
+          true
+        );
+
+        return;
+      }
+
       setRequestingPayoutId(
         payout.id
       );
 
       try {
-        const {
-          data: sessionData,
-          error: sessionError,
-        } =
-          await supabase.auth.getSession();
+        const accessToken =
+          await getAccessToken();
 
-        if (
-          sessionError ||
-          !sessionData.session
-        ) {
+        if (!accessToken) {
           setMessage(
             "Please login again."
           );
@@ -259,7 +648,7 @@ export default function FreelancerEarningsPage() {
                   "application/json",
 
                 Authorization:
-                  `Bearer ${sessionData.session.access_token}`,
+                  `Bearer ${accessToken}`,
               },
 
               body:
@@ -360,6 +749,28 @@ export default function FreelancerEarningsPage() {
       }
     };
 
+  const getBankStatusLabel =
+    (
+      status: string
+    ) => {
+      switch (status) {
+        case "pending":
+          return "Pending Verification";
+
+        case "verified":
+          return "Verified";
+
+        case "rejected":
+          return "Needs Attention";
+
+        case "disabled":
+          return "Disabled";
+
+        default:
+          return status;
+      }
+    };
+
   if (loading) {
     return (
       <LoadingSkeleton />
@@ -393,6 +804,504 @@ export default function FreelancerEarningsPage() {
         </p>
       )}
 
+      {/* PAYOUT BANKING DETAILS */}
+
+      <section
+        className="dark-card"
+        style={{
+          marginBottom: 30,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent:
+              "space-between",
+            alignItems:
+              "flex-start",
+            gap: 20,
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <p className="dashboard-badge">
+              Payout Method
+            </p>
+
+            <h2>
+              Banking Details
+            </h2>
+
+            <p>
+              Add the South African
+              bank account where you
+              want to receive your
+              freelancer payouts.
+            </p>
+          </div>
+
+          {payoutMethod && (
+            <span
+              className={`contract-status ${payoutMethod.status}`}
+            >
+              {getBankStatusLabel(
+                payoutMethod.status
+              )}
+            </span>
+          )}
+        </div>
+
+        {payoutMethod &&
+        !editingBankDetails ? (
+          <div
+            style={{
+              marginTop: 20,
+            }}
+          >
+            <div
+              style={{
+                display: "grid",
+
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(200px, 1fr))",
+
+                gap: 15,
+              }}
+            >
+              <BankInfo
+                label="Account Holder"
+                value={
+                  payoutMethod.accountHolderName
+                }
+              />
+
+              <BankInfo
+                label="Bank"
+                value={
+                  payoutMethod.bankName
+                }
+              />
+
+              <BankInfo
+                label="Account Number"
+                value={
+                  payoutMethod.accountNumberMasked
+                }
+              />
+
+              <BankInfo
+                label="Account Type"
+                value={
+                  payoutMethod.accountType
+                }
+              />
+
+              <BankInfo
+                label="Branch Code"
+                value={
+                  payoutMethod.branchCode
+                }
+              />
+            </div>
+
+            {payoutMethod.status ===
+              "pending" && (
+              <p
+                style={{
+                  marginTop: 18,
+                }}
+              >
+                Your banking details
+                have been saved and are
+                awaiting verification.
+              </p>
+            )}
+
+            {payoutMethod.status ===
+              "verified" && (
+              <p
+                style={{
+                  marginTop: 18,
+                }}
+              >
+                ✓ Your payout banking
+                details have been
+                verified.
+              </p>
+            )}
+
+            {payoutMethod.status ===
+              "rejected" && (
+              <p
+                style={{
+                  marginTop: 18,
+                }}
+              >
+                Your banking details
+                require attention.
+                Please update them
+                before requesting
+                another payout.
+              </p>
+            )}
+
+            <button
+              type="button"
+              className="primary-action-btn"
+              style={{
+                marginTop: 20,
+              }}
+              onClick={() => {
+                setAccountNumber(
+                  ""
+                );
+
+                setEditingBankDetails(
+                  true
+                );
+              }}
+            >
+              Update Banking Details
+            </button>
+          </div>
+        ) : (
+          <form
+            onSubmit={
+              saveBankDetails
+            }
+            style={{
+              marginTop: 24,
+            }}
+          >
+            <div
+              style={{
+                display: "grid",
+
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(240px, 1fr))",
+
+                gap: 18,
+              }}
+            >
+              <div>
+                <label
+                  htmlFor="accountHolderName"
+                  style={{
+                    display: "block",
+                    marginBottom: 7,
+                    fontWeight: 600,
+                  }}
+                >
+                  Account Holder Name
+                </label>
+
+                <input
+                  id="accountHolderName"
+                  type="text"
+                  value={
+                    accountHolderName
+                  }
+                  onChange={(event) =>
+                    setAccountHolderName(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Full name on bank account"
+                  required
+                  style={{
+                    width: "100%",
+                    padding: 12,
+                    borderRadius: 8,
+                  }}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="bankName"
+                  style={{
+                    display: "block",
+                    marginBottom: 7,
+                    fontWeight: 600,
+                  }}
+                >
+                  Bank
+                </label>
+
+                <select
+                  id="bankName"
+                  value={
+                    bankName
+                  }
+                  onChange={(event) =>
+                    setBankName(
+                      event.target.value
+                    )
+                  }
+                  required
+                  style={{
+                    width: "100%",
+                    padding: 12,
+                    borderRadius: 8,
+                  }}
+                >
+                  <option value="">
+                    Select bank
+                  </option>
+
+                  <option value="ABSA">
+                    ABSA
+                  </option>
+
+                  <option value="Capitec">
+                    Capitec
+                  </option>
+
+                  <option value="FNB">
+                    FNB
+                  </option>
+
+                  <option value="Nedbank">
+                    Nedbank
+                  </option>
+
+                  <option value="Standard Bank">
+                    Standard Bank
+                  </option>
+
+                  <option value="African Bank">
+                    African Bank
+                  </option>
+
+                  <option value="TymeBank">
+                    TymeBank
+                  </option>
+
+                  <option value="Discovery Bank">
+                    Discovery Bank
+                  </option>
+
+                  <option value="Bank Zero">
+                    Bank Zero
+                  </option>
+
+                  <option value="Other">
+                    Other
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="accountNumber"
+                  style={{
+                    display: "block",
+                    marginBottom: 7,
+                    fontWeight: 600,
+                  }}
+                >
+                  Account Number
+                </label>
+
+                <input
+                  id="accountNumber"
+                  type="text"
+                  inputMode="numeric"
+                  value={
+                    accountNumber
+                  }
+                  onChange={(event) =>
+                    setAccountNumber(
+                      event.target.value.replace(
+                        /\D/g,
+                        ""
+                      )
+                    )
+                  }
+                  placeholder={
+                    payoutMethod
+                      ? `Current: ${payoutMethod.accountNumberMasked} — enter full number to update`
+                      : "Bank account number"
+                  }
+                  required
+                  style={{
+                    width: "100%",
+                    padding: 12,
+                    borderRadius: 8,
+                  }}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="accountType"
+                  style={{
+                    display: "block",
+                    marginBottom: 7,
+                    fontWeight: 600,
+                  }}
+                >
+                  Account Type
+                </label>
+
+                <select
+                  id="accountType"
+                  value={
+                    accountType
+                  }
+                  onChange={(event) =>
+                    setAccountType(
+                      event.target.value
+                    )
+                  }
+                  required
+                  style={{
+                    width: "100%",
+                    padding: 12,
+                    borderRadius: 8,
+                  }}
+                >
+                  <option value="">
+                    Select account type
+                  </option>
+
+                  <option value="Cheque">
+                    Cheque
+                  </option>
+
+                  <option value="Savings">
+                    Savings
+                  </option>
+
+                  <option value="Current">
+                    Current
+                  </option>
+
+                  <option value="Transmission">
+                    Transmission
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="branchCode"
+                  style={{
+                    display: "block",
+                    marginBottom: 7,
+                    fontWeight: 600,
+                  }}
+                >
+                  Branch Code
+                </label>
+
+                <input
+                  id="branchCode"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={
+                    branchCode
+                  }
+                  onChange={(event) =>
+                    setBranchCode(
+                      event.target.value
+                        .replace(
+                          /\D/g,
+                          ""
+                        )
+                        .slice(
+                          0,
+                          6
+                        )
+                    )
+                  }
+                  placeholder="6-digit branch code"
+                  required
+                  style={{
+                    width: "100%",
+                    padding: 12,
+                    borderRadius: 8,
+                  }}
+                />
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                flexWrap: "wrap",
+                marginTop: 22,
+              }}
+            >
+              <button
+                type="submit"
+                className="primary-action-btn"
+                disabled={
+                  savingBankDetails
+                }
+              >
+                {savingBankDetails
+                  ? "Saving..."
+                  : payoutMethod
+                  ? "Save Updated Banking Details"
+                  : "Save Banking Details"}
+              </button>
+
+              {payoutMethod && (
+                <button
+                  type="button"
+                  className="secondary-action-btn"
+                  disabled={
+                    savingBankDetails
+                  }
+                  onClick={() => {
+                    setAccountHolderName(
+                      payoutMethod.accountHolderName
+                    );
+
+                    setBankName(
+                      payoutMethod.bankName
+                    );
+
+                    setAccountType(
+                      payoutMethod.accountType
+                    );
+
+                    setBranchCode(
+                      payoutMethod.branchCode
+                    );
+
+                    setAccountNumber(
+                      ""
+                    );
+
+                    setEditingBankDetails(
+                      false
+                    );
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+
+            <p
+              style={{
+                marginTop: 16,
+                opacity: 0.8,
+              }}
+            >
+              Please check your
+              account number carefully.
+              Incorrect banking details
+              can delay your payout.
+            </p>
+          </form>
+        )}
+      </section>
+
       {/* SUMMARY */}
 
       <section
@@ -417,7 +1326,6 @@ export default function FreelancerEarningsPage() {
             marginTop: 20,
           }}
         >
-
           <SummaryCard
             label="Available for Payout"
             amount={
@@ -466,7 +1374,6 @@ export default function FreelancerEarningsPage() {
               totals.platformFees
             }
           />
-
         </div>
       </section>
 
@@ -504,7 +1411,6 @@ export default function FreelancerEarningsPage() {
                     }
                     className="dark-card contract-card"
                   >
-
                     <div className="contract-top">
 
                       <h2>
@@ -614,8 +1520,8 @@ export default function FreelancerEarningsPage() {
                       <div className="contract-actions">
                         <span className="contract-status pending">
                           Funds Secured —
-                          Waiting for
-                          Client Approval
+                          Waiting for Client
+                          Approval
                         </span>
                       </div>
                     )}
@@ -625,6 +1531,15 @@ export default function FreelancerEarningsPage() {
                     {payout.status ===
                       "ready_for_payout" && (
                       <div className="contract-actions">
+
+                        {!payoutMethod && (
+                          <p>
+                            Add your banking
+                            details before
+                            requesting this
+                            payout.
+                          </p>
+                        )}
 
                         <button
                           type="button"
@@ -669,8 +1584,7 @@ export default function FreelancerEarningsPage() {
                       "processing" && (
                       <div className="contract-actions">
                         <span className="contract-status approved">
-                          Payout
-                          Processing
+                          Payout Processing
                         </span>
                       </div>
                     )}
@@ -708,7 +1622,6 @@ function SummaryCard({
 }) {
   return (
     <div className="dark-card">
-
       <p>
         {label}
       </p>
@@ -719,7 +1632,26 @@ function SummaryCard({
           amount || 0
         ).toFixed(2)}
       </h2>
+    </div>
+  );
+}
 
+function BankInfo({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="dark-card">
+      <p>
+        {label}
+      </p>
+
+      <strong>
+        {value || "—"}
+      </strong>
     </div>
   );
 }
