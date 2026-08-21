@@ -423,16 +423,13 @@ export default function PayoutReceiptPage() {
               </h1>
 
               <p
-                style={{
-                  margin:
-                    "6px 0 0",
-
-                  color:
-                    "#4b5563",
-                }}
-              >
-                Trusted Work
-              </p>
+  className="receipt-muted"
+  style={{
+    margin: "6px 0 0",
+  }}
+>
+  Trusted Work
+</p>
             </div>
 
             <div
@@ -454,16 +451,13 @@ export default function PayoutReceiptPage() {
               </h2>
 
               <p
-                style={{
-                  margin:
-                    "6px 0 0",
-
-                  color:
-                    "#6b7280",
-                }}
-              >
-                PAID
-              </p>
+  className="receipt-paid"
+  style={{
+    margin: "6px 0 0",
+  }}
+>
+  ✓ PAID
+</p>
             </div>
           </div>
         </div>
@@ -895,37 +889,122 @@ export default function PayoutReceiptPage() {
       {/* PRINT CSS */}
 
       <style jsx global>{`
-        @media print {
-          body {
-            background: white !important;
-          }
+  /* ================================================
+     PAYOUT RECEIPT
 
-          header,
-          nav,
-          aside,
-          footer,
-          .dashboard-sidebar,
-          .receipt-actions {
-            display: none !important;
-          }
+     The receipt is intentionally always light.
+     Global website dark-mode styles must not
+     override the document.
+     ================================================ */
 
-          .dashboard-page {
-            margin: 0 !important;
-            padding: 0 !important;
-            max-width: none !important;
-          }
+  #payout-receipt {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
 
-          #payout-receipt {
-            box-shadow: none !important;
-            border-radius: 0 !important;
-          }
+  #payout-receipt * {
+    color: #111827;
+  }
 
-          @page {
-            size: A4;
-            margin: 12mm;
-          }
-        }
-      `}</style>
+  #payout-receipt h1,
+  #payout-receipt h2,
+  #payout-receipt h3,
+  #payout-receipt h4,
+  #payout-receipt strong {
+    color: #111827 !important;
+  }
+
+  #payout-receipt p,
+  #payout-receipt span,
+  #payout-receipt div {
+    color: inherit;
+  }
+
+  /* Secondary / label text */
+
+  #payout-receipt .receipt-muted {
+    color: #6b7280 !important;
+  }
+
+  /* PAID status */
+
+  #payout-receipt .receipt-paid {
+    color: #16a34a !important;
+    font-weight: 700;
+  }
+
+  /* Keep receipt readable when website uses dark mode */
+
+  html.dark #payout-receipt,
+  body.dark #payout-receipt,
+  [data-theme="dark"] #payout-receipt {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  html.dark #payout-receipt *,
+  body.dark #payout-receipt *,
+  [data-theme="dark"] #payout-receipt * {
+    color: #111827;
+  }
+
+  /* ================================================
+     PRINT / SAVE AS PDF
+     ================================================ */
+
+  @media print {
+    body {
+      background: #ffffff !important;
+    }
+
+    header,
+    nav,
+    aside,
+    footer,
+    .dashboard-sidebar,
+    .receipt-actions {
+      display: none !important;
+    }
+
+    .dashboard-page {
+      margin: 0 !important;
+      padding: 0 !important;
+      max-width: none !important;
+      width: 100% !important;
+    }
+
+    #payout-receipt {
+      background: #ffffff !important;
+      color: #111827 !important;
+
+      box-shadow: none !important;
+      border-radius: 0 !important;
+
+      width: 100% !important;
+      max-width: none !important;
+    }
+
+    #payout-receipt * {
+      color: #111827 !important;
+
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    #payout-receipt .receipt-muted {
+      color: #6b7280 !important;
+    }
+
+    #payout-receipt .receipt-paid {
+      color: #16a34a !important;
+    }
+
+    @page {
+      size: A4;
+      margin: 12mm;
+    }
+  }
+`}</style>
 
     </main>
   );
