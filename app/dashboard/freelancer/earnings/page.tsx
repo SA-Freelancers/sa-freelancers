@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   FormEvent,
   useEffect,
@@ -18,6 +19,7 @@ type MilestoneInfo = {
 
 type Payout = {
   id: string;
+
   milestone_id: string;
   project_id: string;
   contract_id?: string | null;
@@ -32,7 +34,10 @@ type Payout = {
   payment_received_at?: string | null;
   approved_for_payout_at?: string | null;
   payout_requested_at?: string | null;
+  processing_started_at?: string | null;
   paid_out_at?: string | null;
+
+  payout_reference?: string | null;
 
   created_at?: string;
 
@@ -63,12 +68,15 @@ type RequestPayoutResponse = {
 
 type PayoutMethod = {
   id?: string;
+
   accountHolderName: string;
   bankName: string;
   accountNumberMasked: string;
   accountType: string;
   branchCode: string;
+
   status: string;
+
   verifiedAt?: string | null;
   updatedAt?: string | null;
 };
@@ -91,30 +99,40 @@ const emptyTotals: EarningsTotals = {
 };
 
 export default function FreelancerEarningsPage() {
-  const [payouts, setPayouts] =
-    useState<Payout[]>([]);
+  const [
+    payouts,
+    setPayouts,
+  ] = useState<Payout[]>([]);
 
-  const [totals, setTotals] =
+  const [
+    totals,
+    setTotals,
+  ] =
     useState<EarningsTotals>(
       emptyTotals
     );
 
-  const [loading, setLoading] =
-    useState(true);
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
 
-  const [message, setMessage] =
-    useState("");
+  const [
+    message,
+    setMessage,
+  ] = useState("");
 
   const [
     requestingPayoutId,
     setRequestingPayoutId,
-  ] = useState<string | null>(
-    null
-  );
+  ] =
+    useState<string | null>(
+      null
+    );
 
-  // ---------------------------------------------
+  // ==================================================
   // BANKING DETAILS STATE
-  // ---------------------------------------------
+  // ==================================================
 
   const [
     payoutMethod,
@@ -159,13 +177,13 @@ export default function FreelancerEarningsPage() {
     setEditingBankDetails,
   ] = useState(false);
 
+  // ==================================================
+  // INITIAL LOAD
+  // ==================================================
+
   useEffect(() => {
     loadPage();
   }, []);
-
-  // ---------------------------------------------
-  // LOAD PAGE
-  // ---------------------------------------------
 
   const loadPage =
     async () => {
@@ -181,15 +199,17 @@ export default function FreelancerEarningsPage() {
       }
     };
 
-  // ---------------------------------------------
-  // GET SESSION
-  // ---------------------------------------------
+  // ==================================================
+  // AUTH TOKEN
+  // ==================================================
 
   const getAccessToken =
     async () => {
       const {
-        data: sessionData,
-        error: sessionError,
+        data:
+          sessionData,
+        error:
+          sessionError,
       } =
         await supabase.auth.getSession();
 
@@ -200,13 +220,14 @@ export default function FreelancerEarningsPage() {
         return null;
       }
 
-      return sessionData.session
+      return sessionData
+        .session
         .access_token;
     };
 
-  // ---------------------------------------------
+  // ==================================================
   // LOAD EARNINGS
-  // ---------------------------------------------
+  // ==================================================
 
   const loadEarnings =
     async () => {
@@ -242,7 +263,8 @@ export default function FreelancerEarningsPage() {
           await response.text();
 
         let result:
-          EarningsResponse = {};
+          EarningsResponse =
+            {};
 
         try {
           result =
@@ -277,7 +299,8 @@ export default function FreelancerEarningsPage() {
         }
 
         setPayouts(
-          result.payouts || []
+          result.payouts ||
+            []
         );
 
         setTotals(
@@ -296,9 +319,9 @@ export default function FreelancerEarningsPage() {
       }
     };
 
-  // ---------------------------------------------
+  // ==================================================
   // LOAD PAYOUT METHOD
-  // ---------------------------------------------
+  // ==================================================
 
   const loadPayoutMethod =
     async () => {
@@ -314,7 +337,8 @@ export default function FreelancerEarningsPage() {
           await fetch(
             "/api/payouts/method",
             {
-              method: "GET",
+              method:
+                "GET",
 
               headers: {
                 Authorization:
@@ -361,8 +385,13 @@ export default function FreelancerEarningsPage() {
           return;
         }
 
-        if (!result.method) {
-          setPayoutMethod(null);
+        if (
+          !result.method
+        ) {
+          setPayoutMethod(
+            null
+          );
+
           setEditingBankDetails(
             true
           );
@@ -381,7 +410,8 @@ export default function FreelancerEarningsPage() {
         );
 
         setBankName(
-          result.method.bankName ||
+          result.method
+            .bankName ||
             ""
         );
 
@@ -397,7 +427,9 @@ export default function FreelancerEarningsPage() {
             ""
         );
 
-        setAccountNumber("");
+        setAccountNumber(
+          ""
+        );
 
         setEditingBankDetails(
           false
@@ -410,13 +442,14 @@ export default function FreelancerEarningsPage() {
       }
     };
 
-  // ---------------------------------------------
+  // ==================================================
   // SAVE BANKING DETAILS
-  // ---------------------------------------------
+  // ==================================================
 
   const saveBankDetails =
     async (
-      event: FormEvent
+      event:
+        FormEvent
     ) => {
       event.preventDefault();
 
@@ -456,7 +489,8 @@ export default function FreelancerEarningsPage() {
           await fetch(
             "/api/payouts/method",
             {
-              method: "POST",
+              method:
+                "POST",
 
               headers: {
                 "Content-Type":
@@ -519,13 +553,17 @@ export default function FreelancerEarningsPage() {
           return;
         }
 
-        if (result.method) {
+        if (
+          result.method
+        ) {
           setPayoutMethod(
             result.method
           );
         }
 
-        setAccountNumber("");
+        setAccountNumber(
+          ""
+        );
 
         setEditingBankDetails(
           false
@@ -552,9 +590,9 @@ export default function FreelancerEarningsPage() {
       }
     };
 
-  // ---------------------------------------------
+  // ==================================================
   // REQUEST PAYOUT
-  // ---------------------------------------------
+  // ==================================================
 
   const requestPayout =
     async (
@@ -573,12 +611,9 @@ export default function FreelancerEarningsPage() {
         return;
       }
 
-      /*
-       * Require payout details before
-       * allowing a payout request.
-       */
-
-      if (!payoutMethod) {
+      if (
+        !payoutMethod
+      ) {
         setMessage(
           "Please add your banking details before requesting a payout."
         );
@@ -589,7 +624,8 @@ export default function FreelancerEarningsPage() {
 
         window.scrollTo({
           top: 0,
-          behavior: "smooth",
+          behavior:
+            "smooth",
         });
 
         return;
@@ -641,7 +677,8 @@ export default function FreelancerEarningsPage() {
           await fetch(
             "/api/payouts/request",
             {
-              method: "POST",
+              method:
+                "POST",
 
               headers: {
                 "Content-Type":
@@ -714,62 +751,80 @@ export default function FreelancerEarningsPage() {
       }
     };
 
-  // ---------------------------------------------
-  // STATUS LABEL
-  // ---------------------------------------------
+  // ==================================================
+  // STATUS HELPERS
+  // ==================================================
 
-  const getStatusLabel =
-    (
-      status: string
-    ) => {
-      switch (status) {
-        case "held":
-          return "Held";
+  const getStatusLabel = (
+    status: string
+  ) => {
+    switch (status) {
+      case "held":
+        return "Held";
 
-        case "ready_for_payout":
-          return "Ready for Payout";
+      case "ready_for_payout":
+        return "Ready for Payout";
 
-        case "payout_requested":
-          return "Payout Requested";
+      case "payout_requested":
+        return "Payout Requested";
 
-        case "processing":
-          return "Processing";
+      case "processing":
+        return "Processing";
 
-        case "paid_out":
-          return "Paid Out";
+      case "paid_out":
+        return "Paid Out";
 
-        case "cancelled":
-          return "Cancelled";
+      case "cancelled":
+        return "Cancelled";
 
-        case "refunded":
-          return "Refunded";
+      case "refunded":
+        return "Refunded";
 
-        default:
-          return status;
-      }
-    };
+      default:
+        return status;
+    }
+  };
 
-  const getBankStatusLabel =
-    (
-      status: string
-    ) => {
-      switch (status) {
-        case "pending":
-          return "Pending Verification";
+  const getBankStatusLabel = (
+    status: string
+  ) => {
+    switch (status) {
+      case "pending":
+        return "Pending Verification";
 
-        case "verified":
-          return "Verified";
+      case "verified":
+        return "Verified";
 
-        case "rejected":
-          return "Needs Attention";
+      case "rejected":
+        return "Needs Attention";
 
-        case "disabled":
-          return "Disabled";
+      case "disabled":
+        return "Disabled";
 
-        default:
-          return status;
-      }
-    };
+      default:
+        return status;
+    }
+  };
+
+  const formatDate = (
+    value?:
+      | string
+      | null
+  ) => {
+    if (!value) {
+      return "—";
+    }
+
+    return new Date(
+      value
+    ).toLocaleString(
+      "en-ZA"
+    );
+  };
+
+  // ==================================================
+  // LOADING
+  // ==================================================
 
   if (loading) {
     return (
@@ -777,10 +832,16 @@ export default function FreelancerEarningsPage() {
     );
   }
 
+  // ==================================================
+  // PAGE
+  // ==================================================
+
   return (
     <main className="dashboard-page">
 
-      {/* HEADER */}
+      {/* ============================================
+          HEADER
+          ============================================ */}
 
       <section className="dashboard-header">
         <p className="dashboard-badge">
@@ -793,8 +854,9 @@ export default function FreelancerEarningsPage() {
 
         <p>
           Track secured payments,
-          available earnings and
-          payout requests.
+          available earnings,
+          payout requests and
+          completed payment receipts.
         </p>
       </section>
 
@@ -804,7 +866,9 @@ export default function FreelancerEarningsPage() {
         </p>
       )}
 
-      {/* PAYOUT BANKING DETAILS */}
+      {/* ============================================
+          BANKING DETAILS
+          ============================================ */}
 
       <section
         className="dark-card"
@@ -815,12 +879,17 @@ export default function FreelancerEarningsPage() {
         <div
           style={{
             display: "flex",
+
             justifyContent:
               "space-between",
+
             alignItems:
               "flex-start",
+
             gap: 20,
-            flexWrap: "wrap",
+
+            flexWrap:
+              "wrap",
           }}
         >
           <div>
@@ -860,7 +929,8 @@ export default function FreelancerEarningsPage() {
           >
             <div
               style={{
-                display: "grid",
+                display:
+                  "grid",
 
                 gridTemplateColumns:
                   "repeat(auto-fit, minmax(200px, 1fr))",
@@ -871,35 +941,40 @@ export default function FreelancerEarningsPage() {
               <BankInfo
                 label="Account Holder"
                 value={
-                  payoutMethod.accountHolderName
+                  payoutMethod
+                    .accountHolderName
                 }
               />
 
               <BankInfo
                 label="Bank"
                 value={
-                  payoutMethod.bankName
+                  payoutMethod
+                    .bankName
                 }
               />
 
               <BankInfo
                 label="Account Number"
                 value={
-                  payoutMethod.accountNumberMasked
+                  payoutMethod
+                    .accountNumberMasked
                 }
               />
 
               <BankInfo
                 label="Account Type"
                 value={
-                  payoutMethod.accountType
+                  payoutMethod
+                    .accountType
                 }
               />
 
               <BankInfo
                 label="Branch Code"
                 value={
-                  payoutMethod.branchCode
+                  payoutMethod
+                    .branchCode
                 }
               />
             </div>
@@ -908,12 +983,14 @@ export default function FreelancerEarningsPage() {
               "pending" && (
               <p
                 style={{
-                  marginTop: 18,
+                  marginTop:
+                    18,
                 }}
               >
                 Your banking details
-                have been saved and are
-                awaiting verification.
+                have been saved and
+                are awaiting
+                verification.
               </p>
             )}
 
@@ -921,7 +998,8 @@ export default function FreelancerEarningsPage() {
               "verified" && (
               <p
                 style={{
-                  marginTop: 18,
+                  marginTop:
+                    18,
                 }}
               >
                 ✓ Your payout banking
@@ -934,7 +1012,8 @@ export default function FreelancerEarningsPage() {
               "rejected" && (
               <p
                 style={{
-                  marginTop: 18,
+                  marginTop:
+                    18,
                 }}
               >
                 Your banking details
@@ -949,7 +1028,8 @@ export default function FreelancerEarningsPage() {
               type="button"
               className="primary-action-btn"
               style={{
-                marginTop: 20,
+                marginTop:
+                  20,
               }}
               onClick={() => {
                 setAccountNumber(
@@ -975,7 +1055,8 @@ export default function FreelancerEarningsPage() {
           >
             <div
               style={{
-                display: "grid",
+                display:
+                  "grid",
 
                 gridTemplateColumns:
                   "repeat(auto-fit, minmax(240px, 1fr))",
@@ -983,13 +1064,20 @@ export default function FreelancerEarningsPage() {
                 gap: 18,
               }}
             >
+              {/* ACCOUNT HOLDER */}
+
               <div>
                 <label
                   htmlFor="accountHolderName"
                   style={{
-                    display: "block",
-                    marginBottom: 7,
-                    fontWeight: 600,
+                    display:
+                      "block",
+
+                    marginBottom:
+                      7,
+
+                    fontWeight:
+                      600,
                   }}
                 >
                   Account Holder Name
@@ -1001,7 +1089,9 @@ export default function FreelancerEarningsPage() {
                   value={
                     accountHolderName
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event
+                  ) =>
                     setAccountHolderName(
                       event.target.value
                     )
@@ -1009,20 +1099,32 @@ export default function FreelancerEarningsPage() {
                   placeholder="Full name on bank account"
                   required
                   style={{
-                    width: "100%",
-                    padding: 12,
-                    borderRadius: 8,
+                    width:
+                      "100%",
+
+                    padding:
+                      12,
+
+                    borderRadius:
+                      8,
                   }}
                 />
               </div>
+
+              {/* BANK */}
 
               <div>
                 <label
                   htmlFor="bankName"
                   style={{
-                    display: "block",
-                    marginBottom: 7,
-                    fontWeight: 600,
+                    display:
+                      "block",
+
+                    marginBottom:
+                      7,
+
+                    fontWeight:
+                      600,
                   }}
                 >
                   Bank
@@ -1033,16 +1135,23 @@ export default function FreelancerEarningsPage() {
                   value={
                     bankName
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event
+                  ) =>
                     setBankName(
                       event.target.value
                     )
                   }
                   required
                   style={{
-                    width: "100%",
-                    padding: 12,
-                    borderRadius: 8,
+                    width:
+                      "100%",
+
+                    padding:
+                      12,
+
+                    borderRadius:
+                      8,
                   }}
                 >
                   <option value="">
@@ -1091,13 +1200,20 @@ export default function FreelancerEarningsPage() {
                 </select>
               </div>
 
+              {/* ACCOUNT NUMBER */}
+
               <div>
                 <label
                   htmlFor="accountNumber"
                   style={{
-                    display: "block",
-                    marginBottom: 7,
-                    fontWeight: 600,
+                    display:
+                      "block",
+
+                    marginBottom:
+                      7,
+
+                    fontWeight:
+                      600,
                   }}
                 >
                   Account Number
@@ -1110,7 +1226,9 @@ export default function FreelancerEarningsPage() {
                   value={
                     accountNumber
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event
+                  ) =>
                     setAccountNumber(
                       event.target.value.replace(
                         /\D/g,
@@ -1125,20 +1243,32 @@ export default function FreelancerEarningsPage() {
                   }
                   required
                   style={{
-                    width: "100%",
-                    padding: 12,
-                    borderRadius: 8,
+                    width:
+                      "100%",
+
+                    padding:
+                      12,
+
+                    borderRadius:
+                      8,
                   }}
                 />
               </div>
+
+              {/* ACCOUNT TYPE */}
 
               <div>
                 <label
                   htmlFor="accountType"
                   style={{
-                    display: "block",
-                    marginBottom: 7,
-                    fontWeight: 600,
+                    display:
+                      "block",
+
+                    marginBottom:
+                      7,
+
+                    fontWeight:
+                      600,
                   }}
                 >
                   Account Type
@@ -1149,16 +1279,23 @@ export default function FreelancerEarningsPage() {
                   value={
                     accountType
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event
+                  ) =>
                     setAccountType(
                       event.target.value
                     )
                   }
                   required
                   style={{
-                    width: "100%",
-                    padding: 12,
-                    borderRadius: 8,
+                    width:
+                      "100%",
+
+                    padding:
+                      12,
+
+                    borderRadius:
+                      8,
                   }}
                 >
                   <option value="">
@@ -1183,13 +1320,20 @@ export default function FreelancerEarningsPage() {
                 </select>
               </div>
 
+              {/* BRANCH CODE */}
+
               <div>
                 <label
                   htmlFor="branchCode"
                   style={{
-                    display: "block",
-                    marginBottom: 7,
-                    fontWeight: 600,
+                    display:
+                      "block",
+
+                    marginBottom:
+                      7,
+
+                    fontWeight:
+                      600,
                   }}
                 >
                   Branch Code
@@ -1199,11 +1343,15 @@ export default function FreelancerEarningsPage() {
                   id="branchCode"
                   type="text"
                   inputMode="numeric"
-                  maxLength={6}
+                  maxLength={
+                    6
+                  }
                   value={
                     branchCode
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event
+                  ) =>
                     setBranchCode(
                       event.target.value
                         .replace(
@@ -1219,9 +1367,14 @@ export default function FreelancerEarningsPage() {
                   placeholder="6-digit branch code"
                   required
                   style={{
-                    width: "100%",
-                    padding: 12,
-                    borderRadius: 8,
+                    width:
+                      "100%",
+
+                    padding:
+                      12,
+
+                    borderRadius:
+                      8,
                   }}
                 />
               </div>
@@ -1229,10 +1382,16 @@ export default function FreelancerEarningsPage() {
 
             <div
               style={{
-                display: "flex",
+                display:
+                  "flex",
+
                 gap: 12,
-                flexWrap: "wrap",
-                marginTop: 22,
+
+                flexWrap:
+                  "wrap",
+
+                marginTop:
+                  22,
               }}
             >
               <button
@@ -1258,19 +1417,23 @@ export default function FreelancerEarningsPage() {
                   }
                   onClick={() => {
                     setAccountHolderName(
-                      payoutMethod.accountHolderName
+                      payoutMethod
+                        .accountHolderName
                     );
 
                     setBankName(
-                      payoutMethod.bankName
+                      payoutMethod
+                        .bankName
                     );
 
                     setAccountType(
-                      payoutMethod.accountType
+                      payoutMethod
+                        .accountType
                     );
 
                     setBranchCode(
-                      payoutMethod.branchCode
+                      payoutMethod
+                        .branchCode
                     );
 
                     setAccountNumber(
@@ -1294,15 +1457,18 @@ export default function FreelancerEarningsPage() {
               }}
             >
               Please check your
-              account number carefully.
-              Incorrect banking details
-              can delay your payout.
+              account number
+              carefully. Incorrect
+              banking details can
+              delay your payout.
             </p>
           </form>
         )}
       </section>
 
-      {/* SUMMARY */}
+      {/* ============================================
+          EARNINGS SUMMARY
+          ============================================ */}
 
       <section
         className="dark-card"
@@ -1316,14 +1482,16 @@ export default function FreelancerEarningsPage() {
 
         <div
           style={{
-            display: "grid",
+            display:
+              "grid",
 
             gridTemplateColumns:
               "repeat(auto-fit, minmax(180px, 1fr))",
 
             gap: 15,
 
-            marginTop: 20,
+            marginTop:
+              20,
           }}
         >
           <SummaryCard
@@ -1377,16 +1545,59 @@ export default function FreelancerEarningsPage() {
         </div>
       </section>
 
-      {/* PAYMENT HISTORY */}
+      {/* ============================================
+          PAYMENT HISTORY
+          ============================================ */}
 
       <section>
-        <h2
+        <div
           style={{
-            marginBottom: 18,
+            display:
+              "flex",
+
+            justifyContent:
+              "space-between",
+
+            alignItems:
+              "center",
+
+            gap: 12,
+
+            flexWrap:
+              "wrap",
+
+            marginBottom:
+              18,
           }}
         >
-          Payment History
-        </h2>
+          <div>
+            <h2>
+              Payment History
+            </h2>
+
+            <p
+              style={{
+                marginTop:
+                  4,
+
+                opacity:
+                  0.75,
+              }}
+            >
+              Track each secured,
+              requested, processing
+              and completed payout.
+            </p>
+          </div>
+
+          <span className="dashboard-badge">
+            {payouts.length}{" "}
+            {payouts.length ===
+            1
+              ? "Payout"
+              : "Payouts"}
+          </span>
+        </div>
 
         {payouts.length ===
         0 ? (
@@ -1397,28 +1608,61 @@ export default function FreelancerEarningsPage() {
           />
         ) : (
           <div className="contracts-grid">
-
             {payouts.map(
-              (payout) => {
+              (
+                payout
+              ) => {
                 const isRequesting =
                   requestingPayoutId ===
                   payout.id;
 
+                const isPaid =
+                  payout.status ===
+                  "paid_out";
+
                 return (
-                  <div
+                  <article
                     key={
                       payout.id
                     }
                     className="dark-card contract-card"
+                    style={
+                      isPaid
+                        ? {
+                            border:
+                              "1px solid rgba(34, 197, 94, 0.22)",
+                          }
+                        : undefined
+                    }
                   >
-                    <div className="contract-top">
+                    {/* HEADER */}
 
-                      <h2>
-                        {payout
-                          .milestone
-                          ?.title ||
-                          "Project Milestone"}
-                      </h2>
+                    <div className="contract-top">
+                      <div>
+                        <h2>
+                          {payout
+                            .milestone
+                            ?.title ||
+                            "Project Milestone"}
+                        </h2>
+
+                        {isPaid && (
+                          <p
+                            style={{
+                              marginTop:
+                                5,
+
+                              opacity:
+                                0.75,
+
+                              fontSize:
+                                13,
+                            }}
+                          >
+                            Completed payout
+                          </p>
+                        )}
+                      </div>
 
                       <span
                         className={`contract-status ${payout.status}`}
@@ -1427,91 +1671,131 @@ export default function FreelancerEarningsPage() {
                           payout.status
                         )}
                       </span>
-
                     </div>
 
-                    <p>
-                      <strong>
-                        Gross Payment:
-                      </strong>{" "}
-                      ZAR{" "}
-                      {Number(
-                        payout.gross_amount ||
-                          0
-                      ).toFixed(
-                        2
+                    {/* MONEY */}
+
+                    <div
+                      style={{
+                        marginTop:
+                          16,
+                      }}
+                    >
+                      <p>
+                        <strong>
+                          Gross Payment:
+                        </strong>{" "}
+                        ZAR{" "}
+                        {Number(
+                          payout.gross_amount ||
+                            0
+                        ).toFixed(
+                          2
+                        )}
+                      </p>
+
+                      <p>
+                        <strong>
+                          Platform Fee:
+                        </strong>{" "}
+                        ZAR{" "}
+                        {Number(
+                          payout.platform_fee ||
+                            0
+                        ).toFixed(
+                          2
+                        )}
+                      </p>
+
+                      <p>
+                        <strong>
+                          You Receive:
+                        </strong>{" "}
+                        ZAR{" "}
+                        {Number(
+                          payout.freelancer_amount ||
+                            0
+                        ).toFixed(
+                          2
+                        )}
+                      </p>
+                    </div>
+
+                    {/* TIMELINE */}
+
+                    <div
+                      style={{
+                        marginTop:
+                          16,
+                      }}
+                    >
+                      {payout.payment_received_at && (
+                        <p>
+                          <strong>
+                            Payment Received:
+                          </strong>{" "}
+                          {formatDate(
+                            payout.payment_received_at
+                          )}
+                        </p>
                       )}
-                    </p>
 
-                    <p>
-                      <strong>
-                        Platform Fee:
-                      </strong>{" "}
-                      ZAR{" "}
-                      {Number(
-                        payout.platform_fee ||
-                          0
-                      ).toFixed(
-                        2
+                      {payout.approved_for_payout_at && (
+                        <p>
+                          <strong>
+                            Approved for Payout:
+                          </strong>{" "}
+                          {formatDate(
+                            payout.approved_for_payout_at
+                          )}
+                        </p>
                       )}
-                    </p>
 
-                    <p>
-                      <strong>
-                        You Receive:
-                      </strong>{" "}
-                      ZAR{" "}
-                      {Number(
-                        payout.freelancer_amount ||
-                          0
-                      ).toFixed(
-                        2
+                      {payout.payout_requested_at && (
+                        <p>
+                          <strong>
+                            Requested:
+                          </strong>{" "}
+                          {formatDate(
+                            payout.payout_requested_at
+                          )}
+                        </p>
                       )}
-                    </p>
 
-                    {payout.payment_received_at && (
-                      <p>
-                        <strong>
-                          Payment Received:
-                        </strong>{" "}
-                        {new Date(
-                          payout.payment_received_at
-                        ).toLocaleString()}
-                      </p>
-                    )}
+                      {payout.processing_started_at && (
+                        <p>
+                          <strong>
+                            Processing Started:
+                          </strong>{" "}
+                          {formatDate(
+                            payout.processing_started_at
+                          )}
+                        </p>
+                      )}
 
-                    {payout.approved_for_payout_at && (
-                      <p>
-                        <strong>
-                          Approved for Payout:
-                        </strong>{" "}
-                        {new Date(
-                          payout.approved_for_payout_at
-                        ).toLocaleString()}
-                      </p>
-                    )}
+                      {payout.paid_out_at && (
+                        <p>
+                          <strong>
+                            Paid Out:
+                          </strong>{" "}
+                          {formatDate(
+                            payout.paid_out_at
+                          )}
+                        </p>
+                      )}
 
-                    {payout.payout_requested_at && (
-                      <p>
-                        <strong>
-                          Requested:
-                        </strong>{" "}
-                        {new Date(
-                          payout.payout_requested_at
-                        ).toLocaleString()}
-                      </p>
-                    )}
-
-                    {payout.paid_out_at && (
-                      <p>
-                        <strong>
-                          Paid Out:
-                        </strong>{" "}
-                        {new Date(
-                          payout.paid_out_at
-                        ).toLocaleString()}
-                      </p>
-                    )}
+                      {isPaid &&
+                        payout.payout_reference && (
+                          <p>
+                            <strong>
+                              Payment Reference:
+                            </strong>{" "}
+                            {
+                              payout.payout_reference
+                            }
+                          </p>
+                        )}
+                    </div>
 
                     {/* HELD */}
 
@@ -1526,12 +1810,11 @@ export default function FreelancerEarningsPage() {
                       </div>
                     )}
 
-                    {/* READY */}
+                    {/* READY FOR PAYOUT */}
 
                     {payout.status ===
                       "ready_for_payout" && (
                       <div className="contract-actions">
-
                         {!payoutMethod && (
                           <p>
                             Add your banking
@@ -1562,7 +1845,6 @@ export default function FreelancerEarningsPage() {
                                 2
                               )}`}
                         </button>
-
                       </div>
                     )}
 
@@ -1582,55 +1864,151 @@ export default function FreelancerEarningsPage() {
 
                     {payout.status ===
                       "processing" && (
-                      <div className="contract-actions">
+                      <div
+                        className="contract-actions"
+                        style={{
+                          marginTop:
+                            18,
+                        }}
+                      >
                         <span className="contract-status approved">
                           Payout Processing
                         </span>
+
+                        <p
+                          style={{
+                            marginTop:
+                              10,
+
+                            opacity:
+                              0.8,
+                          }}
+                        >
+                          Your payout is being
+                          processed. You will
+                          receive a notification
+                          once payment has been
+                          sent.
+                        </p>
                       </div>
                     )}
 
-                    {/* PAID */}
+                    {/* PAID OUT */}
 
-                    {payout.status ===
-  "paid_out" && (
-  <div
-    className="contract-actions"
-    style={{
-      display: "flex",
-      gap: 12,
-      flexWrap: "wrap",
-      alignItems: "center",
-    }}
-  >
-    <span className="contract-status completed">
-      Payment Sent
-    </span>
+                    {isPaid && (
+                      <div
+                        className="contract-actions"
+                        style={{
+                          marginTop:
+                            20,
+                        }}
+                      >
+                        <div
+                          style={{
+                            display:
+                              "flex",
 
-    <a
-      href={`/dashboard/freelancer/earnings/receipt/${payout.id}`}
-      className="primary-action-btn"
-      style={{
-        textDecoration:
-          "none",
-      }}
-    >
-      📄 View Payout Receipt
-    </a>
-  </div>
-)}
+                            alignItems:
+                              "center",
 
-                  </div>
+                            justifyContent:
+                              "space-between",
+
+                            gap: 16,
+
+                            flexWrap:
+                              "wrap",
+
+                            width:
+                              "100%",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display:
+                                "flex",
+
+                              gap: 10,
+
+                              alignItems:
+                                "center",
+
+                              flexWrap:
+                                "wrap",
+                            }}
+                          >
+                            <span className="contract-status completed">
+                              ✓ Payment Sent
+                            </span>
+
+                            <span
+                              style={{
+                                display:
+                                  "inline-flex",
+
+                                alignItems:
+                                  "center",
+
+                                gap: 6,
+
+                                padding:
+                                  "6px 10px",
+
+                                borderRadius:
+                                  999,
+
+                                fontSize:
+                                  13,
+
+                                fontWeight:
+                                  600,
+
+                                background:
+                                  "rgba(34, 197, 94, 0.12)",
+                              }}
+                            >
+                              📄 Receipt Available
+                            </span>
+                          </div>
+
+                          <Link
+                            href={`/dashboard/freelancer/earnings/receipt/${payout.id}`}
+                            className="primary-action-btn"
+                            style={{
+                              textDecoration:
+                                "none",
+
+                              display:
+                                "inline-flex",
+
+                              alignItems:
+                                "center",
+
+                              justifyContent:
+                                "center",
+
+                              gap: 7,
+                            }}
+                          >
+                            📄 View Receipt
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </article>
                 );
               }
             )}
-
           </div>
         )}
       </section>
-
     </main>
   );
 }
+
+// ==================================================
+// SUMMARY CARD
+// ==================================================
 
 function SummaryCard({
   label,
@@ -1654,6 +2032,10 @@ function SummaryCard({
     </div>
   );
 }
+
+// ==================================================
+// BANK INFO
+// ==================================================
 
 function BankInfo({
   label,
