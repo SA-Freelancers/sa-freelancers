@@ -129,6 +129,11 @@ const adminLinks: SidebarLink[] = [
     icon: "💼",
   },
   {
+    href: "/dashboard/admin/payouts",
+    label: "Payouts",
+    icon: "💳",
+  },
+  {
     href: "/dashboard/admin/marketplace-health",
     label: "Marketplace Health",
     icon: "📊",
