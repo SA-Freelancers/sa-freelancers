@@ -1,9 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { supabase } from "@/app/lib/supabase";
+import {
+  useEffect,
+  useState,
+} from "react";
+import {
+  usePathname,
+  useRouter,
+} from "next/navigation";
+
+import {
+  supabase,
+} from "@/app/lib/supabase";
 
 type SidebarLink = {
   href: string;
@@ -11,7 +20,8 @@ type SidebarLink = {
   icon: string;
 };
 
-const clientLinks: SidebarLink[] = [
+const clientLinks:
+  SidebarLink[] = [
   {
     href: "/dashboard",
     label: "Overview",
@@ -19,37 +29,46 @@ const clientLinks: SidebarLink[] = [
   },
   {
     href: "/freelancers",
-    label: "Browse Freelancers",
+    label:
+      "Browse Freelancers",
     icon: "👨‍💻",
   },
   {
-    href: "/dashboard/post-job",
+    href:
+      "/dashboard/post-job",
     label: "Post Job",
     icon: "➕",
   },
   {
-    href: "/dashboard/jobs",
+    href:
+      "/dashboard/jobs",
     label: "My Jobs",
     icon: "💼",
   },
   {
-    href: "/dashboard/client-contracts",
+    href:
+      "/dashboard/client-contracts",
     label: "Sent Contracts",
     icon: "📨",
   },
   {
-    href: "/dashboard/notifications",
-    label: "Notifications",
+    href:
+      "/dashboard/notifications",
+    label:
+      "Notifications",
     icon: "🔔",
   },
   {
-    href: "/dashboard/profile",
-    label: "Profile Settings",
+    href:
+      "/dashboard/profile",
+    label:
+      "Profile Settings",
     icon: "👤",
   },
 ];
 
-const freelancerLinks: SidebarLink[] = [
+const freelancerLinks:
+  SidebarLink[] = [
   {
     href: "/dashboard",
     label: "Overview",
@@ -61,167 +80,226 @@ const freelancerLinks: SidebarLink[] = [
     icon: "💼",
   },
   {
-    href: "/dashboard/contracts",
+    href:
+      "/dashboard/contracts",
     label: "Contracts",
     icon: "📄",
   },
   {
-    href: "/dashboard/freelancer/earnings",
+    href:
+      "/dashboard/freelancer/earnings",
     label: "My Earnings",
     icon: "💰",
   },
   {
-    href: "/dashboard/favorites",
+    href:
+      "/dashboard/favorites",
     label: "Favorites",
     icon: "❤️",
   },
   {
-    href: "/dashboard/notifications",
-    label: "Notifications",
+    href:
+      "/dashboard/notifications",
+    label:
+      "Notifications",
     icon: "🔔",
   },
   {
-    href: "/dashboard/profile",
-    label: "Profile Settings",
+    href:
+      "/dashboard/profile",
+    label:
+      "Profile Settings",
     icon: "👤",
   },
   {
-    href: "/dashboard/upload",
+    href:
+      "/dashboard/upload",
     label: "Upload",
     icon: "⬆️",
   },
   {
-    href: "/dashboard/portfolio",
+    href:
+      "/dashboard/portfolio",
     label: "Portfolio",
     icon: "🖼️",
   },
 ];
 
-const adminLinks: SidebarLink[] = [
+const adminLinks:
+  SidebarLink[] = [
   {
-    href: "/dashboard/admin",
+    href:
+      "/dashboard/admin",
     label: "Analytics",
     icon: "📊",
   },
   {
-    href: "/dashboard/admin/users",
+    href:
+      "/dashboard/admin/users",
     label: "Users",
     icon: "👥",
   },
   {
-    href: "/dashboard/admin/reports",
+    href:
+      "/dashboard/admin/reports",
     label: "Reports",
     icon: "🚩",
   },
   {
-    href: "/dashboard/admin/moderation",
+    href:
+      "/dashboard/admin/moderation",
     label: "Moderation",
     icon: "🛡️",
   },
   {
-    href: "/dashboard/admin/messages",
+    href:
+      "/dashboard/admin/messages",
     label: "Messages",
     icon: "✉️",
   },
   {
-    href: "/dashboard/admin/jobs",
+    href:
+      "/dashboard/admin/jobs",
     label: "Jobs",
     icon: "💼",
   },
   {
-    href: "/dashboard/admin/payouts",
+    href:
+      "/dashboard/admin/payouts",
     label: "Payouts",
     icon: "💳",
   },
   {
-    href: "/dashboard/admin/marketplace-health",
-    label: "Marketplace Health",
+    href:
+      "/dashboard/admin/finance",
+    label:
+      "Financial Reconciliation",
+    icon: "💰",
+  },
+  {
+    href:
+      "/dashboard/admin/marketplace-health",
+    label:
+      "Marketplace Health",
     icon: "📊",
   },
 ];
 
 export default function DashboardSidebar() {
-  const pathname = usePathname();
-  const router = useRouter();
+  const pathname =
+    usePathname();
 
-  const [role, setRole] =
-    useState("");
+  const router =
+    useRouter();
 
-  const [isAdmin, setIsAdmin] =
-    useState(false);
+  const [
+    role,
+    setRole,
+  ] = useState("");
 
-  const [loading, setLoading] =
-    useState(true);
+  const [
+    isAdmin,
+    setIsAdmin,
+  ] = useState(false);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
 
   useEffect(() => {
     loadProfile();
   }, []);
 
-  const loadProfile = async () => {
-    const {
-      data: { user },
-    } =
-      await supabase.auth.getUser();
+  const loadProfile =
+    async () => {
+      const {
+        data: {
+          user,
+        },
+      } =
+        await supabase.auth.getUser();
 
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+      if (!user) {
+        setLoading(
+          false
+        );
 
-    const {
-      data: profile,
-      error,
-    } = await supabase
-      .from("profiles")
-      .select("role, is_admin")
-      .eq("id", user.id)
-      .single();
+        return;
+      }
 
-    if (error) {
-      console.error(
-        "Sidebar profile loading error:",
-        error
+      const {
+        data:
+          profile,
+
+        error,
+      } =
+        await supabase
+          .from(
+            "profiles"
+          )
+          .select(
+            "role, is_admin"
+          )
+          .eq(
+            "id",
+            user.id
+          )
+          .single();
+
+      if (error) {
+        console.error(
+          "Sidebar profile loading error:",
+          error
+        );
+      }
+
+      setRole(
+        profile?.role ||
+          ""
       );
-    }
 
-    setRole(
-      profile?.role || ""
-    );
+      setIsAdmin(
+        profile?.is_admin ||
+          false
+      );
 
-    setIsAdmin(
-      profile?.is_admin || false
-    );
+      setLoading(
+        false
+      );
+    };
 
-    setLoading(false);
-  };
+  const getLinks =
+    () => {
+      let baseLinks:
+        SidebarLink[] =
+          [];
 
-  const getLinks = () => {
-    let baseLinks:
-      SidebarLink[] = [];
+      if (
+        role ===
+        "client"
+      ) {
+        baseLinks =
+          clientLinks;
+      }
 
-    if (
-      role === "client"
-    ) {
-      baseLinks =
-        clientLinks;
-    }
+      if (
+        role ===
+        "freelancer"
+      ) {
+        baseLinks =
+          freelancerLinks;
+      }
 
-    if (
-      role === "freelancer"
-    ) {
-      baseLinks =
-        freelancerLinks;
-    }
+      if (isAdmin) {
+        baseLinks = [
+          ...baseLinks,
+          ...adminLinks,
+        ];
+      }
 
-    if (isAdmin) {
-      baseLinks = [
-        ...baseLinks,
-        ...adminLinks,
-      ];
-    }
-
-    return baseLinks;
-  };
+      return baseLinks;
+    };
 
   const handleLogout =
     async () => {
@@ -244,23 +322,23 @@ export default function DashboardSidebar() {
 
   return (
     <aside className="dashboard-sidebar dark-card">
-
       <div>
         <h2>
           Dashboard
         </h2>
 
         <p>
-          {role === "client"
+          {role ===
+          "client"
             ? "Client workspace"
-            : role === "freelancer"
+            : role ===
+              "freelancer"
             ? "Freelancer workspace"
             : "Manage your work"}
         </p>
       </div>
 
       <nav className="dashboard-sidebar-nav">
-
         {getLinks().map(
           (link) => {
             const isActive =
@@ -289,15 +367,18 @@ export default function DashboardSidebar() {
                 }
               >
                 <span>
-                  {link.icon}
+                  {
+                    link.icon
+                  }
                 </span>
 
-                {link.label}
+                {
+                  link.label
+                }
               </Link>
             );
           }
         )}
-
       </nav>
 
       <button
@@ -309,7 +390,6 @@ export default function DashboardSidebar() {
       >
         🚪 Logout
       </button>
-
     </aside>
   );
 }

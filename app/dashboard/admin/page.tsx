@@ -15,20 +15,24 @@ import DashboardActivity from "./components/DashboardActivity";
 import type { UserProfile } from "./users/types";
 
 export default function AdminDashboard() {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
-  const [recentUsers, setRecentUsers] = useState<UserProfile[]>([]);
+  const [recentUsers, setRecentUsers] =
+    useState<UserProfile[]>([]);
 
-  const [recentJobs, setRecentJobs] = useState<any[]>([]);
+  const [recentJobs, setRecentJobs] =
+    useState<any[]>([]);
 
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    freelancers: 0,
-    clients: 0,
-    jobs: 0,
-    applications: 0,
-    revenue: 0,
-  });
+  const [stats, setStats] =
+    useState({
+      totalUsers: 0,
+      freelancers: 0,
+      clients: 0,
+      jobs: 0,
+      applications: 0,
+      revenue: 0,
+    });
 
   useEffect(() => {
     loadDashboard();
@@ -42,6 +46,7 @@ export default function AdminDashboard() {
         clients,
         jobs,
         applications,
+        payoutFees,
       ] = await Promise.all([
         supabase
           .from("profiles")
@@ -56,7 +61,10 @@ export default function AdminDashboard() {
             count: "exact",
             head: true,
           })
-          .eq("role", "freelancer"),
+          .eq(
+            "role",
+            "freelancer"
+          ),
 
         supabase
           .from("profiles")
@@ -64,7 +72,10 @@ export default function AdminDashboard() {
             count: "exact",
             head: true,
           })
-          .eq("role", "client"),
+          .eq(
+            "role",
+            "client"
+          ),
 
         supabase
           .from("jobs")
@@ -79,85 +90,182 @@ export default function AdminDashboard() {
             count: "exact",
             head: true,
           }),
+
+        supabase
+          .from(
+            "freelancer_payouts"
+          )
+          .select(
+            "platform_fee"
+          ),
       ]);
 
-      setStats({
-        totalUsers: totalUsers.count ?? 0,
-        freelancers: freelancers.count ?? 0,
-        clients: clients.count ?? 0,
-        jobs: jobs.count ?? 0,
-        applications: applications.count ?? 0,
+      const actualRevenue =
+        (
+          payoutFees.data ||
+          []
+        ).reduce(
+          (
+            total,
+            payout
+          ) =>
+            total +
+            Number(
+              payout.platform_fee ||
+                0
+            ),
+          0
+        );
 
-        // Temporary estimated revenue
-        revenue: (jobs.count ?? 0) * 250,
+      setStats({
+        totalUsers:
+          totalUsers.count ??
+          0,
+
+        freelancers:
+          freelancers.count ??
+          0,
+
+        clients:
+          clients.count ??
+          0,
+
+        jobs:
+          jobs.count ??
+          0,
+
+        applications:
+          applications.count ??
+          0,
+
+        revenue:
+          actualRevenue,
       });
 
       // Recent Users
-      const { data: latestUsers } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", {
-          ascending: false,
-        })
-        .limit(5);
 
-      setRecentUsers((latestUsers as UserProfile[]) ?? []);
+      const {
+        data:
+          latestUsers,
+      } =
+        await supabase
+          .from(
+            "profiles"
+          )
+          .select("*")
+          .order(
+            "created_at",
+            {
+              ascending:
+                false,
+            }
+          )
+          .limit(5);
+
+      setRecentUsers(
+        (
+          latestUsers as
+            UserProfile[]
+        ) ?? []
+      );
 
       // Recent Jobs
-      const { data: latestJobs } = await supabase
-        .from("jobs")
-        .select(`
-          id,
-          title,
-          budget,
-          status,
-          created_at,
-          profiles (
-            full_name
-          )
-        `)
-        .order("created_at", {
-          ascending: false,
-        })
-        .limit(5);
 
-      setRecentJobs(latestJobs ?? []);
-    } catch (error) {
-      console.error("Dashboard Error:", error);
+      const {
+        data:
+          latestJobs,
+      } =
+        await supabase
+          .from(
+            "jobs"
+          )
+          .select(`
+            id,
+            title,
+            budget,
+            status,
+            created_at,
+            profiles (
+              full_name
+            )
+          `)
+          .order(
+            "created_at",
+            {
+              ascending:
+                false,
+            }
+          )
+          .limit(5);
+
+      setRecentJobs(
+        latestJobs ??
+          []
+      );
+    } catch (
+      error
+    ) {
+      console.error(
+        "Dashboard Error:",
+        error
+      );
     } finally {
-      setLoading(false);
+      setLoading(
+        false
+      );
     }
   }
 
   if (loading) {
     return (
       <main className="contracts-page">
-        <h1>Loading Dashboard...</h1>
+        <h1>
+          Loading Dashboard...
+        </h1>
       </main>
     );
   }
 
   return (
     <main className="contracts-page">
-
       <DashboardHeader />
 
       <DashboardStats
-        totalUsers={stats.totalUsers}
-        freelancers={stats.freelancers}
-        clients={stats.clients}
-        jobs={stats.jobs}
-        applications={stats.applications}
-        revenue={stats.revenue}
+        totalUsers={
+          stats.totalUsers
+        }
+        freelancers={
+          stats.freelancers
+        }
+        clients={
+          stats.clients
+        }
+        jobs={
+          stats.jobs
+        }
+        applications={
+          stats.applications
+        }
+        revenue={
+          stats.revenue
+        }
       />
 
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "2fr 1fr",
+          display:
+            "grid",
+
+          gridTemplateColumns:
+            "2fr 1fr",
+
           gap: 20,
-          marginTop: 24,
-          alignItems: "start",
+
+          marginTop:
+            24,
+
+          alignItems:
+            "start",
         }}
       >
         <AnalyticsChart />
@@ -165,14 +273,21 @@ export default function AdminDashboard() {
         <PlatformHealth />
       </div>
 
-      <RecentUsers users={recentUsers} />
+      <RecentUsers
+        users={
+          recentUsers
+        }
+      />
 
-      <RecentJobs jobs={recentJobs} />
+      <RecentJobs
+        jobs={
+          recentJobs
+        }
+      />
 
       <DashboardActivity />
 
       <DashboardQuickActions />
-
     </main>
   );
 }
