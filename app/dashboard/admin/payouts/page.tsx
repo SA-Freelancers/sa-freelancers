@@ -38,10 +38,14 @@ type Payout = {
   payout_reference?: string | null;
   payout_notes?: string | null;
 
-  processed_by?: string | null;
-  processed_by_name?: string | null;
+  processing_started_by?: string | null;
+processing_started_by_name?: string | null;
 
-  paid_out_at?: string | null;
+processed_by?: string | null;
+
+paid_out_at?: string | null;
+paid_out_by?: string | null;
+paid_out_by_name?: string | null;
 
   payout_method_id?: string | null;
 
@@ -1083,15 +1087,16 @@ export default function AdminPayoutsPage() {
           }
 
           const searchable =
-            [
-              payout.freelancer_name,
-              payout.milestone_title,
-              payout.payout_reference,
-              payout.bank_name,
-              payout.account_holder_name,
-              payout.processed_by_name,
-              payout.status,
-            ]
+  [
+    payout.freelancer_name,
+    payout.milestone_title,
+    payout.payout_reference,
+    payout.bank_name,
+    payout.account_holder_name,
+    payout.processing_started_by_name,
+    payout.paid_out_by_name,
+    payout.status,
+  ]
               .filter(Boolean)
               .join(" ")
               .toLowerCase();
@@ -1892,16 +1897,14 @@ export default function AdminPayoutsPage() {
                             )}
                           </p>
 
-                          {payout.processed_by_name && (
-                            <p>
-                              <strong>
-                                Processing Admin:
-                              </strong>{" "}
-                              {
-                                payout.processed_by_name
-                              }
-                            </p>
-                          )}
+                          {payout.processing_started_by_name && (
+  <p>
+    <strong>
+      Processing Started By:
+    </strong>{" "}
+    {payout.processing_started_by_name}
+  </p>
+)}
 
                           <p
                             style={{
@@ -2268,49 +2271,72 @@ export default function AdminPayoutsPage() {
                         }}
                       >
                         <h3
-                          style={{
-                            marginBottom:
-                              12,
-                          }}
-                        >
-                          Payment Record
-                        </h3>
+  style={{
+    marginBottom: 14,
+  }}
+>
+  Audit Trail
+</h3>
 
-                        <p>
-                          <strong>
-                            Payment Reference:
-                          </strong>{" "}
-                          {payout.payout_reference ||
-                            "—"}
-                        </p>
+<p>
+  <strong>
+    Payout Requested:
+  </strong>{" "}
+  {formatDate(
+    payout.payout_requested_at
+  )}
+</p>
 
-                        <p>
-                          <strong>
-                            Paid Out:
-                          </strong>{" "}
-                          {formatDate(
-                            payout.paid_out_at
-                          )}
-                        </p>
+<p>
+  <strong>
+    Processing Started:
+  </strong>{" "}
+  {formatDate(
+    payout.processing_started_at
+  )}
+</p>
 
-                        <p>
-                          <strong>
-                            Processed By:
-                          </strong>{" "}
-                          {payout.processed_by_name ||
-                            "Administrator"}
-                        </p>
+<p>
+  <strong>
+    Processing Started By:
+  </strong>{" "}
+  {payout.processing_started_by_name ||
+    "—"}
+</p>
 
-                        {payout.payout_notes && (
-                          <p>
-                            <strong>
-                              Admin Notes:
-                            </strong>{" "}
-                            {
-                              payout.payout_notes
-                            }
-                          </p>
-                        )}
+<p>
+  <strong>
+    Payment Confirmed:
+  </strong>{" "}
+  {formatDate(
+    payout.paid_out_at
+  )}
+</p>
+
+<p>
+  <strong>
+    Paid Out By:
+  </strong>{" "}
+  {payout.paid_out_by_name ||
+    "—"}
+</p>
+
+<p>
+  <strong>
+    Payment Reference:
+  </strong>{" "}
+  {payout.payout_reference ||
+    "—"}
+</p>
+
+{payout.payout_notes && (
+  <p>
+    <strong>
+      Admin Notes:
+    </strong>{" "}
+    {payout.payout_notes}
+  </p>
+)}
                       </div>
 
                       <div

@@ -1,7 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
+
+import {
+  createClient,
+} from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
+
+// --------------------------------------------------
+// MASK BANK ACCOUNT NUMBER
+// --------------------------------------------------
 
 function maskAccountNumber(
   accountNumber?: string | null
@@ -231,10 +241,12 @@ export async function GET(
         approved_for_payout_at,
         payout_requested_at,
         processing_started_at,
+        processing_started_by,
+        processed_by,
         payout_reference,
         payout_notes,
-        processed_by,
         paid_out_at,
+        paid_out_by,
         created_at,
         updated_at
         `
@@ -278,7 +290,12 @@ export async function GET(
             (payout) =>
               payout.milestone_id
           )
-          .filter(Boolean)
+          .filter(
+            (
+              id
+            ): id is string =>
+              Boolean(id)
+          )
       ),
     ];
 
@@ -343,7 +360,12 @@ export async function GET(
             (payout) =>
               payout.freelancer_id
           )
-          .filter(Boolean)
+          .filter(
+            (
+              id
+            ): id is string =>
+              Boolean(id)
+          )
       ),
     ];
 
@@ -352,7 +374,8 @@ export async function GET(
         string,
         {
           id: string;
-          full_name?: string | null;
+          full_name?:
+            string | null;
         }
       > = {};
 
@@ -396,6 +419,85 @@ export async function GET(
     }
 
     // --------------------------------------------------
+    // LOAD ADMIN PROFILES FOR AUDIT TRAIL
+    // --------------------------------------------------
+
+    const adminIds = [
+      ...new Set(
+        payoutRows
+          .flatMap(
+            (payout) => [
+              payout
+                .processing_started_by,
+
+              payout
+                .paid_out_by,
+
+              // Legacy fallback
+              payout
+                .processed_by,
+            ]
+          )
+          .filter(
+            (
+              id
+            ): id is string =>
+              Boolean(id)
+          )
+      ),
+    ];
+
+    let adminMap:
+      Record<
+        string,
+        {
+          id: string;
+          full_name?:
+            string | null;
+        }
+      > = {};
+
+    if (
+      adminIds.length >
+      0
+    ) {
+      const {
+        data: adminRows,
+        error: adminError,
+      } = await admin
+        .from("profiles")
+        .select(
+          `
+          id,
+          full_name
+          `
+        )
+        .in(
+          "id",
+          adminIds
+        );
+
+      if (
+        adminError
+      ) {
+        console.error(
+          "Admin audit profile loading error:",
+          adminError
+        );
+      }
+
+      for (
+        const adminProfile of
+        adminRows || []
+      ) {
+        adminMap[
+          adminProfile.id
+        ] =
+          adminProfile;
+      }
+    }
+
+    // --------------------------------------------------
     // LOAD PAYOUT METHODS
     // --------------------------------------------------
 
@@ -404,19 +506,30 @@ export async function GET(
         string,
         {
           id: string;
-          freelancer_id: string;
+          freelancer_id:
+            string;
+
           account_holder_name:
             string;
-          bank_name: string;
+
+          bank_name:
+            string;
+
           account_number:
             string;
+
           account_type:
             string;
+
           branch_code:
             string;
-          status: string;
+
+          status:
+            string;
+
           verified_at?:
             string | null;
+
           updated_at?:
             string | null;
         }
@@ -429,6 +542,7 @@ export async function GET(
       const {
         data:
           payoutMethodRows,
+
         error:
           payoutMethodError,
       } = await admin
@@ -535,6 +649,24 @@ export async function GET(
               payout.freelancer_id
             ];
 
+          const processingAdminId =
+            payout
+              .processing_started_by ||
+            payout
+              .processed_by ||
+            null;
+
+          const paidOutAdminId =
+            payout
+              .paid_out_by ||
+            (
+              payout.status ===
+                "paid_out"
+                ? payout
+                    .processed_by
+                : null
+            );
+
           return {
             ...payout,
 
@@ -563,6 +695,26 @@ export async function GET(
                 payout.freelancer_id
               ]?.full_name ||
               "Freelancer",
+
+            // ------------------------------------------
+            // ADMIN AUDIT
+            // ------------------------------------------
+
+            processing_started_by_name:
+              processingAdminId
+                ? adminMap[
+                    processingAdminId
+                  ]?.full_name ||
+                  "Administrator"
+                : null,
+
+            paid_out_by_name:
+              paidOutAdminId
+                ? adminMap[
+                    paidOutAdminId
+                  ]?.full_name ||
+                  "Administrator"
+                : null,
 
             // ------------------------------------------
             // PAYOUT METHOD

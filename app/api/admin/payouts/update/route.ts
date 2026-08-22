@@ -1,6 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { sendPayoutEmail } from "@/app/lib/sendPayoutEmail";
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
+
+import {
+  createClient,
+} from "@supabase/supabase-js";
+
+import {
+  sendPayoutEmail,
+} from "@/app/lib/sendPayoutEmail";
 
 export const runtime = "nodejs";
 
@@ -336,10 +345,12 @@ export async function POST(
         status,
         payout_requested_at,
         processing_started_at,
+        processing_started_by,
         processed_by,
         payout_reference,
         payout_notes,
-        paid_out_at
+        paid_out_at,
+        paid_out_by
         `
       )
       .eq(
@@ -531,16 +542,22 @@ export async function POST(
     // --------------------------------------------------
 
     const updateData: {
-      status: string;
+      status: NextPayoutStatus;
       updated_at: string;
 
       processing_started_at?:
+        string;
+
+      processing_started_by?:
         string;
 
       processed_by?:
         string;
 
       paid_out_at?:
+        string;
+
+      paid_out_by?:
         string;
 
       payout_reference?:
@@ -567,6 +584,10 @@ export async function POST(
       updateData.processing_started_at =
         now;
 
+      updateData.processing_started_by =
+        adminUser.id;
+
+      // Legacy field retained for compatibility
       updateData.processed_by =
         adminUser.id;
     }
@@ -582,6 +603,10 @@ export async function POST(
       updateData.paid_out_at =
         now;
 
+      updateData.paid_out_by =
+        adminUser.id;
+
+      // Legacy field retained for compatibility
       updateData.processed_by =
         adminUser.id;
 
@@ -594,6 +619,9 @@ export async function POST(
 
     // --------------------------------------------------
     // UPDATE PAYOUT
+    //
+    // We match the current status as well as the ID.
+    // This helps prevent duplicate/concurrent transitions.
     // --------------------------------------------------
 
     const {
@@ -623,10 +651,12 @@ export async function POST(
         status,
         payout_requested_at,
         processing_started_at,
+        processing_started_by,
         processed_by,
         payout_reference,
         payout_notes,
         paid_out_at,
+        paid_out_by,
         updated_at
         `
       )
@@ -768,177 +798,182 @@ export async function POST(
         notificationError
       );
     }
+
     // --------------------------------------------------
-// EMAIL FREELANCER AFTER SUCCESSFUL PAYOUT
-//
-// IMPORTANT:
-// Email failure must NEVER undo the payout.
-// --------------------------------------------------
-
-if (
-  nextStatus === "paid_out"
-) {
-  try {
-    // ----------------------------------------------
-    // GET FREELANCER EMAIL
-    // ----------------------------------------------
-
-    const {
-      data:
-        freelancerUserData,
-      error:
-        freelancerUserError,
-    } =
-      await admin.auth.admin.getUserById(
-        payout.freelancer_id
-      );
+    // EMAIL FREELANCER AFTER SUCCESSFUL PAYOUT
+    //
+    // IMPORTANT:
+    // Email failure must NEVER undo a successful payout.
+    // --------------------------------------------------
 
     if (
-      freelancerUserError
+      nextStatus ===
+      "paid_out"
     ) {
-      console.error(
-        "Unable to load freelancer email:",
-        freelancerUserError
-      );
-    } else {
-      const freelancerEmail =
-        freelancerUserData
-          .user
-          ?.email;
-
-      if (
-        freelancerEmail
-      ) {
-        // ------------------------------------------
-        // FREELANCER NAME
-        // ------------------------------------------
+      try {
+        // ----------------------------------------------
+        // GET FREELANCER EMAIL
+        // ----------------------------------------------
 
         const {
           data:
-            freelancerProfile,
+            freelancerUserData,
           error:
-            freelancerProfileError,
-        } = await admin
-          .from("profiles")
-          .select(
-            "full_name"
-          )
-          .eq(
-            "id",
+            freelancerUserError,
+        } =
+          await admin.auth.admin.getUserById(
             payout.freelancer_id
-          )
-          .maybeSingle();
+          );
 
         if (
-          freelancerProfileError
+          freelancerUserError
         ) {
           console.error(
-            "Unable to load freelancer profile for payout email:",
-            freelancerProfileError
+            "Unable to load freelancer email:",
+            freelancerUserError
           );
-        }
-
-        // ------------------------------------------
-        // MILESTONE TITLE
-        // ------------------------------------------
-
-        let milestoneTitle =
-          "Project Milestone";
-
-        if (
-          payout.milestone_id
-        ) {
-          const {
-            data:
-              milestone,
-            error:
-              milestoneError,
-          } = await admin
-            .from(
-              "milestones"
-            )
-            .select(
-              "title"
-            )
-            .eq(
-              "id",
-              payout.milestone_id
-            )
-            .maybeSingle();
+        } else {
+          const freelancerEmail =
+            freelancerUserData
+              .user
+              ?.email;
 
           if (
-            milestoneError
+            freelancerEmail
           ) {
+            // ------------------------------------------
+            // FREELANCER NAME
+            // ------------------------------------------
+
+            const {
+              data:
+                freelancerProfile,
+              error:
+                freelancerProfileError,
+            } = await admin
+              .from(
+                "profiles"
+              )
+              .select(
+                "full_name"
+              )
+              .eq(
+                "id",
+                payout.freelancer_id
+              )
+              .maybeSingle();
+
+            if (
+              freelancerProfileError
+            ) {
+              console.error(
+                "Unable to load freelancer profile for payout email:",
+                freelancerProfileError
+              );
+            }
+
+            // ------------------------------------------
+            // MILESTONE TITLE
+            // ------------------------------------------
+
+            let milestoneTitle =
+              "Project Milestone";
+
+            if (
+              payout.milestone_id
+            ) {
+              const {
+                data:
+                  milestone,
+                error:
+                  milestoneError,
+              } = await admin
+                .from(
+                  "milestones"
+                )
+                .select(
+                  "title"
+                )
+                .eq(
+                  "id",
+                  payout.milestone_id
+                )
+                .maybeSingle();
+
+              if (
+                milestoneError
+              ) {
+                console.error(
+                  "Unable to load milestone for payout email:",
+                  milestoneError
+                );
+              }
+
+              if (
+                milestone?.title
+              ) {
+                milestoneTitle =
+                  milestone.title;
+              }
+            }
+
+            // ------------------------------------------
+            // SEND EMAIL
+            // ------------------------------------------
+
+            const emailResult =
+              await sendPayoutEmail({
+                to:
+                  freelancerEmail,
+
+                freelancerName:
+                  freelancerProfile
+                    ?.full_name ||
+                  "Freelancer",
+
+                amount:
+                  Number(
+                    payout.freelancer_amount ||
+                      0
+                  ),
+
+                paymentReference:
+                  payoutReference,
+
+                milestoneTitle,
+
+                paidOutAt:
+                  updatedPayout
+                    .paid_out_at ||
+                  now,
+
+                payoutId:
+                  payout.id,
+              });
+
+            if (
+              !emailResult.success
+            ) {
+              console.error(
+                "Payout succeeded but email notification failed:",
+                emailResult.error
+              );
+            }
+          } else {
             console.error(
-              "Unable to load milestone for payout email:",
-              milestoneError
+              "Payout email skipped because freelancer email was not found."
             );
           }
-
-          if (
-            milestone?.title
-          ) {
-            milestoneTitle =
-              milestone.title;
-          }
         }
-
-        // ------------------------------------------
-        // SEND EMAIL
-        // ------------------------------------------
-
-        const emailResult =
-          await sendPayoutEmail({
-            to:
-              freelancerEmail,
-
-            freelancerName:
-              freelancerProfile
-                ?.full_name ||
-              "Freelancer",
-
-            amount:
-              Number(
-                payout.freelancer_amount ||
-                  0
-              ),
-
-            paymentReference:
-              payoutReference,
-
-            milestoneTitle,
-
-            paidOutAt:
-              updatedPayout
-                .paid_out_at ||
-              now,
-
-            payoutId:
-              payout.id,
-          });
-
-        if (
-          !emailResult.success
-        ) {
-          console.error(
-            "Payout succeeded but email notification failed:",
-            emailResult.error
-          );
-        }
-      } else {
+      } catch (
+        emailError
+      ) {
         console.error(
-          "Payout email skipped because freelancer email was not found."
+          "Payout completed but email processing failed:",
+          emailError
         );
       }
     }
-  } catch (emailError) {
-    console.error(
-      "Payout completed but email processing failed:",
-      emailError
-    );
-  }
-}
-    
 
     // --------------------------------------------------
     // SUCCESS
@@ -946,7 +981,8 @@ if (
 
     return NextResponse.json(
       {
-        success: true,
+        success:
+          true,
 
         payout:
           updatedPayout,
