@@ -39,13 +39,13 @@ type Payout = {
   payout_notes?: string | null;
 
   processing_started_by?: string | null;
-processing_started_by_name?: string | null;
+  processing_started_by_name?: string | null;
 
-processed_by?: string | null;
+  processed_by?: string | null;
 
-paid_out_at?: string | null;
-paid_out_by?: string | null;
-paid_out_by_name?: string | null;
+  paid_out_at?: string | null;
+  paid_out_by?: string | null;
+  paid_out_by_name?: string | null;
 
   payout_method_id?: string | null;
 
@@ -345,7 +345,11 @@ export default function AdminPayoutsPage() {
 
             processing_started_at?: string | null;
 
+            processing_started_by?: string | null;
+
             paid_out_at?: string | null;
+
+            paid_out_by?: string | null;
 
             processed_by?: string | null;
 
@@ -431,8 +435,10 @@ export default function AdminPayoutsPage() {
           "Approved For Payout At",
           "Payout Requested At",
           "Processing Started At",
+          "Processing Started By",
           "Paid Out At",
-          "Processed By",
+          "Paid Out By",
+          "Legacy Processed By",
           "Created At",
         ];
 
@@ -479,7 +485,11 @@ export default function AdminPayoutsPage() {
 
                 row.processing_started_at,
 
+                row.processing_started_by,
+
                 row.paid_out_at,
+
+                row.paid_out_by,
 
                 row.processed_by,
 
@@ -1087,16 +1097,16 @@ export default function AdminPayoutsPage() {
           }
 
           const searchable =
-  [
-    payout.freelancer_name,
-    payout.milestone_title,
-    payout.payout_reference,
-    payout.bank_name,
-    payout.account_holder_name,
-    payout.processing_started_by_name,
-    payout.paid_out_by_name,
-    payout.status,
-  ]
+            [
+              payout.freelancer_name,
+              payout.milestone_title,
+              payout.payout_reference,
+              payout.bank_name,
+              payout.account_holder_name,
+              payout.processing_started_by_name,
+              payout.paid_out_by_name,
+              payout.status,
+            ]
               .filter(Boolean)
               .join(" ")
               .toLowerCase();
@@ -1898,13 +1908,13 @@ export default function AdminPayoutsPage() {
                           </p>
 
                           {payout.processing_started_by_name && (
-  <p>
-    <strong>
-      Processing Started By:
-    </strong>{" "}
-    {payout.processing_started_by_name}
-  </p>
-)}
+                            <p>
+                              <strong>
+                                Processing Started By:
+                              </strong>{" "}
+                              {payout.processing_started_by_name}
+                            </p>
+                          )}
 
                           <p
                             style={{
@@ -2271,72 +2281,73 @@ export default function AdminPayoutsPage() {
                         }}
                       >
                         <h3
-  style={{
-    marginBottom: 14,
-  }}
->
-  Audit Trail
-</h3>
+                          style={{
+                            marginBottom:
+                              14,
+                          }}
+                        >
+                          Audit Trail
+                        </h3>
 
-<p>
-  <strong>
-    Payout Requested:
-  </strong>{" "}
-  {formatDate(
-    payout.payout_requested_at
-  )}
-</p>
+                        <p>
+                          <strong>
+                            Payout Requested:
+                          </strong>{" "}
+                          {formatDate(
+                            payout.payout_requested_at
+                          )}
+                        </p>
 
-<p>
-  <strong>
-    Processing Started:
-  </strong>{" "}
-  {formatDate(
-    payout.processing_started_at
-  )}
-</p>
+                        <p>
+                          <strong>
+                            Processing Started:
+                          </strong>{" "}
+                          {formatDate(
+                            payout.processing_started_at
+                          )}
+                        </p>
 
-<p>
-  <strong>
-    Processing Started By:
-  </strong>{" "}
-  {payout.processing_started_by_name ||
-    "—"}
-</p>
+                        <p>
+                          <strong>
+                            Processing Started By:
+                          </strong>{" "}
+                          {payout.processing_started_by_name ||
+                            "—"}
+                        </p>
 
-<p>
-  <strong>
-    Payment Confirmed:
-  </strong>{" "}
-  {formatDate(
-    payout.paid_out_at
-  )}
-</p>
+                        <p>
+                          <strong>
+                            Payment Confirmed:
+                          </strong>{" "}
+                          {formatDate(
+                            payout.paid_out_at
+                          )}
+                        </p>
 
-<p>
-  <strong>
-    Paid Out By:
-  </strong>{" "}
-  {payout.paid_out_by_name ||
-    "—"}
-</p>
+                        <p>
+                          <strong>
+                            Paid Out By:
+                          </strong>{" "}
+                          {payout.paid_out_by_name ||
+                            "—"}
+                        </p>
 
-<p>
-  <strong>
-    Payment Reference:
-  </strong>{" "}
-  {payout.payout_reference ||
-    "—"}
-</p>
+                        <p>
+                          <strong>
+                            Payment Reference:
+                          </strong>{" "}
+                          {payout.payout_reference ||
+                            "—"}
+                        </p>
 
-{payout.payout_notes && (
-  <p>
-    <strong>
-      Admin Notes:
-    </strong>{" "}
-    {payout.payout_notes}
-  </p>
-)}
+                        {payout.payout_notes && (
+                          <p>
+                            <strong>
+                              Admin Notes:
+                            </strong>{" "}
+                            {payout.payout_notes}
+                          </p>
+                        )}
                       </div>
 
                       <div
