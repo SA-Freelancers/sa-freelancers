@@ -123,7 +123,7 @@ export async function GET(
     }
 
     // --------------------------------------------------
-    // AUTH
+    // AUTHORIZATION
     // --------------------------------------------------
 
     const authorization =
@@ -154,6 +154,10 @@ export async function GET(
         7
       );
 
+    // --------------------------------------------------
+    // SUPABASE ADMIN CLIENT
+    // --------------------------------------------------
+
     const admin =
       createClient(
         supabaseUrl,
@@ -168,6 +172,10 @@ export async function GET(
           },
         }
       );
+
+    // --------------------------------------------------
+    // VERIFY USER
+    // --------------------------------------------------
 
     const {
       data: userData,
@@ -201,7 +209,9 @@ export async function GET(
       data: profile,
       error: profileError,
     } = await admin
-      .from("profiles")
+      .from(
+        "profiles"
+      )
       .select(
         `
         id,
@@ -250,13 +260,15 @@ export async function GET(
     }
 
     // --------------------------------------------------
-    // PERIOD
+    // REPORTING PERIOD
     // --------------------------------------------------
 
     const periodParam =
       request.nextUrl
         .searchParams
-        .get("period") ||
+        .get(
+          "period"
+        ) ||
       "month";
 
     const allowedPeriods:
@@ -440,6 +452,7 @@ export async function GET(
 
           outstandingCount +=
             1;
+
           break;
 
         case "ready_for_payout":
@@ -448,6 +461,7 @@ export async function GET(
 
           outstandingCount +=
             1;
+
           break;
 
         case "payout_requested":
@@ -456,6 +470,7 @@ export async function GET(
 
           outstandingCount +=
             1;
+
           break;
 
         case "processing":
@@ -464,6 +479,7 @@ export async function GET(
 
           outstandingCount +=
             1;
+
           break;
 
         case "paid_out":
@@ -472,6 +488,7 @@ export async function GET(
 
           completedCount +=
             1;
+
           break;
       }
     }
@@ -495,6 +512,123 @@ export async function GET(
       0.01;
 
     // --------------------------------------------------
+    // MONTHLY FINANCIAL DATA
+    // --------------------------------------------------
+
+    const monthlyMap:
+      Record<
+        string,
+        {
+          gross: number;
+          fees: number;
+          freelancer: number;
+        }
+      > = {};
+
+    for (
+      const payout of rows
+    ) {
+      const sourceDate =
+        payout.payment_received_at ||
+        payout.created_at;
+
+      if (
+        !sourceDate
+      ) {
+        continue;
+      }
+
+      const date =
+        new Date(
+          sourceDate
+        );
+
+      const key =
+        `${date.getFullYear()}-${String(
+          date.getMonth() +
+            1
+        ).padStart(
+          2,
+          "0"
+        )}`;
+
+      if (
+        !monthlyMap[
+          key
+        ]
+      ) {
+        monthlyMap[
+          key
+        ] = {
+          gross:
+            0,
+
+          fees:
+            0,
+
+          freelancer:
+            0,
+        };
+      }
+
+      monthlyMap[
+        key
+      ].gross +=
+        Number(
+          payout.gross_amount ||
+            0
+        );
+
+      monthlyMap[
+        key
+      ].fees +=
+        Number(
+          payout.platform_fee ||
+            0
+        );
+
+      monthlyMap[
+        key
+      ].freelancer +=
+        Number(
+          payout.freelancer_amount ||
+            0
+        );
+    }
+
+    const monthly =
+      Object.entries(
+        monthlyMap
+      )
+        .sort(
+          (
+            [a],
+            [b]
+          ) =>
+            a.localeCompare(
+              b
+            )
+        )
+        .map(
+          (
+            [
+              month,
+              values,
+            ]
+          ) => ({
+            month,
+            gross:
+              values.gross,
+
+            fees:
+              values.fees,
+
+            freelancer:
+              values.freelancer,
+          })
+        );
+
+    // --------------------------------------------------
     // RESPONSE
     // --------------------------------------------------
 
@@ -508,7 +642,8 @@ export async function GET(
         range: {
           from:
             startDate
-              ? startDate.toISOString()
+              ? startDate
+                  .toISOString()
               : null,
 
           to:
@@ -557,12 +692,17 @@ export async function GET(
           balanced:
             accountingBalanced,
         },
+
+        // This was missing from your current response.
+        monthly,
       },
       {
         status: 200,
       }
     );
-  } catch (error) {
+  } catch (
+    error
+  ) {
     console.error(
       "Unexpected reconciliation API error:",
       error
@@ -571,6 +711,7 @@ export async function GET(
     return NextResponse.json(
       {
         success: false,
+
         error:
           "Unable to generate reconciliation data.",
       },

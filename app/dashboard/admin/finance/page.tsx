@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import { supabase } from "@/app/lib/supabase";
+import MonthlyFinanceChart from "./MonthlyFinanceChart";
 
 type Period =
   | "today"
@@ -16,6 +17,13 @@ type Period =
   | "month"
   | "year"
   | "all";
+
+type MonthlyFinanceRow = {
+  month: string;
+  gross: number;
+  fees: number;
+  freelancer: number;
+};
 
 type ReconciliationResponse = {
   success?: boolean;
@@ -51,6 +59,8 @@ type ReconciliationResponse = {
     balanced: boolean;
   };
 
+  monthly?: MonthlyFinanceRow[];
+
   error?: string;
 };
 
@@ -78,134 +88,108 @@ const emptyData: ReconciliationResponse = {
     difference: 0,
     balanced: true,
   },
+
+  monthly: [],
 };
 
 export default function AdminFinancePage() {
-  const [
-    period,
-    setPeriod,
-  ] =
-    useState<Period>(
-      "month"
-    );
+  const [period, setPeriod] =
+    useState<Period>("month");
 
-  const [
-    data,
-    setData,
-  ] =
+  const [data, setData] =
     useState<ReconciliationResponse>(
       emptyData
     );
 
-  const [
-    loading,
-    setLoading,
-  ] =
+  const [loading, setLoading] =
     useState(true);
 
-  const [
-    message,
-    setMessage,
-  ] =
+  const [message, setMessage] =
     useState("");
 
   const loadFinance =
-    useCallback(
-      async () => {
-        setLoading(true);
-        setMessage("");
+    useCallback(async () => {
+      setLoading(true);
+      setMessage("");
+
+      try {
+        const {
+          data: sessionData,
+          error: sessionError,
+        } =
+          await supabase.auth.getSession();
+
+        if (
+          sessionError ||
+          !sessionData.session
+        ) {
+          setMessage(
+            "Please login again."
+          );
+
+          return;
+        }
+
+        const response =
+          await fetch(
+            `/api/admin/finance/reconciliation?period=${period}`,
+            {
+              method: "GET",
+
+              headers: {
+                Authorization:
+                  `Bearer ${sessionData.session.access_token}`,
+              },
+
+              cache: "no-store",
+            }
+          );
+
+        const text =
+          await response.text();
+
+        let result:
+          ReconciliationResponse = {};
 
         try {
-          const {
-            data: sessionData,
-            error: sessionError,
-          } =
-            await supabase.auth.getSession();
-
-          if (
-            sessionError ||
-            !sessionData.session
-          ) {
-            setMessage(
-              "Please login again."
-            );
-
-            return;
-          }
-
-          const response =
-            await fetch(
-              `/api/admin/finance/reconciliation?period=${period}`,
-              {
-                method:
-                  "GET",
-
-                headers: {
-                  Authorization:
-                    `Bearer ${sessionData.session.access_token}`,
-                },
-
-                cache:
-                  "no-store",
-              }
-            );
-
-          const text =
-            await response.text();
-
-          let result:
-            ReconciliationResponse =
-              {};
-
-          try {
-            result =
-              text
-                ? JSON.parse(
-                    text
-                  )
-                : {};
-          } catch {
-            setMessage(
-              `Server returned an invalid response (${response.status}).`
-            );
-
-            return;
-          }
-
-          if (
-            !response.ok ||
-            !result.success
-          ) {
-            setMessage(
-              result.error ||
-                "Unable to load financial reconciliation."
-            );
-
-            return;
-          }
-
-          setData(
-            result
-          );
-        } catch (
-          error
-        ) {
-          console.error(
-            "Finance dashboard loading error:",
-            error
-          );
-
+          result =
+            text
+              ? JSON.parse(text)
+              : {};
+        } catch {
           setMessage(
-            "Unable to load financial reconciliation."
+            `Server returned an invalid response (${response.status}).`
           );
-        } finally {
-          setLoading(
-            false
-          );
+
+          return;
         }
-      },
-      [period]
-    );
+
+        if (
+          !response.ok ||
+          !result.success
+        ) {
+          setMessage(
+            result.error ||
+              "Unable to load financial reconciliation."
+          );
+
+          return;
+        }
+
+        setData(result);
+      } catch (error) {
+        console.error(
+          "Finance dashboard loading error:",
+          error
+        );
+
+        setMessage(
+          "Unable to load financial reconciliation."
+        );
+      } finally {
+        setLoading(false);
+      }
+    }, [period]);
 
   useEffect(() => {
     loadFinance();
@@ -223,6 +207,9 @@ export default function AdminFinancePage() {
     data.accounting ||
     emptyData.accounting!;
 
+  const monthly =
+    data.monthly || [];
+
   const money = (
     value: number
   ) =>
@@ -231,19 +218,14 @@ export default function AdminFinancePage() {
     ).toLocaleString(
       "en-ZA",
       {
-        minimumFractionDigits:
-          2,
-
-        maximumFractionDigits:
-          2,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
       }
     )}`;
 
   const periodLabel =
     useMemo(() => {
-      switch (
-        period
-      ) {
+      switch (period) {
         case "today":
           return "Today";
 
@@ -267,9 +249,7 @@ export default function AdminFinancePage() {
       }
     }, [period]);
 
-  if (
-    loading
-  ) {
+  if (loading) {
     return (
       <main className="dashboard-page">
         <h1>
@@ -316,29 +296,18 @@ export default function AdminFinancePage() {
       <section
         className="dark-card"
         style={{
-          marginBottom:
-            28,
-
-          padding:
-            18,
+          marginBottom: 28,
+          padding: 18,
         }}
       >
         <div
           style={{
-            display:
-              "flex",
-
+            display: "flex",
             justifyContent:
               "space-between",
-
-            alignItems:
-              "center",
-
-            gap:
-              14,
-
-            flexWrap:
-              "wrap",
+            alignItems: "center",
+            gap: 14,
+            flexWrap: "wrap",
           }}
         >
           <div>
@@ -348,11 +317,8 @@ export default function AdminFinancePage() {
 
             <p
               style={{
-                opacity:
-                  0.75,
-
-                marginTop:
-                  4,
+                opacity: 0.75,
+                marginTop: 4,
               }}
             >
               {periodLabel}
@@ -361,80 +327,51 @@ export default function AdminFinancePage() {
 
           <div
             style={{
-              display:
-                "flex",
-
-              gap:
-                10,
-
-              flexWrap:
-                "wrap",
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
             }}
           >
             <PeriodButton
               label="Today"
               value="today"
-              current={
-                period
-              }
-              onChange={
-                setPeriod
-              }
+              current={period}
+              onChange={setPeriod}
             />
 
             <PeriodButton
               label="7 Days"
               value="7d"
-              current={
-                period
-              }
-              onChange={
-                setPeriod
-              }
+              current={period}
+              onChange={setPeriod}
             />
 
             <PeriodButton
               label="30 Days"
               value="30d"
-              current={
-                period
-              }
-              onChange={
-                setPeriod
-              }
+              current={period}
+              onChange={setPeriod}
             />
 
             <PeriodButton
               label="This Month"
               value="month"
-              current={
-                period
-              }
-              onChange={
-                setPeriod
-              }
+              current={period}
+              onChange={setPeriod}
             />
 
             <PeriodButton
               label="This Year"
               value="year"
-              current={
-                period
-              }
-              onChange={
-                setPeriod
-              }
+              current={period}
+              onChange={setPeriod}
             />
 
             <PeriodButton
               label="All Time"
               value="all"
-              current={
-                period
-              }
-              onChange={
-                setPeriod
-              }
+              current={period}
+              onChange={setPeriod}
             />
           </div>
         </div>
@@ -444,14 +381,12 @@ export default function AdminFinancePage() {
 
       <section
         style={{
-          marginBottom:
-            32,
+          marginBottom: 32,
         }}
       >
         <h2
           style={{
-            marginBottom:
-              16,
+            marginBottom: 16,
           }}
         >
           Financial Overview
@@ -459,41 +394,31 @@ export default function AdminFinancePage() {
 
         <div
           style={{
-            display:
-              "grid",
-
+            display: "grid",
             gridTemplateColumns:
               "repeat(auto-fit, minmax(210px, 1fr))",
-
-            gap:
-              15,
+            gap: 15,
           }}
         >
           <FinanceCard
             title="Gross Client Payments"
-            amount={
-              money(
-                totals.grossClientPayments
-              )
-            }
+            amount={money(
+              totals.grossClientPayments
+            )}
           />
 
           <FinanceCard
             title="Platform Fees Earned"
-            amount={
-              money(
-                totals.platformFeesEarned
-              )
-            }
+            amount={money(
+              totals.platformFeesEarned
+            )}
           />
 
           <FinanceCard
             title="Freelancer Net Amount"
-            amount={
-              money(
-                totals.freelancerNetAmount
-              )
-            }
+            amount={money(
+              totals.freelancerNetAmount
+            )}
           />
         </div>
       </section>
@@ -502,14 +427,12 @@ export default function AdminFinancePage() {
 
       <section
         style={{
-          marginBottom:
-            32,
+          marginBottom: 32,
         }}
       >
         <h2
           style={{
-            marginBottom:
-              16,
+            marginBottom: 16,
           }}
         >
           Payout Liability
@@ -517,50 +440,38 @@ export default function AdminFinancePage() {
 
         <div
           style={{
-            display:
-              "grid",
-
+            display: "grid",
             gridTemplateColumns:
               "repeat(auto-fit, minmax(190px, 1fr))",
-
-            gap:
-              15,
+            gap: 15,
           }}
         >
           <FinanceCard
             title="Currently Held"
-            amount={
-              money(
-                totals.held
-              )
-            }
+            amount={money(
+              totals.held
+            )}
           />
 
           <FinanceCard
             title="Ready for Payout"
-            amount={
-              money(
-                totals.ready
-              )
-            }
+            amount={money(
+              totals.ready
+            )}
           />
 
           <FinanceCard
             title="Payout Requested"
-            amount={
-              money(
-                totals.requested
-              )
-            }
+            amount={money(
+              totals.requested
+            )}
           />
 
           <FinanceCard
             title="Processing"
-            amount={
-              money(
-                totals.processing
-              )
-            }
+            amount={money(
+              totals.processing
+            )}
           />
         </div>
       </section>
@@ -569,14 +480,12 @@ export default function AdminFinancePage() {
 
       <section
         style={{
-          marginBottom:
-            32,
+          marginBottom: 32,
         }}
       >
         <h2
           style={{
-            marginBottom:
-              16,
+            marginBottom: 16,
           }}
         >
           Completed Payouts
@@ -584,23 +493,17 @@ export default function AdminFinancePage() {
 
         <div
           style={{
-            display:
-              "grid",
-
+            display: "grid",
             gridTemplateColumns:
               "repeat(auto-fit, minmax(210px, 1fr))",
-
-            gap:
-              15,
+            gap: 15,
           }}
         >
           <FinanceCard
             title="Paid Out"
-            amount={
-              money(
-                totals.paidOut
-              )
-            }
+            amount={money(
+              totals.paidOut
+            )}
           />
 
           <CountCard
@@ -619,18 +522,16 @@ export default function AdminFinancePage() {
         </div>
       </section>
 
-      {/* TRANSACTION COUNTS */}
+      {/* TRANSACTIONS */}
 
       <section
         style={{
-          marginBottom:
-            32,
+          marginBottom: 32,
         }}
       >
         <h2
           style={{
-            marginBottom:
-              16,
+            marginBottom: 16,
           }}
         >
           Transactions
@@ -638,14 +539,10 @@ export default function AdminFinancePage() {
 
         <div
           style={{
-            display:
-              "grid",
-
+            display: "grid",
             gridTemplateColumns:
               "repeat(auto-fit, minmax(190px, 1fr))",
-
-            gap:
-              15,
+            gap: 15,
           }}
         >
           <CountCard
@@ -664,25 +561,54 @@ export default function AdminFinancePage() {
         </div>
       </section>
 
+      {/* MONTHLY FINANCIAL PERFORMANCE */}
+
+      <section
+        style={{
+          marginBottom: 32,
+        }}
+      >
+        {monthly.length > 0 ? (
+          <MonthlyFinanceChart
+            rows={monthly}
+          />
+        ) : (
+          <div
+            className="dark-card"
+            style={{
+              padding: 20,
+            }}
+          >
+            <h2>
+              Monthly Financial Performance
+            </h2>
+
+            <p
+              style={{
+                marginTop: 8,
+                opacity: 0.75,
+              }}
+            >
+              No financial transactions
+              are available for the
+              selected reporting period.
+            </p>
+          </div>
+        )}
+      </section>
+
       {/* ACCOUNTING CHECK */}
 
       <section className="dark-card">
         <div
           style={{
-            display:
-              "flex",
-
+            display: "flex",
             justifyContent:
               "space-between",
-
             alignItems:
               "flex-start",
-
-            gap:
-              20,
-
-            flexWrap:
-              "wrap",
+            gap: 20,
+            flexWrap: "wrap",
           }}
         >
           <div>
@@ -696,8 +622,7 @@ export default function AdminFinancePage() {
 
             <p
               style={{
-                marginTop:
-                  8,
+                marginTop: 8,
               }}
             >
               Gross client payments
@@ -722,44 +647,32 @@ export default function AdminFinancePage() {
 
         <div
           style={{
-            display:
-              "grid",
-
+            display: "grid",
             gridTemplateColumns:
               "repeat(auto-fit, minmax(200px, 1fr))",
-
-            gap:
-              15,
-
-            marginTop:
-              22,
+            gap: 15,
+            marginTop: 22,
           }}
         >
           <FinanceCard
             title="Gross Payments"
-            amount={
-              money(
-                totals.grossClientPayments
-              )
-            }
+            amount={money(
+              totals.grossClientPayments
+            )}
           />
 
           <FinanceCard
             title="Expected Gross"
-            amount={
-              money(
-                accounting.expectedGross
-              )
-            }
+            amount={money(
+              accounting.expectedGross
+            )}
           />
 
           <FinanceCard
             title="Difference"
-            amount={
-              money(
-                accounting.difference
-              )
-            }
+            amount={money(
+              accounting.difference
+            )}
           />
         </div>
       </section>
@@ -781,8 +694,7 @@ function PeriodButton({
   ) => void;
 }) {
   const active =
-    current ===
-    value;
+    current === value;
 
   return (
     <button
@@ -793,9 +705,7 @@ function PeriodButton({
           : "secondary-action-btn"
       }
       onClick={() =>
-        onChange(
-          value
-        )
+        onChange(value)
       }
     >
       {label}
@@ -818,8 +728,7 @@ function FinanceCard({
 
       <h2
         style={{
-          marginTop:
-            8,
+          marginTop: 8,
         }}
       >
         {amount}
@@ -843,8 +752,7 @@ function CountCard({
 
       <h2
         style={{
-          marginTop:
-            8,
+          marginTop: 8,
         }}
       >
         {Number(

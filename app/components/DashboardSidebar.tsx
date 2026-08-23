@@ -328,14 +328,14 @@ export default function DashboardSidebar() {
         </h2>
 
         <p>
-          {role ===
-          "client"
-            ? "Client workspace"
-            : role ===
-              "freelancer"
-            ? "Freelancer workspace"
-            : "Manage your work"}
-        </p>
+  {isAdmin
+    ? "Administrator workspace"
+    : role === "client"
+    ? "Client workspace"
+    : role === "freelancer"
+    ? "Freelancer workspace"
+    : "Manage your work"}
+</p>
       </div>
 
       <nav className="dashboard-sidebar-nav">
