@@ -158,6 +158,11 @@ const adminLinks:
     icon: "✉️",
   },
   {
+  href: "/dashboard/admin/conversations",
+  label: "Conversations",
+  icon: "💬",
+},
+  {
     href:
       "/dashboard/admin/jobs",
     label: "Jobs",
