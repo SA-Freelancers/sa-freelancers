@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -20,6 +22,19 @@ type SendResult = {
   emailId?: string | null;
 };
 
+type EmailUser = {
+  id: string;
+  fullName: string;
+  role: string;
+  email: string;
+};
+
+type UserSearchResult = {
+  success?: boolean;
+  users?: EmailUser[];
+  error?: string;
+};
+
 export default function AdminEmailPage() {
   const [
     recipientUserId,
@@ -35,6 +50,26 @@ export default function AdminEmailPage() {
     recipientEmail,
     setRecipientEmail,
   ] = useState("");
+
+  const [
+    recipientSearch,
+    setRecipientSearch,
+  ] = useState("");
+
+  const [
+    searchResults,
+    setSearchResults,
+  ] = useState<EmailUser[]>([]);
+
+  const [
+    searching,
+    setSearching,
+  ] = useState(false);
+
+  const [
+    searchOpen,
+    setSearchOpen,
+  ] = useState(false);
 
   const [
     senderType,
@@ -68,6 +103,246 @@ export default function AdminEmailPage() {
     setSuccess,
   ] = useState("");
 
+  const searchRequestRef =
+    useRef(0);
+
+  useEffect(() => {
+    const query =
+      recipientSearch.trim();
+
+    if (
+      query.length < 2 ||
+      recipientUserId
+    ) {
+      setSearchResults([]);
+      setSearchOpen(false);
+      setSearching(false);
+      return;
+    }
+
+    const requestId =
+      ++searchRequestRef.current;
+
+    const timeout =
+      window.setTimeout(
+        async () => {
+          setSearching(true);
+
+          try {
+            const {
+              data: sessionData,
+              error: sessionError,
+            } =
+              await supabase.auth.getSession();
+
+            if (
+              sessionError ||
+              !sessionData.session
+            ) {
+              if (
+                requestId ===
+                searchRequestRef.current
+              ) {
+                setError(
+                  "Please login again."
+                );
+              }
+
+              return;
+            }
+
+            const response =
+              await fetch(
+                `/api/admin/email-users?q=${encodeURIComponent(
+                  query
+                )}`,
+                {
+                  method: "GET",
+
+                  headers: {
+                    Authorization:
+                      `Bearer ${sessionData.session.access_token}`,
+                  },
+                }
+              );
+
+            const text =
+              await response.text();
+
+            let result:
+              UserSearchResult = {};
+
+            try {
+              result =
+                text
+                  ? JSON.parse(text)
+                  : {};
+            } catch {
+              if (
+                requestId ===
+                searchRequestRef.current
+              ) {
+                setError(
+                  `The server returned an invalid response (${response.status}).`
+                );
+              }
+
+              return;
+            }
+
+            if (
+              requestId !==
+              searchRequestRef.current
+            ) {
+              return;
+            }
+
+            if (
+              !response.ok ||
+              !result.success
+            ) {
+              setSearchResults([]);
+
+              setError(
+                result.error ||
+                  "Unable to search users."
+              );
+
+              return;
+            }
+
+            setSearchResults(
+              result.users || []
+            );
+
+            setSearchOpen(true);
+          } catch (searchError) {
+            console.error(
+              "Admin email user search error:",
+              searchError
+            );
+
+            if (
+              requestId ===
+              searchRequestRef.current
+            ) {
+              setError(
+                "Unable to search users."
+              );
+
+              setSearchResults([]);
+            }
+          } finally {
+            if (
+              requestId ===
+              searchRequestRef.current
+            ) {
+              setSearching(false);
+            }
+          }
+        },
+        350
+      );
+
+    return () => {
+      window.clearTimeout(
+        timeout
+      );
+    };
+  }, [
+    recipientSearch,
+    recipientUserId,
+  ]);
+
+  function selectRecipient(
+    user: EmailUser
+  ) {
+    setRecipientUserId(
+      user.id
+    );
+
+    setRecipientName(
+      user.fullName
+    );
+
+    setRecipientEmail(
+      user.email
+    );
+
+    setRecipientSearch(
+      user.fullName
+    );
+
+    setSearchResults([]);
+    setSearchOpen(false);
+    setError("");
+  }
+
+  function clearRecipient() {
+    setRecipientUserId("");
+    setRecipientName("");
+    setRecipientEmail("");
+    setRecipientSearch("");
+    setSearchResults([]);
+    setSearchOpen(false);
+
+    searchRequestRef.current += 1;
+  }
+
+  function roleLabel(
+    role: string
+  ) {
+    const normalized =
+      role
+        .trim()
+        .toLowerCase();
+
+    if (
+      normalized ===
+      "freelancer"
+    ) {
+      return "Freelancer";
+    }
+
+    if (
+      normalized ===
+      "client"
+    ) {
+      return "Client";
+    }
+
+    return role || "User";
+  }
+
+  function maskEmail(
+    email: string
+  ) {
+    const parts =
+      email.split("@");
+
+    if (
+      parts.length !== 2
+    ) {
+      return email;
+    }
+
+    const [
+      local,
+      domain,
+    ] = parts;
+
+    if (
+      local.length <= 3
+    ) {
+      return `${local}***@${domain}`;
+    }
+
+    return `${local.slice(
+      0,
+      3
+    )}••••@${domain}`;
+  }
+
   async function sendEmail() {
     if (sending) {
       return;
@@ -78,7 +353,7 @@ export default function AdminEmailPage() {
 
     if (!recipientEmail.trim()) {
       setError(
-        "Recipient email is required."
+        "Please select a recipient."
       );
 
       return;
@@ -211,7 +486,6 @@ export default function AdminEmailPage() {
 
   return (
     <main className="contracts-page">
-
       <section style={header}>
         <div>
           <p style={eyebrow}>
@@ -233,10 +507,12 @@ export default function AdminEmailPage() {
               opacity: 0.7,
             }}
           >
-            Send official Freelance
-            Hub SA communication
-            using an approved
-            domain address.
+            Search for a client
+            or freelancer and send
+            official Freelance Hub
+            SA communication using
+            an approved domain
+            address.
           </p>
         </div>
       </section>
@@ -259,77 +535,212 @@ export default function AdminEmailPage() {
       >
         <div style={fieldGroup}>
           <label style={label}>
-            Recipient Name
+            Recipient
           </label>
 
-          <input
-            type="text"
-            value={
-              recipientName
-            }
-            onChange={(
-              event
-            ) =>
-              setRecipientName(
-                event.target.value
-              )
-            }
-            placeholder="Client or freelancer name"
-            style={input}
-          />
-        </div>
+          {!recipientUserId ? (
+            <div
+              style={{
+                position:
+                  "relative",
+              }}
+            >
+              <input
+                type="text"
+                value={
+                  recipientSearch
+                }
+                onChange={(
+                  event
+                ) => {
+                  setRecipientSearch(
+                    event.target.value
+                  );
 
-        <div style={fieldGroup}>
-          <label style={label}>
-            Recipient Email
-          </label>
+                  setRecipientUserId(
+                    ""
+                  );
 
-          <input
-            type="email"
-            value={
-              recipientEmail
-            }
-            onChange={(
-              event
-            ) =>
-              setRecipientEmail(
-                event.target.value
-              )
-            }
-            placeholder="user@example.com"
-            style={input}
-          />
-        </div>
+                  setRecipientName(
+                    ""
+                  );
 
-        <div style={fieldGroup}>
-          <label style={label}>
-            Recipient User ID
-            <span style={optional}>
-              {" "}Optional
-            </span>
-          </label>
+                  setRecipientEmail(
+                    ""
+                  );
 
-          <input
-            type="text"
-            value={
-              recipientUserId
-            }
-            onChange={(
-              event
-            ) =>
-              setRecipientUserId(
-                event.target.value
-              )
-            }
-            placeholder="Supabase profile UUID"
-            style={input}
-          />
+                  setError("");
+                }}
+                onFocus={() => {
+                  if (
+                    searchResults.length >
+                    0
+                  ) {
+                    setSearchOpen(
+                      true
+                    );
+                  }
+                }}
+                placeholder="Search client or freelancer..."
+                autoComplete="off"
+                style={input}
+              />
 
-          <p style={helpText}>
-            This is only used to
-            connect the email log
-            to a platform user.
-          </p>
+              {searching && (
+                <div
+                  style={
+                    searchStatus
+                  }
+                >
+                  Searching...
+                </div>
+              )}
+
+              {searchOpen && (
+                <div
+                  style={
+                    resultsBox
+                  }
+                >
+                  {searchResults.length >
+                  0 ? (
+                    searchResults.map(
+                      (user) => (
+                        <button
+                          key={
+                            user.id
+                          }
+                          type="button"
+                          onClick={() =>
+                            selectRecipient(
+                              user
+                            )
+                          }
+                          style={
+                            resultButton
+                          }
+                        >
+                          <div
+                            style={
+                              resultTopRow
+                            }
+                          >
+                            <strong>
+                              {
+                                user.fullName
+                              }
+                            </strong>
+
+                            <span
+                              style={
+                                roleBadge
+                              }
+                            >
+                              {roleLabel(
+                                user.role
+                              )}
+                            </span>
+                          </div>
+
+                          <div
+                            style={
+                              resultEmail
+                            }
+                          >
+                            {maskEmail(
+                              user.email
+                            )}
+                          </div>
+                        </button>
+                      )
+                    )
+                  ) : (
+                    <div
+                      style={
+                        emptyResult
+                      }
+                    >
+                      No matching
+                      users found.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <p
+                style={helpText}
+              >
+                Type at least two
+                letters from the
+                user's name, email
+                address or role.
+              </p>
+            </div>
+          ) : (
+            <div
+              style={
+                selectedRecipient
+              }
+            >
+              <div>
+                <span
+                  style={
+                    smallLabel
+                  }
+                >
+                  SELECTED USER
+                </span>
+
+                <div
+                  style={
+                    selectedNameRow
+                  }
+                >
+                  <strong
+                    style={{
+                      fontSize: 16,
+                    }}
+                  >
+                    {
+                      recipientName
+                    }
+                  </strong>
+
+                  <span
+                    style={
+                      selectedBadge
+                    }
+                  >
+                    Selected
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 5,
+                    opacity: 0.72,
+                    fontSize: 13,
+                  }}
+                >
+                  {
+                    recipientEmail
+                  }
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={
+                  clearRecipient
+                }
+                style={
+                  clearButton
+                }
+              >
+                Change
+              </button>
+            </div>
+          )}
         </div>
 
         <div style={fieldGroup}>
@@ -441,18 +852,21 @@ export default function AdminEmailPage() {
               sendEmail
             }
             disabled={
-              sending
+              sending ||
+              !recipientUserId
             }
             style={{
               ...sendButton,
 
               opacity:
-                sending
+                sending ||
+                !recipientUserId
                   ? 0.6
                   : 1,
 
               cursor:
-                sending
+                sending ||
+                !recipientUserId
                   ? "not-allowed"
                   : "pointer",
             }}
@@ -540,12 +954,6 @@ const label = {
   marginBottom: 8,
 };
 
-const optional = {
-  fontSize: 12,
-  opacity: 0.55,
-  fontWeight: 500,
-};
-
 const input = {
   width: "100%",
   padding:
@@ -583,6 +991,130 @@ const counter = {
   fontSize: 12,
   opacity: 0.55,
   marginTop: 6,
+};
+
+const searchStatus = {
+  position:
+    "absolute" as const,
+  right: 14,
+  top: 13,
+  fontSize: 12,
+  opacity: 0.6,
+};
+
+const resultsBox = {
+  position:
+    "absolute" as const,
+  zIndex: 30,
+  left: 0,
+  right: 0,
+  top: 49,
+  maxHeight: 320,
+  overflowY:
+    "auto" as const,
+  borderRadius: 12,
+  border:
+    "1px solid var(--border)",
+  background:
+    "var(--surface)",
+  boxShadow:
+    "0 18px 50px rgba(0,0,0,0.28)",
+};
+
+const resultButton = {
+  width: "100%",
+  border: "none",
+  borderBottom:
+    "1px solid var(--border)",
+  background:
+    "transparent",
+  color:
+    "var(--text)",
+  padding:
+    "13px 14px",
+  textAlign:
+    "left" as const,
+  cursor: "pointer",
+};
+
+const resultTopRow = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent:
+    "space-between",
+  gap: 12,
+};
+
+const roleBadge = {
+  fontSize: 11,
+  fontWeight: 800,
+  padding:
+    "4px 8px",
+  borderRadius: 999,
+  background:
+    "rgba(37,99,235,0.12)",
+  border:
+    "1px solid rgba(37,99,235,0.25)",
+};
+
+const resultEmail = {
+  marginTop: 5,
+  fontSize: 12,
+  opacity: 0.65,
+};
+
+const emptyResult = {
+  padding: 16,
+  fontSize: 13,
+  opacity: 0.65,
+};
+
+const selectedRecipient = {
+  display: "flex",
+  justifyContent:
+    "space-between",
+  alignItems: "center",
+  gap: 16,
+  padding: 16,
+  borderRadius: 12,
+  border:
+    "1px solid rgba(34,197,94,0.35)",
+  background:
+    "rgba(34,197,94,0.07)",
+};
+
+const selectedNameRow = {
+  display: "flex",
+  alignItems: "center",
+  flexWrap:
+    "wrap" as const,
+  gap: 8,
+};
+
+const selectedBadge = {
+  fontSize: 11,
+  fontWeight: 800,
+  padding:
+    "4px 8px",
+  borderRadius: 999,
+  background:
+    "rgba(34,197,94,0.15)",
+  border:
+    "1px solid rgba(34,197,94,0.28)",
+};
+
+const clearButton = {
+  padding:
+    "8px 12px",
+  borderRadius: 8,
+  border:
+    "1px solid var(--border)",
+  background:
+    "transparent",
+  color:
+    "var(--text)",
+  fontWeight: 700,
+  cursor: "pointer",
 };
 
 const senderPreview = {
