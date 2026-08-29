@@ -4,22 +4,35 @@ import { useEffect } from "react";
 
 export default function VersionRefresh() {
   useEffect(() => {
-    let currentVersion = "";
+    let mounted = true;
+    let initialVersion = "";
 
     const checkVersion = async () => {
       try {
-        const res = await fetch("/version.txt", {
-          cache: "no-store",
-        });
+        const response = await fetch(
+          `/version.txt?t=${Date.now()}`,
+          {
+            cache: "no-store",
+          }
+        );
 
-        const latestVersion = (await res.text()).trim();
-
-        if (!currentVersion) {
-          currentVersion = latestVersion;
+        if (!response.ok) {
           return;
         }
 
-        if (latestVersion && latestVersion !== currentVersion) {
+        const latestVersion =
+          (await response.text()).trim();
+
+        if (!mounted || !latestVersion) {
+          return;
+        }
+
+        if (!initialVersion) {
+          initialVersion = latestVersion;
+          return;
+        }
+
+        if (latestVersion !== initialVersion) {
           window.location.reload();
         }
       } catch {
@@ -27,11 +40,23 @@ export default function VersionRefresh() {
       }
     };
 
-    checkVersion();
+    void checkVersion();
 
-    const interval = setInterval(checkVersion, 10 * 60 * 1000);
+    const interval =
+      window.setInterval(
+        () => {
+          void checkVersion();
+        },
+        10 * 60 * 1000
+      );
 
-    return () => clearInterval(interval);
+    return () => {
+      mounted = false;
+
+      window.clearInterval(
+        interval
+      );
+    };
   }, []);
 
   return null;

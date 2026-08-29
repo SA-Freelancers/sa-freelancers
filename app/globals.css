@@ -1,3 +1,15 @@
+/*
+  Freelance Hub SA - cleaned globals.css
+
+  Clean-up performed:
+  - Removed duplicate skeleton shimmer definition.
+  - Removed obsolete mobile/navbar/home overflow patch block.
+  - Removed obsolete PlatformStats CSS replaced by the newer responsive block.
+  - Preserved all other application, dashboard, admin, marketplace, profile,
+    footer, navbar and responsive styles.
+  - Kept the final responsive/theme section as the authoritative override.
+*/
+
 :root {
   --bg: #f8fafc;
   --surface: #ffffff;
@@ -74,38 +86,6 @@ select {
 body.dark nav,
 body.dark footer {
   background: #020617 !important;
-}
-.skeleton-shimmer {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(
-    90deg,
-    rgba(120, 120, 120, 0.12) 25%,
-    rgba(180, 180, 180, 0.28) 50%,
-    rgba(120, 120, 120, 0.12) 75%
-  );
-  background-size: 200% 100%;
-  animation: skeleton-loading 1.4s infinite linear;
-}
-
-@keyframes skeleton-loading {
-  0% {
-    background-position: 200% 0;
-  }
-
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-.dark .skeleton-shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.06) 25%,
-    rgba(255, 255, 255, 0.16) 50%,
-    rgba(255, 255, 255, 0.06) 75%
-  );
-  background-size: 200% 100%;
 }
 .skeleton-card {
   background: rgba(255, 255, 255, 0.04);
@@ -1799,264 +1779,7 @@ body:not(.dark) .quick-action-card p {
   opacity: 0.75;
   line-height: 1.7;
 }
-/* MOBILE-FIRST NAVBAR FIX */
-.navbar-wrapper {
-  position: sticky;
-  top: 0;
-  z-index: 999;
-  background: #0f172a !important;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-}
 
-.navbar-container {
-  max-width: 1350px;
-  margin: 0 auto;
-  padding: 14px 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: relative;
-}
-
-.navbar-logo {
-  color: white !important;
-  text-decoration: none;
-  font-size: 1.35rem;
-  font-weight: 950;
-  white-space: nowrap;
-}
-
-.navbar-logo span {
-  color: #22c55e;
-}
-
-.navbar-menu-btn {
-  display: none;
-  border: none;
-  background: transparent;
-  color: white;
-  font-size: 28px;
-  cursor: pointer;
-}
-
-.navbar-links {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.navbar-link,
-.navbar-login-btn,
-.navbar-register-btn,
-.navbar-logout-btn,
-.navbar-dark-btn {
-  border: none;
-  text-decoration: none;
-  padding: 10px 14px;
-  border-radius: 14px;
-  font-weight: 900;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.navbar-link {
-  color: white !important;
-  background: transparent;
-}
-
-.navbar-link.active {
-  background: rgba(37, 99, 235, 0.25);
-  color: #93c5fd !important;
-}
-
-.navbar-login-btn {
-  color: white !important;
-  background: rgba(255,255,255,0.1);
-}
-
-.navbar-register-btn {
-  color: white !important;
-  background: #2563eb;
-}
-
-.navbar-logout-btn {
-  color: white !important;
-  background: #dc2626;
-}
-
-.navbar-dark-btn {
-  color: white !important;
-  background: rgba(255,255,255,0.1);
-}
-
-/* HOME MOBILE RESPONSIVE FIX */
-.home-hero {
-  overflow: hidden;
-}
-
-.home-hero h1 {
-  max-width: 100%;
-  word-break: normal;
-}
-
-.home-actions {
-  width: 100%;
-}
-
-.home-primary-btn,
-.home-secondary-btn {
-  min-width: 160px;
-}
-
-.home-hero .home-secondary-btn,
-body:not(.dark) .home-hero .home-secondary-btn {
-  background: white !important;
-  color: #0f172a !important;
-}
-
-.home-hero h1 span,
-body:not(.dark) .home-hero h1 span {
-  color: #22c55e !important;
-}
-
-  .home-hero {
-    min-height: auto !important;
-    padding: 70px 16px 55px !important;
-  }
-
-  .home-hero h1 {
-    font-size: clamp(2.1rem, 13vw, 3.1rem) !important;
-    line-height: 1.03 !important;
-    letter-spacing: -0.04em;
-  }
-
-  .home-hero p {
-    font-size: 1rem !important;
-    line-height: 1.55 !important;
-  }
-
-  .home-actions {
-    flex-direction: column;
-    align-items: stretch;
-    max-width: 320px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .home-primary-btn,
-  .home-secondary-btn {
-    width: 100%;
-  }
-
-  .stats-section {
-    margin-top: 20px !important;
-  }
-
-/* FINAL MOBILE OVERFLOW FIX */
-* {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden !important;
-}
-
-.main-wrapper {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-.home-page,
-.home-section,
-.home-grid,
-.stats-section,
-.safety-page,
-.site-footer,
-.site-footer-content {
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-@media (max-width: 768px) {
-  .navbar-container {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .navbar-links {
-    position: fixed !important;
-    top: 58px !important;
-    left: 10px !important;
-    right: 10px !important;
-    width: auto !important;
-    max-width: none !important;
-  }
-
-  .home-hero {
-    width: 100%;
-    padding: 55px 16px 45px !important;
-  }
-
-  .home-hero-content {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .home-hero h1 {
-    font-size: 2.25rem !important;
-    line-height: 1.05 !important;
-  }
-
-  .home-hero p {
-    font-size: 0.95rem !important;
-  }
-
-  .stats-section {
-    grid-template-columns: 1fr 1fr !important;
-    padding: 20px 14px !important;
-    gap: 14px !important;
-  }
-
-  .stats-card {
-    padding: 22px 10px !important;
-  }
-
-  .stats-card h3 {
-    font-size: 2rem !important;
-  }
-
-  .home-section {
-    padding: 0 14px !important;
-  }
-
-  .home-grid {
-    grid-template-columns: 1fr !important;
-    gap: 16px !important;
-  }
-
-  .home-card {
-    width: 100% !important;
-  }
-
-  .home-cta {
-    width: calc(100% - 28px) !important;
-    padding: 35px 18px !important;
-  }
-
-  .site-footer-content {
-    width: 100% !important;
-    grid-template-columns: 1fr !important;
-    padding: 45px 16px !important;
-  }
-
-  .site-footer {
-    width: 100% !important;
-  }
-}
 @media (max-width: 768px) {
   .dashboard-layout {
     grid-template-columns: 1fr !important;
@@ -3450,89 +3173,6 @@ margin-bottom:16px;
     color: #000000 !important;
     border: 1px solid #cbd5e1;
 }
-/* =========================
-   PLATFORM STATS
-========================= */
-
-.platform-stats-section {
-  width: 100%;
-  padding: 56px 24px;
-  background: #020617;
-}
-
-.platform-stats-grid {
-  width: min(100%, 980px);
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 22px;
-}
-
-.platform-stat-card {
-  min-height: 170px;
-  padding: 28px 20px;
-  border-radius: 22px;
-  background: #1e293b;
-  border: 1px solid #334155;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.platform-stat-number {
-  display: block;
-  font-size: 2.8rem;
-  line-height: 1;
-  font-weight: 800;
-  color: #f8fafc;
-  margin-bottom: 18px;
-}
-
-.platform-stat-label {
-  display: block;
-  font-size: 1rem;
-  color: #cbd5e1;
-}
-
-/* Light mode */
-body:not(.dark) .platform-stats-section {
-  background: #f8f6f0;
-}
-
-body:not(.dark) .platform-stat-card {
-  background: #ffffff;
-  border-color: #e5e7eb;
-}
-
-body:not(.dark) .platform-stat-number {
-  color: #111827;
-}
-
-body:not(.dark) .platform-stat-label {
-  color: #475569;
-}
-
-@media (max-width: 900px) {
-  .platform-stats-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 520px) {
-  .platform-stats-section {
-    padding: 36px 16px;
-  }
-
-  .platform-stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .platform-stat-card {
-    min-height: 140px;
-  }
-}
 /* =========================================================
    FREELANCE HUB SA
    FINAL RESPONSIVE / VIEWPORT / THEME FIX
@@ -4595,5 +4235,136 @@ button {
   .platform-stat-label {
     font-size:
       0.78rem;
+  }
+}
+/* =========================================================
+   WHY FREELANCE HUB SA - DESKTOP + MOBILE
+   ========================================================= */
+
+.home-benefits-section {
+  width: calc(100% - 40px);
+  max-width: 1200px;
+
+  margin: 0 auto;
+
+  padding: 48px 32px;
+
+  border-radius: 24px;
+
+  text-align: center;
+
+  overflow: hidden;
+}
+
+.home-benefits-section > h2 {
+  margin: 0;
+
+  font-size: clamp(
+    2rem,
+    4vw,
+    3rem
+  );
+
+  line-height: 1.15;
+
+  font-weight: 900;
+
+  color: #f8fafc;
+}
+
+.home-benefits-grid {
+  width: 100%;
+
+  margin-top: 32px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+
+  gap: 18px;
+}
+
+.home-benefits-grid > div {
+  min-width: 0;
+
+  padding: 26px 20px;
+
+  border: 1px solid #334155;
+
+  border-radius: 20px;
+
+  background: #0f172a;
+
+  text-align: left;
+}
+
+.home-benefits-grid h3 {
+  margin: 0 0 12px;
+
+  font-size: 1.08rem;
+
+  line-height: 1.35;
+
+  color: #f8fafc;
+}
+
+.home-benefits-grid p {
+  margin: 0;
+
+  font-size: 0.95rem;
+
+  line-height: 1.65;
+
+  color: #cbd5e1;
+}
+
+
+/* TABLET */
+
+@media (max-width: 900px) {
+  .home-benefits-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+}
+
+
+/* PHONE */
+
+@media (max-width: 600px) {
+  .home-benefits-section {
+    width: calc(100% - 28px);
+
+    padding: 32px 16px;
+
+    border-radius: 22px;
+  }
+
+  .home-benefits-section > h2 {
+    font-size: 1.9rem;
+  }
+
+  .home-benefits-grid {
+    margin-top: 24px;
+
+    grid-template-columns:
+      minmax(0, 1fr);
+
+    gap: 12px;
+  }
+
+  .home-benefits-grid > div {
+    width: 100%;
+
+    padding: 20px 16px;
+
+    text-align: left;
   }
 }
