@@ -162,6 +162,11 @@ const adminLinks:
   label: "Conversations",
   icon: "💬",
 },
+{
+  href: "/dashboard/admin/email",
+  label: "Send Email",
+  icon: "📧",
+},
   {
     href:
       "/dashboard/admin/jobs",
