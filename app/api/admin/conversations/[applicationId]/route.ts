@@ -25,10 +25,12 @@ export async function GET(
     // ==================================================
 
     const supabaseUrl =
-      process.env.NEXT_PUBLIC_SUPABASE_URL;
+      process.env
+        .NEXT_PUBLIC_SUPABASE_URL;
 
     const serviceRoleKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY;
+      process.env
+        .SUPABASE_SERVICE_ROLE_KEY;
 
     if (
       !supabaseUrl ||
@@ -40,12 +42,14 @@ export async function GET(
           error:
             "Server configuration is incomplete.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
 
     // ==================================================
-    // AUTHENTICATION
+    // AUTHORIZATION
     // ==================================================
 
     const authorization =
@@ -65,12 +69,18 @@ export async function GET(
           error:
             "Authentication required.",
         },
-        { status: 401 }
+        {
+          status: 401,
+        }
       );
     }
 
     const accessToken =
       authorization.substring(7);
+
+    // ==================================================
+    // SUPABASE ADMIN CLIENT
+    // ==================================================
 
     const admin =
       createClient(
@@ -80,11 +90,16 @@ export async function GET(
           auth: {
             autoRefreshToken:
               false,
+
             persistSession:
               false,
           },
         }
       );
+
+    // ==================================================
+    // VERIFY LOGGED-IN USER
+    // ==================================================
 
     const {
       data: userData,
@@ -104,21 +119,27 @@ export async function GET(
           error:
             "Unable to verify your login session.",
         },
-        { status: 401 }
+        {
+          status: 401,
+        }
       );
     }
 
     // ==================================================
-    // ADMIN CHECK
+    // VERIFY ADMIN
     // ==================================================
 
     const {
       data: adminProfile,
-      error: adminError,
+      error: adminProfileError,
     } = await admin
       .from("profiles")
       .select(
-        "id, full_name, is_admin"
+        `
+        id,
+        full_name,
+        is_admin
+        `
       )
       .eq(
         "id",
@@ -126,10 +147,12 @@ export async function GET(
       )
       .maybeSingle();
 
-    if (adminError) {
+    if (
+      adminProfileError
+    ) {
       console.error(
-        "Admin profile error:",
-        adminError
+        "Conversation detail admin verification error:",
+        adminProfileError
       );
 
       return NextResponse.json(
@@ -138,7 +161,9 @@ export async function GET(
           error:
             "Unable to verify administrator access.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
 
@@ -151,7 +176,9 @@ export async function GET(
           error:
             "Administrator access required.",
         },
-        { status: 403 }
+        {
+          status: 403,
+        }
       );
     }
 
@@ -161,28 +188,41 @@ export async function GET(
 
     const {
       applicationId,
-    } = await context.params;
+    } =
+      await context.params;
 
-    if (!applicationId) {
+    const cleanApplicationId =
+      String(
+        applicationId ||
+          ""
+      ).trim();
+
+    if (
+      !cleanApplicationId
+    ) {
       return NextResponse.json(
         {
           success: false,
           error:
             "Application ID is required.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
     // ==================================================
-    // APPLICATION
+    // LOAD APPLICATION
     // ==================================================
 
     const {
       data: application,
       error: applicationError,
     } = await admin
-      .from("applications")
+      .from(
+        "applications"
+      )
       .select(
         `
         id,
@@ -194,13 +234,15 @@ export async function GET(
       )
       .eq(
         "id",
-        applicationId
+        cleanApplicationId
       )
       .maybeSingle();
 
-    if (applicationError) {
+    if (
+      applicationError
+    ) {
       console.error(
-        "Application loading error:",
+        "Conversation application loading error:",
         applicationError
       );
 
@@ -210,46 +252,57 @@ export async function GET(
           error:
             "Unable to load application.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
 
-    if (!application) {
+    if (
+      !application
+    ) {
       return NextResponse.json(
         {
           success: false,
           error:
             "Conversation not found.",
         },
-        { status: 404 }
+        {
+          status: 404,
+        }
       );
     }
 
     // ==================================================
-    // JOB
+    // LOAD JOB
+    //
+    // IMPORTANT:
+    // jobs table does NOT have a status column.
     // ==================================================
 
     const {
-  data: job,
-  error: jobError,
-} = await admin
-  .from("jobs")
-  .select(
-    `
-    id,
-    title,
-    client_id
-    `
-  )
-  .eq(
-    "id",
-    application.job_id
-  )
-  .maybeSingle();
+      data: job,
+      error: jobError,
+    } = await admin
+      .from("jobs")
+      .select(
+        `
+        id,
+        title,
+        client_id
+        `
+      )
+      .eq(
+        "id",
+        application.job_id
+      )
+      .maybeSingle();
 
-    if (jobError) {
+    if (
+      jobError
+    ) {
       console.error(
-        "Job loading error:",
+        "Conversation job loading error:",
         jobError
       );
 
@@ -259,79 +312,112 @@ export async function GET(
           error:
             "Unable to load job information.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
 
     // ==================================================
-    // PARTICIPANT PROFILES
+    // PARTICIPANT IDS
     // ==================================================
 
-    const participantIds = [
-      application.freelancer_id,
-      job?.client_id,
-    ].filter(
-      (id): id is string =>
-        Boolean(id)
-    );
-
-    const {
-      data: profiles,
-      error: profileError,
-    } = participantIds.length
-      ? await admin
-          .from("profiles")
-          .select(
-            `
-            id,
-            full_name,
-            role
-            `
-          )
-          .in(
-            "id",
-            participantIds
-          )
-      : {
-          data: [],
-          error: null,
-        };
-
-    if (profileError) {
-      console.error(
-        "Participant profile error:",
-        profileError
+    const participantIds =
+      [
+        application.freelancer_id,
+        job?.client_id,
+      ].filter(
+        (
+          id
+        ): id is string =>
+          Boolean(id)
       );
-    }
 
-    const profileMap =
-      new Map(
-        (profiles || []).map(
-          (profile) => [
-            profile.id,
-            profile,
-          ]
+    // ==================================================
+    // LOAD PARTICIPANT PROFILES
+    // ==================================================
+
+    const profileMap:
+      Record<
+        string,
+        {
+          id: string;
+          full_name?: string | null;
+          role?: string | null;
+        }
+      > = {};
+
+    if (
+      participantIds.length >
+      0
+    ) {
+      const {
+        data: profileRows,
+        error: profileError,
+      } = await admin
+        .from("profiles")
+        .select(
+          `
+          id,
+          full_name,
+          role
+          `
         )
-      );
+        .in(
+          "id",
+          participantIds
+        );
+
+      if (
+        profileError
+      ) {
+        console.error(
+          "Conversation participant loading error:",
+          profileError
+        );
+
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Unable to load conversation participants.",
+          },
+          {
+            status: 500,
+          }
+        );
+      }
+
+      for (
+        const profile of
+          profileRows ||
+        []
+      ) {
+        profileMap[
+          profile.id
+        ] =
+          profile;
+      }
+    }
 
     const freelancer =
-      profileMap.get(
+      profileMap[
         application.freelancer_id
-      );
+      ];
 
     const client =
       job?.client_id
-        ? profileMap.get(
+        ? profileMap[
             job.client_id
-          )
+          ]
         : null;
 
     // ==================================================
-    // SUCCESSFUL MESSAGES
+    // LOAD SUCCESSFUL MESSAGES
     // ==================================================
 
     const {
-      data: messages,
+      data: messageRows,
       error: messageError,
     } = await admin
       .from("messages")
@@ -346,7 +432,7 @@ export async function GET(
       )
       .eq(
         "application_id",
-        applicationId
+        cleanApplicationId
       )
       .order(
         "created_at",
@@ -355,9 +441,11 @@ export async function GET(
         }
       );
 
-    if (messageError) {
+    if (
+      messageError
+    ) {
       console.error(
-        "Conversation messages error:",
+        "Conversation message loading error:",
         messageError
       );
 
@@ -367,16 +455,22 @@ export async function GET(
           error:
             "Unable to load conversation messages.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
 
+    const messages =
+      messageRows ||
+      [];
+
     // ==================================================
-    // SAFETY EVENTS
+    // LOAD SAFETY EVENTS
     // ==================================================
 
     const {
-      data: safetyEvents,
+      data: safetyRows,
       error: safetyError,
     } = await admin
       .from(
@@ -399,7 +493,7 @@ export async function GET(
       )
       .eq(
         "application_id",
-        applicationId
+        cleanApplicationId
       )
       .order(
         "created_at",
@@ -408,9 +502,11 @@ export async function GET(
         }
       );
 
-    if (safetyError) {
+    if (
+      safetyError
+    ) {
       console.error(
-        "Safety event loading error:",
+        "Conversation safety loading error:",
         safetyError
       );
 
@@ -420,28 +516,41 @@ export async function GET(
           error:
             "Unable to load safety events.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
 
+    const safetyEvents =
+      safetyRows ||
+      [];
+
     // ==================================================
-    // ADD SENDER INFORMATION
+    // ADD SENDER INFO TO MESSAGES
     // ==================================================
 
     const messagesWithSender =
-      (messages || []).map(
-        (message) => {
+      messages.map(
+        (
+          message
+        ) => {
           const sender =
-            profileMap.get(
+            profileMap[
               message.sender_id
-            );
+            ];
 
           return {
             ...message,
 
             sender_name:
               sender?.full_name ||
-              "User",
+              (
+                message.sender_id ===
+                job?.client_id
+                  ? "Client"
+                  : "Freelancer"
+              ),
 
             sender_role:
               sender?.role ||
@@ -450,22 +559,31 @@ export async function GET(
         }
       );
 
+    // ==================================================
+    // ADD SENDER INFO TO SAFETY EVENTS
+    // ==================================================
+
     const safetyWithSender =
-      (
-        safetyEvents || []
-      ).map(
-        (event) => {
+      safetyEvents.map(
+        (
+          event
+        ) => {
           const sender =
-            profileMap.get(
+            profileMap[
               event.sender_id
-            );
+            ];
 
           return {
             ...event,
 
             sender_name:
               sender?.full_name ||
-              "User",
+              (
+                event.sender_id ===
+                job?.client_id
+                  ? "Client"
+                  : "Freelancer"
+              ),
 
             sender_role:
               sender?.role ||
@@ -476,14 +594,13 @@ export async function GET(
 
     // ==================================================
     // TIMELINE
-    //
-    // Combines real messages and blocked attempts
-    // chronologically for admin review.
     // ==================================================
 
-    const timeline = [
-      ...messagesWithSender.map(
-        (message) => ({
+    const messageTimeline =
+      messagesWithSender.map(
+        (
+          message
+        ) => ({
           type:
             "message" as const,
 
@@ -505,10 +622,13 @@ export async function GET(
           created_at:
             message.created_at,
         })
-      ),
+      );
 
-      ...safetyWithSender.map(
-        (event) => ({
+    const safetyTimeline =
+      safetyWithSender.map(
+        (
+          event
+        ) => ({
           type:
             "safety_event" as const,
 
@@ -525,7 +645,8 @@ export async function GET(
             event.sender_role,
 
           content:
-            event.attempted_content,
+            event.attempted_content ||
+            "",
 
           event_type:
             event.event_type,
@@ -548,16 +669,24 @@ export async function GET(
           created_at:
             event.created_at,
         })
-      ),
-    ].sort(
-      (a, b) =>
-        new Date(
-          a.created_at
-        ).getTime() -
-        new Date(
-          b.created_at
-        ).getTime()
-    );
+      );
+
+    const timeline =
+      [
+        ...messageTimeline,
+        ...safetyTimeline,
+      ].sort(
+        (
+          a,
+          b
+        ) =>
+          new Date(
+            a.created_at
+          ).getTime() -
+          new Date(
+            b.created_at
+          ).getTime()
+      );
 
     // ==================================================
     // SUMMARY
@@ -565,86 +694,115 @@ export async function GET(
 
     const pendingSafetyEvents =
       safetyWithSender.filter(
-        (event) =>
+        (
+          event
+        ) =>
           event.status ===
           "pending"
       ).length;
 
     const highRiskEvents =
       safetyWithSender.filter(
-        (event) =>
+        (
+          event
+        ) =>
           event.risk_level ===
             "high" ||
           event.risk_level ===
             "critical"
       ).length;
 
+    const criticalEvents =
+      safetyWithSender.filter(
+        (
+          event
+        ) =>
+          event.risk_level ===
+          "critical"
+      ).length;
+
     // ==================================================
     // RESPONSE
     // ==================================================
 
+    const conversation = {
+      application_id:
+        application.id,
+
+      application_status:
+        application.status ||
+        null,
+
+      // ALWAYS return job object.
+      job: {
+        id:
+          job?.id ||
+          application.job_id,
+
+        title:
+          job?.title ||
+          "Job",
+
+        status:
+          null,
+      },
+
+      // ALWAYS return client object.
+      client: {
+        id:
+          job?.client_id ||
+          null,
+
+        name:
+          client?.full_name ||
+          "Client",
+      },
+
+      // ALWAYS return freelancer object.
+      freelancer: {
+        id:
+          application.freelancer_id,
+
+        name:
+          freelancer?.full_name ||
+          "Freelancer",
+      },
+
+      // ALWAYS return summary.
+      summary: {
+        messages:
+          messagesWithSender.length,
+
+        safetyEvents:
+          safetyWithSender.length,
+
+        pendingSafetyEvents,
+
+        highRiskEvents,
+
+        criticalEvents,
+      },
+
+      // ALWAYS return timeline.
+      timeline,
+    };
+
     return NextResponse.json(
       {
-        success: true,
+        success:
+          true,
 
-        conversation: {
-          application_id:
-            application.id,
-
-          application_status:
-            application.status,
-
-          jjob: {
-  id:
-    job?.id ||
-    application.job_id,
-
-  title:
-    job?.title ||
-    "Job",
-
-  status: null,
-},
-
-          client: {
-            id:
-              job?.client_id ||
-              null,
-
-            name:
-              client?.full_name ||
-              "Client",
-          },
-
-          freelancer: {
-            id:
-              application.freelancer_id,
-
-            name:
-              freelancer?.full_name ||
-              "Freelancer",
-          },
-
-          summary: {
-            messages:
-              messagesWithSender.length,
-
-            safetyEvents:
-              safetyWithSender.length,
-
-            pendingSafetyEvents,
-
-            highRiskEvents,
-          },
-
-          timeline,
-        },
+        conversation,
       },
-      { status: 200 }
+      {
+        status: 200,
+      }
     );
-  } catch (error) {
+  } catch (
+    error
+  ) {
     console.error(
-      "Admin conversation detail error:",
+      "Unexpected admin conversation detail error:",
       error
     );
 
@@ -654,7 +812,9 @@ export async function GET(
         error:
           "Unable to load conversation.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }
