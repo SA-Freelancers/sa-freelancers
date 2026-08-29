@@ -230,23 +230,22 @@ export async function GET(
     // ==================================================
 
     const {
-      data: job,
-      error: jobError,
-    } = await admin
-      .from("jobs")
-      .select(
-        `
-        id,
-        title,
-        client_id,
-        status
-        `
-      )
-      .eq(
-        "id",
-        application.job_id
-      )
-      .maybeSingle();
+  data: job,
+  error: jobError,
+} = await admin
+  .from("jobs")
+  .select(
+    `
+    id,
+    title,
+    client_id
+    `
+  )
+  .eq(
+    "id",
+    application.job_id
+  )
+  .maybeSingle();
 
     if (jobError) {
       console.error(
@@ -595,19 +594,17 @@ export async function GET(
           application_status:
             application.status,
 
-          job: {
-            id:
-              job?.id ||
-              application.job_id,
+          jjob: {
+  id:
+    job?.id ||
+    application.job_id,
 
-            title:
-              job?.title ||
-              "Job",
+  title:
+    job?.title ||
+    "Job",
 
-            status:
-              job?.status ||
-              null,
-          },
+  status: null,
+},
 
           client: {
             id:
