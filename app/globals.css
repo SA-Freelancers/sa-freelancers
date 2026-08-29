@@ -3533,3 +3533,1067 @@ body:not(.dark) .platform-stat-label {
     min-height: 140px;
   }
 }
+/* =========================================================
+   FREELANCE HUB SA
+   FINAL RESPONSIVE / VIEWPORT / THEME FIX
+   ========================================================= */
+
+/* ---------- THEME ---------- */
+
+html {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #475569;
+  --border: #e5e7eb;
+
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: clip;
+}
+
+html.dark {
+  --bg: #020617;
+  --surface: #0f172a;
+  --card: #1e293b;
+  --text: #f8fafc;
+  --muted: #cbd5e1;
+  --border: #334155;
+  color-scheme: dark;
+}
+
+body {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 100vh;
+
+  margin: 0;
+  padding: 0;
+
+  overflow-x: clip;
+
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+/*
+  Keep compatibility with older CSS that
+  checks body.dark.
+*/
+html.dark body {
+  background: #020617 !important;
+  color: #f8fafc !important;
+}
+
+
+/* ---------- GLOBAL WIDTH SAFETY ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+img,
+video {
+  height: auto;
+}
+
+input,
+textarea,
+select,
+button {
+  max-width: 100%;
+}
+
+.main-wrapper {
+  display: block;
+
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+
+  margin: 0;
+  padding: 0;
+
+  overflow-x: clip;
+}
+
+
+/* =========================================================
+   HOMEPAGE
+   ========================================================= */
+
+.home-page {
+  display: grid;
+
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+
+  gap: 70px;
+
+  overflow-x: clip;
+}
+
+
+/* ---------- HERO ---------- */
+
+.home-hero {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+
+  min-height: 620px;
+
+  padding:
+    90px
+    max(20px, env(safe-area-inset-left))
+    90px
+    max(20px, env(safe-area-inset-right));
+
+  display: grid;
+  place-items: center;
+
+  text-align: center;
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(37, 99, 235, 0.35),
+      transparent 35%
+    ),
+    linear-gradient(
+      135deg,
+      #0f172a,
+      #1e3a8a
+    );
+
+  color: white;
+}
+
+.home-hero-content {
+  width: 100%;
+  min-width: 0;
+  max-width: 950px;
+
+  margin: 0 auto;
+}
+
+.home-hero h1 {
+  width: 100%;
+  max-width: 100%;
+
+  margin: 0;
+
+  font-size:
+    clamp(
+      2.8rem,
+      7vw,
+      5.5rem
+    );
+
+  line-height: 0.98;
+
+  font-weight: 950;
+
+  letter-spacing:
+    -0.05em;
+
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.home-hero h1 span {
+  color:
+    #22c55e !important;
+}
+
+.home-hero p {
+  width: 100%;
+  max-width: 760px;
+
+  margin:
+    24px auto 0;
+
+  font-size: 1.18rem;
+  line-height: 1.7;
+
+  color:
+    white !important;
+
+  opacity: 0.88;
+}
+
+
+/* ---------- HERO ACTIONS ---------- */
+
+.home-actions {
+  width: 100%;
+
+  margin-top: 34px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-wrap: wrap;
+
+  gap: 15px;
+}
+
+.home-primary-btn,
+.home-secondary-btn {
+  min-width: 160px;
+  max-width: 100%;
+
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 14px 22px;
+
+  border-radius: 16px;
+
+  text-decoration: none;
+
+  font-weight: 900;
+
+  white-space: normal;
+
+  text-align: center;
+}
+
+
+/* ---------- PAGE SECTIONS ---------- */
+
+.home-section {
+  width: 100%;
+  min-width: 0;
+
+  max-width: 1200px;
+
+  margin: 0 auto;
+
+  padding: 0 20px;
+
+  overflow: hidden;
+}
+
+.home-section-header {
+  width: 100%;
+  max-width: 100%;
+
+  text-align: center;
+
+  margin-bottom: 34px;
+}
+
+.home-section-header h2 {
+  max-width: 100%;
+
+  overflow-wrap:
+    break-word;
+}
+
+
+/* ---------- HOMEPAGE CARDS ---------- */
+
+.home-grid {
+  display: grid;
+
+  width: 100%;
+  min-width: 0;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(
+        min(250px, 100%),
+        1fr
+      )
+    );
+
+  gap: 22px;
+}
+
+.home-card {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+
+  padding: 28px;
+
+  overflow: hidden;
+}
+
+.home-card h1,
+.home-card h2,
+.home-card h3,
+.home-card p {
+  max-width: 100%;
+
+  overflow-wrap:
+    break-word;
+}
+
+
+/* ---------- STATS ---------- */
+
+.stats-section {
+  width: calc(100% - 40px);
+
+  max-width: 1200px;
+
+  min-width: 0;
+
+  margin:
+    -60px auto 0;
+
+  padding: 0;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(
+        min(220px, 100%),
+        1fr
+      )
+    );
+
+  gap: 22px;
+
+  position: relative;
+  z-index: 5;
+
+  overflow: hidden;
+}
+
+.stats-card {
+  width: 100%;
+  min-width: 0;
+
+  padding: 30px;
+
+  overflow: hidden;
+}
+
+
+/* ---------- CTA ---------- */
+
+.home-cta {
+  width:
+    min(
+      calc(100% - 40px),
+      1100px
+    );
+
+  min-width: 0;
+
+  max-width: 1100px;
+
+  margin:
+    0 auto 70px;
+
+  padding: 55px 25px;
+
+  overflow: hidden;
+}
+
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.site-footer {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+
+  overflow: hidden;
+}
+
+.site-footer-content {
+  width: 100%;
+  min-width: 0;
+
+  max-width: 1300px;
+
+  margin: 0 auto;
+
+  padding: 60px 20px;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1.2fr)
+    minmax(0, 1fr);
+
+  gap: 40px;
+}
+
+.footer-brand,
+.footer-links,
+.footer-links > * {
+  min-width: 0;
+}
+
+
+/* =========================================================
+   NAVBAR WIDTH PROTECTION
+   ========================================================= */
+
+.navbar-wrapper {
+  width: 100%;
+  max-width: 100%;
+
+  left: 0;
+  right: 0;
+
+  overflow: visible;
+}
+
+.navbar-container {
+  width: 100%;
+  min-width: 0;
+  max-width: 1350px;
+
+  margin: 0 auto;
+
+  padding: 14px 18px;
+}
+
+.navbar-logo {
+  min-width: 0;
+  max-width: calc(100% - 70px);
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+
+    overflow-x: clip !important;
+  }
+
+
+  /* ---------- NAVBAR ---------- */
+
+  .navbar-container {
+    width: 100%;
+    max-width: 100%;
+
+    padding:
+      12px 14px;
+  }
+
+  .navbar-logo {
+    max-width:
+      calc(100% - 65px);
+  }
+
+  .navbar-logo img {
+    width: auto;
+
+    max-width: 100%;
+
+    max-height: 58px;
+
+    object-fit: contain;
+  }
+
+  .navbar-menu-btn {
+    flex: 0 0 auto;
+  }
+
+  .navbar-links {
+    max-width: 100vw;
+  }
+
+
+  /* ---------- HOMEPAGE ---------- */
+
+  .home-page {
+    width: 100%;
+
+    gap: 44px;
+  }
+
+
+  /* ---------- HERO ---------- */
+
+  .home-hero {
+    width: 100%;
+
+    min-height: auto;
+
+    padding:
+      55px
+      16px
+      48px;
+
+    overflow: hidden;
+  }
+
+  .home-hero-content {
+    width: 100%;
+
+    min-width: 0;
+
+    max-width: 100%;
+  }
+
+  .home-hero h1 {
+    width: 100%;
+
+    font-size:
+      clamp(
+        2rem,
+        9.5vw,
+        2.8rem
+      ) !important;
+
+    line-height:
+      1.08 !important;
+
+    letter-spacing:
+      -0.035em;
+
+    overflow-wrap:
+      anywhere;
+  }
+
+  .home-hero p {
+    width: 100%;
+
+    max-width: 100%;
+
+    margin-top: 20px;
+
+    font-size:
+      1rem !important;
+
+    line-height:
+      1.55 !important;
+  }
+
+
+  /* ---------- HERO BUTTONS ---------- */
+
+  .home-actions {
+    width: 100%;
+
+    max-width: 340px;
+
+    margin:
+      28px auto 0;
+
+    display: grid;
+
+    grid-template-columns:
+      1fr;
+
+    gap: 12px;
+  }
+
+  .home-primary-btn,
+  .home-secondary-btn {
+    width: 100%;
+
+    min-width: 0;
+
+    max-width: 100%;
+
+    padding:
+      14px 18px;
+  }
+
+
+  /* ---------- FEATURE BADGES ---------- */
+
+  .hero-feature-badge {
+    max-width: 100%;
+
+    font-size:
+      0.85rem;
+
+    white-space:
+      normal;
+  }
+
+
+  /* ---------- STATS ---------- */
+
+  .stats-section {
+    width:
+      calc(100% - 28px);
+
+    max-width:
+      calc(100% - 28px);
+
+    margin:
+      0 auto;
+
+    padding: 0;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      ) !important;
+
+    gap:
+      12px !important;
+
+    overflow: visible;
+  }
+
+  .stats-card {
+    width: 100%;
+
+    min-width: 0;
+
+    padding:
+      22px
+      8px !important;
+
+    border-radius:
+      18px !important;
+  }
+
+  .stats-card h3 {
+    font-size:
+      clamp(
+        1.8rem,
+        10vw,
+        2.4rem
+      ) !important;
+  }
+
+  .stats-card p {
+    font-size:
+      0.9rem;
+
+    overflow-wrap:
+      break-word;
+  }
+
+
+  /* ---------- SECTIONS ---------- */
+
+  .home-section {
+    width: 100%;
+
+    max-width: 100%;
+
+    padding:
+      0 14px !important;
+  }
+
+  .home-section-header {
+    width: 100%;
+
+    margin-bottom:
+      24px;
+  }
+
+  .home-section-header h2 {
+    font-size:
+      clamp(
+        1.8rem,
+        8vw,
+        2.3rem
+      ) !important;
+  }
+
+
+  /* ---------- CARDS ---------- */
+
+  .home-grid {
+    width: 100%;
+
+    min-width: 0;
+
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+
+    gap:
+      14px !important;
+  }
+
+  .home-card {
+    width: 100% !important;
+
+    min-width: 0 !important;
+
+    max-width: 100% !important;
+
+    padding:
+      22px 18px !important;
+
+    border-radius:
+      20px !important;
+  }
+
+
+  /* ---------- CTA ---------- */
+
+  .home-cta {
+    width:
+      calc(100% - 28px) !important;
+
+    max-width:
+      calc(100% - 28px) !important;
+
+    margin:
+      0 auto 45px !important;
+
+    padding:
+      34px 18px !important;
+
+    border-radius:
+      22px !important;
+  }
+
+  .home-cta h2 {
+    font-size:
+      1.9rem !important;
+
+    overflow-wrap:
+      break-word;
+  }
+
+  .home-cta .home-primary-btn {
+    width: 100%;
+  }
+
+
+  /* ---------- FOOTER ---------- */
+
+  .site-footer-content {
+    width: 100%;
+
+    max-width: 100%;
+
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+
+    padding:
+      42px 18px !important;
+
+    gap:
+      32px;
+  }
+
+  .footer-links {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+
+  .footer-brand,
+  .footer-links,
+  .footer-bottom {
+    width: 100%;
+
+    min-width: 0;
+
+    max-width: 100%;
+  }
+}
+
+
+/* =========================================================
+   EXTRA SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 430px) {
+
+  .home-hero {
+    padding:
+      45px
+      14px
+      42px;
+  }
+
+  .home-hero h1 {
+    font-size:
+      2rem !important;
+  }
+
+  .stats-section {
+    width:
+      calc(100% - 24px);
+
+    max-width:
+      calc(100% - 24px);
+
+    gap:
+      10px !important;
+  }
+
+  .stats-card {
+    padding:
+      18px
+      6px !important;
+  }
+
+  .stats-card h3 {
+    font-size:
+      1.8rem !important;
+  }
+
+  .stats-card p {
+    font-size:
+      0.8rem !important;
+  }
+
+  .home-section {
+    padding:
+      0 12px !important;
+  }
+
+  .home-card {
+    padding:
+      20px 16px !important;
+  }
+}
+/* =========================================================
+   PLATFORM STATS - FINAL RESPONSIVE FIX
+   ========================================================= */
+
+.platform-stats-section {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+
+  padding: 56px 24px;
+
+  background: #020617;
+
+  overflow: hidden;
+}
+
+.platform-stats-grid {
+  width: 100%;
+  max-width: 980px;
+  min-width: 0;
+
+  margin: 0 auto;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+
+  gap: 22px;
+}
+
+.platform-stat-card {
+  width: 100%;
+  min-width: 0;
+
+  min-height: 170px;
+
+  padding: 28px 20px;
+
+  border-radius: 22px;
+
+  background: #1e293b;
+
+  border:
+    1px solid #334155;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  text-align: center;
+
+  overflow: hidden;
+}
+
+.platform-stat-value {
+  display: block;
+
+  max-width: 100%;
+
+  margin-bottom: 18px;
+
+  font-size:
+    clamp(
+      2rem,
+      5vw,
+      2.8rem
+    );
+
+  line-height: 1;
+
+  font-weight: 800;
+
+  color:
+    #f8fafc !important;
+
+  overflow-wrap:
+    anywhere;
+}
+
+.platform-stat-label {
+  display: block;
+
+  width: 100%;
+
+  font-size: 1rem;
+
+  color: #cbd5e1;
+
+  overflow-wrap:
+    break-word;
+}
+
+.platform-stats-error {
+  max-width: 980px;
+
+  margin:
+    14px auto 0;
+
+  padding:
+    0 10px;
+
+  text-align: center;
+
+  color:
+    #fca5a5 !important;
+
+  font-size:
+    0.85rem;
+}
+
+
+/* TABLET */
+
+@media (max-width: 900px) {
+  .platform-stats-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+}
+
+
+/* PHONE */
+
+@media (max-width: 600px) {
+  .platform-stats-section {
+    width: 100%;
+
+    padding:
+      30px 12px;
+  }
+
+  .platform-stats-grid {
+    width: 100%;
+
+    max-width: 100%;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+
+    gap: 10px;
+  }
+
+  .platform-stat-card {
+    min-height: 125px;
+
+    padding:
+      18px 8px;
+
+    border-radius:
+      17px;
+  }
+
+  .platform-stat-value {
+    margin-bottom:
+      12px;
+
+    font-size:
+      clamp(
+        1.8rem,
+        10vw,
+        2.25rem
+      );
+  }
+
+  .platform-stat-label {
+    font-size:
+      0.86rem;
+  }
+}
+
+
+/* VERY SMALL PHONE */
+
+@media (max-width: 360px) {
+  .platform-stats-section {
+    padding:
+      26px 10px;
+  }
+
+  .platform-stats-grid {
+    gap: 8px;
+  }
+
+  .platform-stat-card {
+    min-height:
+      115px;
+
+    padding:
+      16px 6px;
+  }
+
+  .platform-stat-value {
+    font-size:
+      1.7rem;
+  }
+
+  .platform-stat-label {
+    font-size:
+      0.78rem;
+  }
+}

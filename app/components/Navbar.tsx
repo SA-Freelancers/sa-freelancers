@@ -2,249 +2,911 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { supabase } from "@/app/lib/supabase";
+
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  usePathname,
+  useRouter,
+} from "next/navigation";
+
+import {
+  supabase,
+} from "@/app/lib/supabase";
+
+type NavbarUser =
+  | {
+      id: string;
+      email?: string | null;
+      user_metadata?: {
+        full_name?: string;
+      };
+    }
+  | null;
 
 export default function Navbar() {
-  const pathname = usePathname();
-  const router = useRouter();
+  const pathname =
+    usePathname();
 
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [role, setRole] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [notificationCount, setNotificationCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const router =
+    useRouter();
+
+  const [
+    menuOpen,
+    setMenuOpen,
+  ] = useState(false);
+
+  const [
+    darkMode,
+    setDarkMode,
+  ] = useState(true);
+
+  const [
+    user,
+    setUser,
+  ] = useState<NavbarUser>(
+    null
+  );
+
+  const [
+    role,
+    setRole,
+  ] = useState("");
+
+  const [
+    isAdmin,
+    setIsAdmin,
+  ] = useState(false);
+
+  const [
+    notificationCount,
+    setNotificationCount,
+  ] = useState(0);
+
+  const [
+    authReady,
+    setAuthReady,
+  ] = useState(false);
+
+  // ==================================================
+  // INITIAL LOAD
+  // ==================================================
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
+    let mounted = true;
 
-    if (savedTheme === "dark") {
-      document.body.classList.add("dark");
-      setDarkMode(true);
-    }
+    const applySavedTheme =
+      () => {
+        try {
+          const savedTheme =
+            localStorage.getItem(
+              "theme"
+            );
 
-    getUser();
+          const shouldUseDark =
+            savedTheme !==
+            "light";
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setUser(session?.user || null);
+          if (
+            shouldUseDark
+          ) {
+            document.documentElement.classList.add(
+              "dark"
+            );
 
-        if (session?.user) {
-          await loadProfile(session.user.id);
-          loadNotifications(session.user.id);
-        } else {
-          setRole("");
-          setIsAdmin(false);
-          setNotificationCount(0);
+            document.body.classList.add(
+              "dark"
+            );
+          } else {
+            document.documentElement.classList.remove(
+              "dark"
+            );
+
+            document.body.classList.remove(
+              "dark"
+            );
+          }
+
+          if (
+            mounted
+          ) {
+            setDarkMode(
+              shouldUseDark
+            );
+          }
+        } catch (
+          error
+        ) {
+          console.error(
+            "Theme loading error:",
+            error
+          );
+
+          document.documentElement.classList.add(
+            "dark"
+          );
+
+          document.body.classList.add(
+            "dark"
+          );
+
+          if (
+            mounted
+          ) {
+            setDarkMode(
+              true
+            );
+          }
         }
-      }
-    );
+      };
+
+    const loadInitialUser =
+      async () => {
+        try {
+          const {
+            data:
+              sessionData,
+          } =
+            await supabase.auth.getSession();
+
+          const sessionUser =
+            sessionData
+              .session
+              ?.user ||
+            null;
+
+          if (
+            !mounted
+          ) {
+            return;
+          }
+
+          setUser(
+            sessionUser
+          );
+
+          if (
+            sessionUser
+          ) {
+            await Promise.all([
+              loadProfile(
+                sessionUser.id
+              ),
+
+              loadNotifications(
+                sessionUser.id
+              ),
+            ]);
+          } else {
+            setRole("");
+
+            setIsAdmin(
+              false
+            );
+
+            setNotificationCount(
+              0
+            );
+          }
+        } catch (
+          error
+        ) {
+          console.error(
+            "Navbar user loading error:",
+            error
+          );
+
+          if (
+            mounted
+          ) {
+            setUser(
+              null
+            );
+
+            setRole(
+              ""
+            );
+
+            setIsAdmin(
+              false
+            );
+
+            setNotificationCount(
+              0
+            );
+          }
+        } finally {
+          if (
+            mounted
+          ) {
+            setAuthReady(
+              true
+            );
+          }
+        }
+      };
+
+    applySavedTheme();
+
+    void loadInitialUser();
+
+    const {
+      data:
+        authListener,
+    } =
+      supabase.auth.onAuthStateChange(
+        async (
+          _event,
+          session
+        ) => {
+          if (
+            !mounted
+          ) {
+            return;
+          }
+
+          const sessionUser =
+            session?.user ||
+            null;
+
+          setUser(
+            sessionUser
+          );
+
+          if (
+            sessionUser
+          ) {
+            try {
+              await Promise.all([
+                loadProfile(
+                  sessionUser.id
+                ),
+
+                loadNotifications(
+                  sessionUser.id
+                ),
+              ]);
+            } catch (
+              error
+            ) {
+              console.error(
+                "Navbar auth refresh error:",
+                error
+              );
+            }
+          } else {
+            setRole(
+              ""
+            );
+
+            setIsAdmin(
+              false
+            );
+
+            setNotificationCount(
+              0
+            );
+          }
+
+          setAuthReady(
+            true
+          );
+        }
+      );
 
     return () => {
-      authListener.subscription.unsubscribe();
+      mounted =
+        false;
+
+      authListener
+        .subscription
+        .unsubscribe();
     };
   }, []);
 
-  const getUser = async () => {
-    const { data } = await supabase.auth.getUser();
+  // ==================================================
+  // CLOSE MENU WHEN ROUTE CHANGES
+  // ==================================================
 
-    setUser(data.user);
+  useEffect(() => {
+    setMenuOpen(
+      false
+    );
+  }, [pathname]);
 
-    if (data.user) {
-      await loadProfile(data.user.id);
-      loadNotifications(data.user.id);
+  // ==================================================
+  // LOAD PROFILE
+  // ==================================================
+
+  async function loadProfile(
+    userId: string
+  ) {
+    const {
+      data,
+      error,
+    } =
+      await supabase
+        .from(
+          "profiles"
+        )
+        .select(
+          "role, is_admin"
+        )
+        .eq(
+          "id",
+          userId
+        )
+        .maybeSingle();
+
+    if (
+      error
+    ) {
+      console.error(
+        "Navbar profile loading error:",
+        error
+      );
+
+      setRole(
+        ""
+      );
+
+      setIsAdmin(
+        false
+      );
+
+      return;
     }
 
-    setLoading(false);
-  };
+    setRole(
+      data?.role ||
+        ""
+    );
 
-  const loadProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("role, is_admin")
-      .eq("id", userId)
-      .single();
+    setIsAdmin(
+      Boolean(
+        data?.is_admin
+      )
+    );
+  }
 
-    setRole(data?.role || "");
-    setIsAdmin(data?.is_admin || false);
-  };
+  // ==================================================
+  // LOAD NOTIFICATIONS
+  // ==================================================
 
-  const loadNotifications = async (userId: string) => {
-    const { count } = await supabase
-      .from("notifications")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .eq("is_read", false);
+  async function loadNotifications(
+    userId: string
+  ) {
+    const {
+      count,
+      error,
+    } =
+      await supabase
+        .from(
+          "notifications"
+        )
+        .select(
+          "*",
+          {
+            count:
+              "exact",
 
-    setNotificationCount(count || 0);
-  };
+            head:
+              true,
+          }
+        )
+        .eq(
+          "user_id",
+          userId
+        )
+        .eq(
+          "is_read",
+          false
+        );
 
-  const closeMenu = () => setMenuOpen(false);
+    if (
+      error
+    ) {
+      console.error(
+        "Navbar notification count error:",
+        error
+      );
 
-  const toggleDarkMode = () => {
-    const newMode = !darkMode;
-    setDarkMode(newMode);
-
-    if (newMode) {
-      document.body.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.body.classList.remove("dark");
-      localStorage.getItem("theme") || "dark"
+      return;
     }
-  };
 
-  const logout = async () => {
-    closeMenu();
-    await supabase.auth.signOut();
-    router.push("/login");
-  };
+    setNotificationCount(
+      count ||
+        0
+    );
+  }
 
-  const getInitials = () => {
-    const fullName = user?.user_metadata?.full_name || user?.email || "User";
-    const names = fullName.trim().split(" ");
+  // ==================================================
+  // MENU
+  // ==================================================
 
-    if (names.length === 1) return names[0].charAt(0).toUpperCase();
+  const closeMenu =
+    () => {
+      setMenuOpen(
+        false
+      );
+    };
 
-    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
-  };
+  // ==================================================
+  // THEME
+  // ==================================================
 
-  if (loading) return null;
+  const toggleDarkMode =
+    () => {
+      const newMode =
+        !darkMode;
+
+      setDarkMode(
+        newMode
+      );
+
+      if (
+        newMode
+      ) {
+        document.documentElement.classList.add(
+          "dark"
+        );
+
+        document.body.classList.add(
+          "dark"
+        );
+
+        localStorage.setItem(
+          "theme",
+          "dark"
+        );
+      } else {
+        document.documentElement.classList.remove(
+          "dark"
+        );
+
+        document.body.classList.remove(
+          "dark"
+        );
+
+        localStorage.setItem(
+          "theme",
+          "light"
+        );
+      }
+    };
+
+  // ==================================================
+  // LOGOUT
+  // ==================================================
+
+  const logout =
+    async () => {
+      closeMenu();
+
+      await supabase.auth.signOut();
+
+      router.push(
+        "/login"
+      );
+
+      router.refresh();
+    };
+
+  // ==================================================
+  // INITIALS
+  // ==================================================
+
+  const getInitials =
+    () => {
+      const fullName =
+        user
+          ?.user_metadata
+          ?.full_name ||
+        user?.email ||
+        "User";
+
+      const names =
+        fullName
+          .trim()
+          .split(/\s+/);
+
+      if (
+        names.length ===
+        1
+      ) {
+        return names[0]
+          .charAt(0)
+          .toUpperCase();
+      }
+
+      return (
+        names[0]
+          .charAt(0) +
+        names[
+          names.length -
+            1
+        ].charAt(0)
+      ).toUpperCase();
+    };
+
+  // ==================================================
+  // UI
+  // ==================================================
 
   return (
     <header className="navbar-wrapper">
       <div className="navbar-container">
-  <Link href="/" className="navbar-logo" onClick={closeMenu}>
-  <Image
-    src="/freelancehubsa-navbar-dark.png"
-    alt="Freelance Hub SA"
-    width={430}
-    height={100}
-    priority
-    className="navbar-logo-image"
-  />
-</Link>
-        <button
-          className="navbar-menu-btn"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle menu"
+        {/* LOGO */}
+
+        <Link
+          href="/"
+          className="navbar-logo"
+          onClick={
+            closeMenu
+          }
         >
-          {menuOpen ? "✕" : "☰"}
+          <Image
+            src="/freelancehubsa-navbar-dark.png"
+            alt="Freelance Hub SA"
+            width={430}
+            height={100}
+            priority
+            className="navbar-logo-image"
+          />
+        </Link>
+
+        {/* MOBILE MENU BUTTON */}
+
+        <button
+          type="button"
+          className="navbar-menu-btn"
+          onClick={() =>
+            setMenuOpen(
+              (
+                previous
+              ) =>
+                !previous
+            )
+          }
+          aria-label={
+            menuOpen
+              ? "Close menu"
+              : "Open menu"
+          }
+          aria-expanded={
+            menuOpen
+          }
+        >
+          {menuOpen
+            ? "✕"
+            : "☰"}
         </button>
 
-        <nav className={`navbar-links ${menuOpen ? "navbar-mobile-open" : ""}`}>
-          <Link href="/" onClick={closeMenu} className={`navbar-link ${pathname === "/" ? "active" : ""}`}>
+        {/* NAVIGATION */}
+
+        <nav
+          className={`navbar-links ${
+            menuOpen
+              ? "navbar-mobile-open"
+              : ""
+          }`}
+        >
+          <Link
+            href="/"
+            onClick={
+              closeMenu
+            }
+            className={`navbar-link ${
+              pathname ===
+              "/"
+                ? "active"
+                : ""
+            }`}
+          >
             Home
           </Link>
 
-          <Link href="/safety" onClick={closeMenu} className={`navbar-link ${pathname.startsWith("/safety") ? "active" : ""}`}>
+          <Link
+            href="/safety"
+            onClick={
+              closeMenu
+            }
+            className={`navbar-link ${
+              pathname.startsWith(
+                "/safety"
+              )
+                ? "active"
+                : ""
+            }`}
+          >
             Safety
           </Link>
 
-          <Link href="/contact" onClick={closeMenu} className={`navbar-link ${pathname.startsWith("/contact") ? "active" : ""}`}>
+          <Link
+            href="/contact"
+            onClick={
+              closeMenu
+            }
+            className={`navbar-link ${
+              pathname.startsWith(
+                "/contact"
+              )
+                ? "active"
+                : ""
+            }`}
+          >
             Support
           </Link>
 
-          {user && role === "freelancer" && (
-            <Link href="/search" onClick={closeMenu} className={`navbar-link ${pathname.startsWith("/search") ? "active" : ""}`}>
-              Marketplace
-            </Link>
-          )}
+          {/* AUTH-DEPENDENT LINKS */}
 
-          {user && role === "client" && (
-            <Link href="/dashboard/post-job" onClick={closeMenu} className="navbar-link">
-              Post Job
-            </Link>
-          )}
+          {authReady &&
+            user &&
+            role ===
+              "freelancer" && (
+              <Link
+                href="/search"
+                onClick={
+                  closeMenu
+                }
+                className={`navbar-link ${
+                  pathname.startsWith(
+                    "/search"
+                  )
+                    ? "active"
+                    : ""
+                }`}
+              >
+                Marketplace
+              </Link>
+            )}
 
-          <button onClick={toggleDarkMode} className="navbar-dark-btn">
-            {darkMode ? "☀️" : "🌙"}
+          {authReady &&
+            user &&
+            role ===
+              "client" && (
+              <Link
+                href="/dashboard/post-job"
+                onClick={
+                  closeMenu
+                }
+                className={`navbar-link ${
+                  pathname.startsWith(
+                    "/dashboard/post-job"
+                  )
+                    ? "active"
+                    : ""
+                }`}
+              >
+                Post Job
+              </Link>
+            )}
+
+          {/* THEME */}
+
+          <button
+            type="button"
+            onClick={
+              toggleDarkMode
+            }
+            className="navbar-dark-btn"
+            aria-label={
+              darkMode
+                ? "Switch to light mode"
+                : "Switch to dark mode"
+            }
+            title={
+              darkMode
+                ? "Switch to light mode"
+                : "Switch to dark mode"
+            }
+          >
+            {darkMode
+              ? "☀️"
+              : "🌙"}
           </button>
 
-          {user ? (
+          {/* AUTH AREA */}
+
+          {!authReady ? (
+            <div
+              className="navbar-auth-loading"
+              aria-hidden="true"
+            >
+              <span />
+            </div>
+          ) : user ? (
             <>
-              <Link href="/dashboard/notifications" onClick={closeMenu} className="navbar-notification">
+              {/* NOTIFICATIONS */}
+
+              <Link
+                href="/dashboard/notifications"
+                onClick={
+                  closeMenu
+                }
+                className="navbar-notification"
+                aria-label={`Notifications: ${notificationCount} unread`}
+              >
                 🔔
-                {notificationCount > 0 && (
-                  <span className="navbar-notification-badge">{notificationCount}</span>
+
+                {notificationCount >
+                  0 && (
+                  <span className="navbar-notification-badge">
+                    {
+                      notificationCount
+                    }
+                  </span>
                 )}
               </Link>
 
+              {/* USER MENU */}
+
               <div className="navbar-user-menu">
-                <span className="navbar-user">{getInitials()}</span>
+                <button
+                  type="button"
+                  className="navbar-user"
+                  aria-label="Open account menu"
+                >
+                  {getInitials()}
+                </button>
 
                 <div className="navbar-user-dropdown">
-                  <Link href="/dashboard" onClick={closeMenu}>
+                  <Link
+                    href="/dashboard"
+                    onClick={
+                      closeMenu
+                    }
+                  >
                     Dashboard
                   </Link>
 
-                  <Link href="/dashboard/profile" onClick={closeMenu}>
+                  <Link
+                    href="/dashboard/profile"
+                    onClick={
+                      closeMenu
+                    }
+                  >
                     Profile
                   </Link>
 
-                  {role === "freelancer" && (
+                  {/* FREELANCER */}
+
+                  {role ===
+                    "freelancer" && (
                     <>
-                      <Link href="/search" onClick={closeMenu}>
+                      <Link
+                        href="/search"
+                        onClick={
+                          closeMenu
+                        }
+                      >
                         Marketplace
                       </Link>
 
-                      <Link href="/dashboard/contracts" onClick={closeMenu}>
+                      <Link
+                        href="/dashboard/contracts"
+                        onClick={
+                          closeMenu
+                        }
+                      >
                         Contracts
                       </Link>
 
-                      <Link href="/dashboard/projects" onClick={closeMenu}>
+                      <Link
+                        href="/dashboard/projects"
+                        onClick={
+                          closeMenu
+                        }
+                      >
                         Projects
                       </Link>
                     </>
                   )}
 
-                  {role === "client" && (
+                  {/* CLIENT */}
+
+                  {role ===
+                    "client" && (
                     <>
-                      <Link href="/dashboard/post-job" onClick={closeMenu}>
+                      <Link
+                        href="/dashboard/post-job"
+                        onClick={
+                          closeMenu
+                        }
+                      >
                         Post Job
                       </Link>
 
-                      <Link href="/dashboard/jobs" onClick={closeMenu}>
+                      <Link
+                        href="/dashboard/jobs"
+                        onClick={
+                          closeMenu
+                        }
+                      >
                         My Jobs
                       </Link>
 
-                      <Link href="/dashboard/client-contracts" onClick={closeMenu}>
-                        Sent Contracts
+                      <Link
+                        href="/dashboard/client-contracts"
+                        onClick={
+                          closeMenu
+                        }
+                      >
+                        Sent
+                        Contracts
                       </Link>
                     </>
                   )}
+
+                  {/* ADMIN */}
 
                   {isAdmin && (
                     <>
-                      <Link href="/dashboard/admin" onClick={closeMenu}>
+                      <Link
+                        href="/dashboard/admin"
+                        onClick={
+                          closeMenu
+                        }
+                      >
                         Admin
                       </Link>
 
-                      <Link href="/dashboard/admin/moderation" onClick={closeMenu}>
+                      <Link
+                        href="/dashboard/admin/moderation"
+                        onClick={
+                          closeMenu
+                        }
+                      >
                         Moderation
                       </Link>
 
-                      <Link href="/dashboard/admin/user-reports" onClick={closeMenu}>
-                        User Reports
+                      <Link
+                        href="/dashboard/admin/user-reports"
+                        onClick={
+                          closeMenu
+                        }
+                      >
+                        User
+                        Reports
                       </Link>
                     </>
                   )}
 
-                  <button onClick={logout}>Logout</button>
+                  <button
+                    type="button"
+                    onClick={
+                      logout
+                    }
+                  >
+                    Logout
+                  </button>
                 </div>
               </div>
             </>
           ) : (
             <>
-              <Link href="/login" className="navbar-login-btn" onClick={closeMenu}>
+              <Link
+                href="/login"
+                className="navbar-login-btn"
+                onClick={
+                  closeMenu
+                }
+              >
                 Login
               </Link>
 
-              <Link href="/register" className="navbar-register-btn" onClick={closeMenu}>
-                Create Account
+              <Link
+                href="/register"
+                className="navbar-register-btn"
+                onClick={
+                  closeMenu
+                }
+              >
+                Create
+                Account
               </Link>
             </>
           )}
