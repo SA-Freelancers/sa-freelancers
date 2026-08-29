@@ -2,12 +2,25 @@
 
 type Job = {
   id: string;
+
   title: string;
-  budget: number | null;
-  status: string | null;
-  created_at: string | null;
+
+  budget:
+    | number
+    | null;
+
+  status:
+    | string
+    | null;
+
+  created_at:
+    | string
+    | null;
+
   profiles?: {
-    full_name: string | null;
+    full_name:
+      | string
+      | null;
   } | null;
 };
 
@@ -15,92 +28,232 @@ type Props = {
   jobs: Job[];
 };
 
-export default function RecentJobs({ jobs }: Props) {
+function formatBudget(
+  budget:
+    number | null
+) {
+  if (
+    budget === null ||
+    budget === undefined
+  ) {
+    return "-";
+  }
+
+  return `R ${budget.toLocaleString()}`;
+}
+
+function formatDate(
+  date:
+    string | null
+) {
+  if (!date) {
+    return "-";
+  }
+
+  return new Date(
+    date
+  ).toLocaleDateString();
+}
+
+function formatStatus(
+  status:
+    string | null
+) {
+  if (!status) {
+    return "Closed";
+  }
+
   return (
-    <section
-      className="dark-card"
-      style={{
-        padding: 24,
-        marginTop: 24,
-      }}
-    >
-      <h2>Recent Jobs</h2>
+    status
+      .charAt(0)
+      .toUpperCase() +
+    status.slice(1)
+  );
+}
 
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          marginTop: 20,
-        }}
-      >
-        <thead>
-          <tr>
-            <th style={{ textAlign: "left", padding: 12 }}>Job</th>
+export default function RecentJobs({
+  jobs,
+}: Props) {
+  return (
+    <section className="dark-card admin-recent-card">
+      <h2>
+        Recent Jobs
+      </h2>
 
-            <th style={{ textAlign: "left", padding: 12 }}>Client</th>
+      {/* DESKTOP TABLE */}
 
-            <th style={{ textAlign: "left", padding: 12 }}>Budget</th>
+      <div className="admin-desktop-table">
+        <table className="admin-recent-table">
+          <thead>
+            <tr>
+              <th>
+                Job
+              </th>
 
-            <th style={{ textAlign: "left", padding: 12 }}>Status</th>
+              <th>
+                Client
+              </th>
 
-            <th style={{ textAlign: "left", padding: 12 }}>Posted</th>
-          </tr>
-        </thead>
+              <th>
+                Budget
+              </th>
 
-        <tbody>
-          {jobs.map((job) => (
-            <tr
-              key={job.id}
-              style={{
-                borderBottom:
-                  "1px solid rgba(255,255,255,.06)",
-              }}
+              <th>
+                Status
+              </th>
+
+              <th>
+                Posted
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {jobs.map(
+              (
+                job
+              ) => (
+                <tr
+                  key={
+                    job.id
+                  }
+                >
+                  <td>
+                    {job.title}
+                  </td>
+
+                  <td>
+                    {job.profiles
+                      ?.full_name ??
+                      "-"}
+                  </td>
+
+                  <td>
+                    {formatBudget(
+                      job.budget
+                    )}
+                  </td>
+
+                  <td>
+                    {job.status ===
+                    "open" ? (
+                      <span className="accept-btn">
+                        Open
+                      </span>
+                    ) : (
+                      <span className="reject-btn">
+                        {formatStatus(
+                          job.status
+                        )}
+                      </span>
+                    )}
+                  </td>
+
+                  <td>
+                    {formatDate(
+                      job.created_at
+                    )}
+                  </td>
+                </tr>
+              )
+            )}
+
+            {jobs.length ===
+              0 && (
+              <tr>
+                <td
+                  colSpan={
+                    5
+                  }
+                  className="admin-empty-table"
+                >
+                  No jobs
+                  found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* MOBILE CARDS */}
+
+      <div className="admin-mobile-list">
+        {jobs.map(
+          (
+            job
+          ) => (
+            <article
+              key={
+                job.id
+              }
+              className="admin-mobile-record"
             >
-              <td style={{ padding: 12 }}>{job.title}</td>
+              <div className="admin-mobile-record-top">
+                <strong>
+                  {job.title}
+                </strong>
 
-              <td style={{ padding: 12 }}>
-                {job.profiles?.full_name ?? "-"}
-              </td>
-
-              <td style={{ padding: 12 }}>
-                {job.budget
-                  ? `R ${job.budget.toLocaleString()}`
-                  : "-"}
-              </td>
-
-              <td style={{ padding: 12 }}>
-                {job.status === "open" ? (
-                  <span className="accept-btn">Open</span>
+                {job.status ===
+                "open" ? (
+                  <span className="accept-btn">
+                    Open
+                  </span>
                 ) : (
                   <span className="reject-btn">
-                    {job.status ?? "Closed"}
+                    {formatStatus(
+                      job.status
+                    )}
                   </span>
                 )}
-              </td>
+              </div>
 
-              <td style={{ padding: 12 }}>
-                {job.created_at
-                  ? new Date(job.created_at).toLocaleDateString()
-                  : "-"}
-              </td>
-            </tr>
-          ))}
+              <div className="admin-mobile-record-row">
+                <span>
+                  Client
+                </span>
 
-          {jobs.length === 0 && (
-            <tr>
-              <td
-                colSpan={5}
-                style={{
-                  textAlign: "center",
-                  padding: 30,
-                }}
-              >
-                No jobs found.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+                <span>
+                  {job.profiles
+                    ?.full_name ??
+                    "-"}
+                </span>
+              </div>
+
+              <div className="admin-mobile-record-row">
+                <span>
+                  Budget
+                </span>
+
+                <strong>
+                  {formatBudget(
+                    job.budget
+                  )}
+                </strong>
+              </div>
+
+              <div className="admin-mobile-record-row">
+                <span>
+                  Posted
+                </span>
+
+                <span>
+                  {formatDate(
+                    job.created_at
+                  )}
+                </span>
+              </div>
+            </article>
+          )
+        )}
+
+        {jobs.length ===
+          0 && (
+          <div className="admin-empty-mobile">
+            No jobs found.
+          </div>
+        )}
+      </div>
     </section>
   );
 }

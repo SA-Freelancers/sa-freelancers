@@ -46,42 +46,88 @@ export default function UserTable({
         <thead>
           <tr
             style={{
-              borderBottom: "1px solid rgba(255,255,255,.15)",
+              borderBottom:
+                "1px solid rgba(255,255,255,.15)",
             }}
           >
-            <th style={{ padding: "14px", textAlign: "left" }}>
+            <th
+              style={{
+                padding: "14px",
+                textAlign: "left",
+              }}
+            >
               Name
             </th>
 
-            <th style={{ padding: "14px", textAlign: "left" }}>
+            <th
+              style={{
+                padding: "14px",
+                textAlign: "left",
+              }}
+            >
               Email
             </th>
 
-            <th style={{ padding: "14px", textAlign: "left" }}>
+            <th
+              style={{
+                padding: "14px",
+                textAlign: "left",
+              }}
+            >
               Role
             </th>
 
-            <th style={{ padding: "14px", textAlign: "left" }}>
+            <th
+              style={{
+                padding: "14px",
+                textAlign: "left",
+              }}
+            >
               Category
             </th>
 
-            <th style={{ padding: "14px", textAlign: "left" }}>
+            <th
+              style={{
+                padding: "14px",
+                textAlign: "left",
+              }}
+            >
               Location
             </th>
 
-            <th style={{ padding: "14px", textAlign: "left" }}>
+            <th
+              style={{
+                padding: "14px",
+                textAlign: "left",
+              }}
+            >
               Status
             </th>
 
-            <th style={{ padding: "14px", textAlign: "left" }}>
+            <th
+              style={{
+                padding: "14px",
+                textAlign: "left",
+              }}
+            >
               Verified
             </th>
 
-            <th style={{ padding: "14px", textAlign: "left" }}>
+            <th
+              style={{
+                padding: "14px",
+                textAlign: "left",
+              }}
+            >
               Demo
             </th>
 
-            <th style={{ padding: "14px", textAlign: "left" }}>
+            <th
+              style={{
+                padding: "14px",
+                textAlign: "left",
+              }}
+            >
               Actions
             </th>
           </tr>
@@ -96,15 +142,27 @@ export default function UserTable({
                   "1px solid rgba(255,255,255,.06)",
               }}
             >
-              <td style={{ padding: "14px" }}>
+              <td
+                style={{
+                  padding: "14px",
+                }}
+              >
                 {user.full_name || "Unnamed User"}
               </td>
 
-              <td style={{ padding: "14px" }}>
+              <td
+                style={{
+                  padding: "14px",
+                }}
+              >
                 {user.email}
               </td>
 
-              <td style={{ padding: "14px" }}>
+              <td
+                style={{
+                  padding: "14px",
+                }}
+              >
                 {user.is_admin ? (
                   <span className="verified-badge">
                     Administrator
@@ -120,15 +178,27 @@ export default function UserTable({
                 )}
               </td>
 
-              <td style={{ padding: "14px" }}>
+              <td
+                style={{
+                  padding: "14px",
+                }}
+              >
                 {user.category || "-"}
               </td>
 
-              <td style={{ padding: "14px" }}>
+              <td
+                style={{
+                  padding: "14px",
+                }}
+              >
                 {user.location || "-"}
               </td>
 
-              <td style={{ padding: "14px" }}>
+              <td
+                style={{
+                  padding: "14px",
+                }}
+              >
                 {user.suspended ? (
                   <span className="reject-btn">
                     Suspended
@@ -140,7 +210,11 @@ export default function UserTable({
                 )}
               </td>
 
-              <td style={{ padding: "14px" }}>
+              <td
+                style={{
+                  padding: "14px",
+                }}
+              >
                 {user.verified ? (
                   <span className="verified-badge">
                     Verified
@@ -150,7 +224,11 @@ export default function UserTable({
                 )}
               </td>
 
-              <td style={{ padding: "14px" }}>
+              <td
+                style={{
+                  padding: "14px",
+                }}
+              >
                 {user.is_demo ? (
                   <span className="top-rated-badge">
                     Demo
@@ -160,34 +238,35 @@ export default function UserTable({
                 )}
               </td>
 
-              <td style={{ padding: "14px" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                  }}
-                >
+              <td
+                style={{
+                  padding: "14px",
+                }}
+              >
+                <div className="admin-user-actions">
                   <button
-                    className="accept-btn"
+                    type="button"
+                    className="admin-user-action-btn admin-user-view-btn"
                     onClick={() => onView(user)}
                   >
                     View
                   </button>
 
                   <button
-                    className="verified-btn"
+                    type="button"
+                    className="admin-user-action-btn admin-user-edit-btn"
                     onClick={() => onEdit(user)}
                   >
                     Edit
                   </button>
 
                   <button
-                    className={
+                    type="button"
+                    className={`admin-user-action-btn ${
                       user.suspended
-                        ? "accept-btn"
-                        : "reject-btn"
-                    }
+                        ? "admin-user-unsuspend-btn"
+                        : "admin-user-suspend-btn"
+                    }`}
                     onClick={() =>
                       onSuspend(
                         user.id,
@@ -201,10 +280,9 @@ export default function UserTable({
                   </button>
 
                   <button
-                    className="reject-btn"
-                    onClick={() =>
-                      onDelete(user)
-                    }
+                    type="button"
+                    className="admin-user-action-btn admin-user-delete-btn"
+                    onClick={() => onDelete(user)}
                   >
                     Delete
                   </button>

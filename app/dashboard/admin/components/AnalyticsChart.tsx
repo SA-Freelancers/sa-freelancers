@@ -61,11 +61,16 @@ export default function AnalyticsChart() {
 
         borderColor: "#22c55e",
 
-        backgroundColor: "rgba(34,197,94,.25)",
+        backgroundColor:
+          "rgba(34,197,94,.25)",
 
-        tension: .35,
+        tension: 0.35,
 
         fill: true,
+
+        pointRadius: 3,
+
+        pointHoverRadius: 5,
       },
     ],
   };
@@ -73,73 +78,65 @@ export default function AnalyticsChart() {
   const options = {
     responsive: true,
 
+    maintainAspectRatio: false,
+
     plugins: {
-
       legend: {
-
         labels: {
-
           color: "white",
 
+          boxWidth: 14,
+
+          padding: 14,
         },
-
       },
-
     },
 
     scales: {
-
       x: {
-
         ticks: {
-
           color: "white",
 
+          maxRotation: 0,
+
+          autoSkip: true,
+
+          maxTicksLimit: 6,
         },
 
+        grid: {
+          color:
+            "rgba(255,255,255,.05)",
+        },
       },
 
       y: {
+        beginAtZero: true,
 
         ticks: {
-
           color: "white",
-
         },
 
+        grid: {
+          color:
+            "rgba(255,255,255,.05)",
+        },
       },
-
     },
-
   };
 
   return (
+    <section className="dark-card admin-analytics-card">
+      <h2>
+        User Growth
+      </h2>
 
-    <section
-      className="dark-card"
-      style={{
-        padding: 24,
-        marginTop: 24,
-      }}
-    >
-
-      <h2>User Growth</h2>
-
-      <div
-        style={{
-          marginTop: 20,
-        }}
-      >
-
+      <div className="admin-chart-container">
         <Line
           data={data}
           options={options}
         />
-
       </div>
-
     </section>
-
   );
-
 }

@@ -2,20 +2,68 @@
 
 type HealthItem = {
   name: string;
-  status: "online" | "warning" | "offline";
+
+  status:
+    | "online"
+    | "warning"
+    | "offline";
 };
 
 const services: HealthItem[] = [
-  { name: "Supabase Database", status: "online" },
-  { name: "Authentication", status: "online" },
-  { name: "Storage", status: "online" },
-  { name: "Payments", status: "online" },
-  { name: "Email Service", status: "online" },
-  { name: "Notifications", status: "online" },
-  { name: "Demo Data", status: "warning" },
+  {
+    name:
+      "Supabase Database",
+    status:
+      "online",
+  },
+
+  {
+    name:
+      "Authentication",
+    status:
+      "online",
+  },
+
+  {
+    name:
+      "Storage",
+    status:
+      "online",
+  },
+
+  {
+    name:
+      "Payments",
+    status:
+      "online",
+  },
+
+  {
+    name:
+      "Email Service",
+    status:
+      "online",
+  },
+
+  {
+    name:
+      "Notifications",
+    status:
+      "online",
+  },
+
+  {
+    name:
+      "Demo Data",
+    status:
+      "warning",
+  },
 ];
 
-function getColor(status: HealthItem["status"]) {
+function getColor(
+  status:
+    HealthItem["status"]
+) {
   switch (status) {
     case "online":
       return "#22c55e";
@@ -28,7 +76,10 @@ function getColor(status: HealthItem["status"]) {
   }
 }
 
-function getLabel(status: HealthItem["status"]) {
+function getLabel(
+  status:
+    HealthItem["status"]
+) {
   switch (status) {
     case "online":
       return "Online";
@@ -43,46 +94,54 @@ function getLabel(status: HealthItem["status"]) {
 
 export default function PlatformHealth() {
   return (
-    <section
-      className="dark-card"
-      style={{
-        padding: 24,
-        marginTop: 24,
-      }}
-    >
-      <h2>Platform Health</h2>
+    <section className="dark-card admin-health-card">
+      <h2>
+        Platform Health
+      </h2>
 
-      <div
-        style={{
-          marginTop: 20,
-          display: "grid",
-          gap: 14,
-        }}
-      >
-        {services.map((service) => (
-          <div
-            key={service.name}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "14px 18px",
-              borderRadius: 10,
-              background: "rgba(255,255,255,.03)",
-            }}
-          >
-            <span>{service.name}</span>
-
-            <span
-              style={{
-                color: getColor(service.status),
-                fontWeight: 700,
-              }}
+      <div className="admin-health-list">
+        {services.map(
+          (
+            service
+          ) => (
+            <div
+              key={
+                service.name
+              }
+              className="admin-health-item"
             >
-              ● {getLabel(service.status)}
-            </span>
-          </div>
-        ))}
+              <span className="admin-health-name">
+                {
+                  service.name
+                }
+              </span>
+
+              <span
+                className="admin-health-status"
+                style={{
+                  color:
+                    getColor(
+                      service.status
+                    ),
+                }}
+              >
+                <span
+                  className="admin-health-dot"
+                  style={{
+                    background:
+                      getColor(
+                        service.status
+                      ),
+                  }}
+                />
+
+                {getLabel(
+                  service.status
+                )}
+              </span>
+            </div>
+          )
+        )}
       </div>
     </section>
   );

@@ -1,98 +1,202 @@
 "use client";
 
-import type { UserProfile } from "../users/types";
+import type {
+  UserProfile,
+} from "../users/types";
 
 type Props = {
-  users: UserProfile[];
+  users:
+    UserProfile[];
 };
+
+function formatDate(
+  date:
+    string | null | undefined
+) {
+  if (!date) {
+    return "-";
+  }
+
+  return new Date(
+    date
+  ).toLocaleDateString();
+}
+
+function getRole(
+  user:
+    UserProfile
+) {
+  if (
+    user.is_admin
+  ) {
+    return "Administrator";
+  }
+
+  if (
+    user.role ===
+    "freelancer"
+  ) {
+    return "Freelancer";
+  }
+
+  if (
+    user.role ===
+    "client"
+  ) {
+    return "Client";
+  }
+
+  return (
+    user.role ||
+    "User"
+  );
+}
 
 export default function RecentUsers({
   users,
 }: Props) {
   return (
-    <section
-      className="dark-card"
-      style={{
-        padding: 24,
-        marginTop: 24,
-      }}
-    >
-      <h2
-        style={{
-          marginBottom: 20,
-        }}
-      >
+    <section className="dark-card admin-recent-card">
+      <h2>
         Recent Users
       </h2>
 
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-        }}
-      >
-        <thead>
-          <tr>
-            <th style={{ textAlign: "left", padding: 10 }}>
-              Name
-            </th>
+      {/* DESKTOP TABLE */}
 
-            <th style={{ textAlign: "left", padding: 10 }}>
-              Email
-            </th>
-
-            <th style={{ textAlign: "left", padding: 10 }}>
-              Role
-            </th>
-
-            <th style={{ textAlign: "left", padding: 10 }}>
-              Joined
-            </th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {users.map((user) => (
-            <tr key={user.id}>
-              <td style={{ padding: 10 }}>
-                {user.full_name}
-              </td>
-
-              <td style={{ padding: 10 }}>
-                {user.email}
-              </td>
-
-              <td style={{ padding: 10 }}>
-                {user.is_admin
-                  ? "Administrator"
-                  : user.role}
-              </td>
-
-              <td style={{ padding: 10 }}>
-                {user.created_at
-                  ? new Date(
-                      user.created_at
-                    ).toLocaleDateString()
-                  : "-"}
-              </td>
-            </tr>
-          ))}
-
-          {users.length === 0 && (
+      <div className="admin-desktop-table">
+        <table className="admin-recent-table">
+          <thead>
             <tr>
-              <td
-                colSpan={4}
-                style={{
-                  padding: 25,
-                  textAlign: "center",
-                }}
-              >
-                No users found.
-              </td>
+              <th>
+                Name
+              </th>
+
+              <th>
+                Email
+              </th>
+
+              <th>
+                Role
+              </th>
+
+              <th>
+                Joined
+              </th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody>
+            {users.map(
+              (
+                user
+              ) => (
+                <tr
+                  key={
+                    user.id
+                  }
+                >
+                  <td>
+                    {user.full_name ||
+                      "Unnamed User"}
+                  </td>
+
+                  <td>
+                    {user.email ||
+                      "-"}
+                  </td>
+
+                  <td>
+                    {getRole(
+                      user
+                    )}
+                  </td>
+
+                  <td>
+                    {formatDate(
+                      user.created_at
+                    )}
+                  </td>
+                </tr>
+              )
+            )}
+
+            {users.length ===
+              0 && (
+              <tr>
+                <td
+                  colSpan={
+                    4
+                  }
+                  className="admin-empty-table"
+                >
+                  No users
+                  found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* MOBILE CARDS */}
+
+      <div className="admin-mobile-list">
+        {users.map(
+          (
+            user
+          ) => (
+            <article
+              key={
+                user.id
+              }
+              className="admin-mobile-record"
+            >
+              <div className="admin-mobile-record-top">
+                <strong>
+                  {user.full_name ||
+                    "Unnamed User"}
+                </strong>
+
+                <span className="admin-mobile-role">
+                  {getRole(
+                    user
+                  )}
+                </span>
+              </div>
+
+              <div className="admin-mobile-record-row">
+                <span>
+                  Email
+                </span>
+
+                <span>
+                  {user.email ||
+                    "-"}
+                </span>
+              </div>
+
+              <div className="admin-mobile-record-row">
+                <span>
+                  Joined
+                </span>
+
+                <span>
+                  {formatDate(
+                    user.created_at
+                  )}
+                </span>
+              </div>
+            </article>
+          )
+        )}
+
+        {users.length ===
+          0 && (
+          <div className="admin-empty-mobile">
+            No users found.
+          </div>
+        )}
+      </div>
     </section>
   );
 }
