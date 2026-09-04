@@ -8,15 +8,10 @@ import {
 } from "@supabase/supabase-js";
 
 import {
-  Resend,
-} from "resend";
+  Webhook,
+} from "svix";
 
 export const runtime = "nodejs";
-
-const resend =
-  new Resend(
-    process.env.RESEND_API_KEY
-  );
 
 export async function POST(
   request: NextRequest
@@ -27,16 +22,13 @@ export async function POST(
     // ==================================================
 
     const supabaseUrl =
-      process.env
-        .NEXT_PUBLIC_SUPABASE_URL;
+      process.env.NEXT_PUBLIC_SUPABASE_URL;
 
     const serviceRoleKey =
-      process.env
-        .SUPABASE_SERVICE_ROLE_KEY;
+      process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     const webhookSecret =
-      process.env
-        .RESEND_WEBHOOK_SECRET;
+      process.env.RESEND_WEBHOOK_SECRET;
 
     if (
       !supabaseUrl ||
@@ -61,7 +53,7 @@ export async function POST(
 
     // ==================================================
     // RAW BODY
-    // IMPORTANT: DO NOT USE request.json() HERE
+    // IMPORTANT: DO NOT USE request.json()
     // ==================================================
 
     const payload =
@@ -100,26 +92,31 @@ export async function POST(
     }
 
     // ==================================================
-    // VERIFY RESEND WEBHOOK
+    // VERIFY RESEND / SVIX WEBHOOK
     // ==================================================
 
     let event: any;
 
     try {
+      const webhook =
+        new Webhook(
+          webhookSecret
+        );
+
       event =
-        resend.webhooks.verify({
+        webhook.verify(
           payload,
+          {
+            "svix-id":
+              svixId,
 
-          headers: {
-            id: svixId,
-            timestamp:
+            "svix-timestamp":
               svixTimestamp,
-            signature:
-              svixSignature,
-          },
 
-          webhookSecret,
-        });
+            "svix-signature":
+              svixSignature,
+          }
+        );
     } catch (error) {
       console.error(
         "Invalid Resend webhook:",
@@ -217,7 +214,7 @@ export async function POST(
     };
 
     // ==================================================
-    // DELIVERY EVENT
+    // DELIVERED
     // ==================================================
 
     if (
@@ -235,7 +232,7 @@ export async function POST(
     }
 
     // ==================================================
-    // BOUNCE EVENT
+    // BOUNCED
     // ==================================================
 
     else if (
@@ -254,7 +251,7 @@ export async function POST(
     }
 
     // ==================================================
-    // FAILED EVENT
+    // FAILED
     // ==================================================
 
     else if (
@@ -274,7 +271,7 @@ export async function POST(
     }
 
     // ==================================================
-    // IGNORE EVENTS WE DO NOT CURRENTLY TRACK
+    // IGNORE OTHER EVENTS
     // ==================================================
 
     else {
@@ -291,7 +288,7 @@ export async function POST(
     }
 
     // ==================================================
-    // UPDATE EMAIL LOG
+    // UPDATE ADMIN EMAIL LOG
     // ==================================================
 
     const {
