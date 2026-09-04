@@ -128,10 +128,6 @@ async function requireAdmin(
   const user =
     userData.user;
 
-    console.log("Authenticated admin request:", {
-  id: user?.id,
-  email: user?.email,
-});
 
   if (!user) {
     console.error(
