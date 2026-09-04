@@ -22,13 +22,64 @@ type Activity = {
 type Profile = {
   role?: string;
   is_admin?: boolean;
-  full_name?: string;
-  bio?: string;
-  category?: string;
-  avatar_url?: string;
-  cv_url?: string;
-  portfolio_url?: string;
+
+  full_name?: string | null;
+  headline?: string | null;
+  bio?: string | null;
+  category?: string | null;
+
+  avatar_url?: string | null;
+  cv_url?: string | null;
+  portfolio_url?: string | null;
+
+  skills?: string[] | string | null;
+
+  hourly_rate?: number | null;
+  years_experience?: number | null;
 };
+
+function hasProfileSkills(
+  value: string[] | string | null | undefined
+): boolean {
+  if (Array.isArray(value)) {
+    return value.some(
+      (item) =>
+        typeof item === "string" &&
+        item.trim().length > 0
+    );
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      return false;
+    }
+
+    try {
+      const parsed: unknown = JSON.parse(trimmed);
+
+      if (Array.isArray(parsed)) {
+        return parsed.some(
+          (item) =>
+            typeof item === "string" &&
+            item.trim().length > 0
+        );
+      }
+    } catch {
+      // Not JSON, so treat as comma-separated text.
+    }
+
+    return trimmed
+      .split(",")
+      .some(
+        (item: string) =>
+          item.trim().length > 0
+      );
+  }
+
+  return false;
+}
 
 export default function DashboardPage() {
   const [role, setRole] = useState("");
@@ -41,211 +92,562 @@ export default function DashboardPage() {
     saved: 0,
   });
 
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [profileCompletion, setProfileCompletion] = useState(0);
-  const [missingItems, setMissingItems] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [activities, setActivities] =
+    useState<Activity[]>([]);
+
+  const [
+    profileCompletion,
+    setProfileCompletion,
+  ] = useState(0);
+
+  const [
+    missingItems,
+    setMissingItems,
+  ] = useState<string[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
 
   useEffect(() => {
     loadDashboard();
   }, []);
 
-  const calculateProfileCompletion = (profile: Profile) => {
-  const isClient = profile.role === "client";
+  // ============================================
+  // PROFILE COMPLETION
+  // ============================================
 
-  const checks = isClient
-    ? [!!profile.full_name, !!profile.bio]
-    : [
-        !!profile.full_name,
-        !!profile.bio,
-        !!profile.category,
-        !!profile.avatar_url,
-        !!profile.cv_url,
-        !!profile.portfolio_url,
+  const calculateProfileCompletion = (
+    profile: Profile
+  ) => {
+    const isClient =
+      profile.role === "client";
+
+    // ============================================
+    // CLIENT PROFILE COMPLETION
+    // ============================================
+
+    if (isClient) {
+      const checks = [
+        {
+          label: "Full Name",
+          complete:
+            !!profile.full_name?.trim(),
+        },
+        {
+          label: "Client Bio",
+          complete:
+            !!profile.bio?.trim(),
+        },
       ];
 
-  const missing = [];
+      const completed =
+        checks.filter(
+          (item) => item.complete
+        ).length;
 
-  if (!profile.full_name) missing.push("Full Name");
-  if (!profile.bio) missing.push(isClient ? "Client Bio" : "Bio");
+      const missing =
+        checks
+          .filter(
+            (item) => !item.complete
+          )
+          .map(
+            (item) => item.label
+          );
 
-  if (!isClient) {
-    if (!profile.category) missing.push("Category");
-    if (!profile.avatar_url) missing.push("Profile Picture");
-    if (!profile.cv_url) missing.push("CV Upload");
-    if (!profile.portfolio_url) missing.push("Portfolio Upload");
-  }
+      const percentage =
+        Math.round(
+          (completed /
+            checks.length) *
+            100
+        );
 
-  const completed = checks.filter(Boolean).length;
-  const percentage = Math.round((completed / checks.length) * 100);
+      setProfileCompletion(
+        percentage
+      );
 
-  setProfileCompletion(percentage);
-  setMissingItems(missing);
-};
+      setMissingItems(
+        missing
+      );
 
-  const loadDashboard = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setLoading(false);
       return;
     }
 
-    await supabase
-      .from("profiles")
-      .update({
-        last_seen: new Date().toISOString(),
-      })
-      .eq("id", user.id);
+    // ============================================
+    // FREELANCER PROFILE COMPLETION
+    // MUST MATCH ProfileCompletionCard
+    // ============================================
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
+    const checks = [
+      {
+        label: "Full Name",
+        complete:
+          !!profile.full_name?.trim(),
+      },
+      {
+        label:
+          "Professional Headline",
+        complete:
+          !!profile.headline?.trim(),
+      },
+      {
+        label:
+          "Professional Bio",
+        complete:
+          !!profile.bio?.trim(),
+      },
+      {
+        label: "Category",
+        complete:
+          !!profile.category?.trim(),
+      },
+      {
+        label:
+          "Profile Picture",
+        complete:
+          !!profile.avatar_url?.trim(),
+      },
+      {
+        label: "CV",
+        complete:
+          !!profile.cv_url?.trim(),
+      },
+      {
+        label: "Portfolio",
+        complete:
+          !!profile.portfolio_url?.trim(),
+      },
+      {
+        label: "Skills",
+        complete:
+          hasProfileSkills(
+            profile.skills
+          ),
+      },
+      {
+        label: "Hourly Rate",
+        complete:
+          typeof profile.hourly_rate ===
+            "number" &&
+          Number.isFinite(
+            profile.hourly_rate
+          ) &&
+          profile.hourly_rate > 0,
+      },
+      {
+        label:
+          "Years of Experience",
+        complete:
+          typeof profile.years_experience ===
+            "number" &&
+          Number.isFinite(
+            profile.years_experience
+          ) &&
+          profile.years_experience >=
+            0,
+      },
+    ];
 
-    setRole(profile?.role || "");
-    setIsAdmin(profile?.is_admin || false);
-    calculateProfileCompletion(profile || {});
+    const completed =
+      checks.filter(
+        (item) => item.complete
+      ).length;
 
-    if (profile?.role === "client") {
-      await loadClientDashboard(user.id);
-    }
+    const missing =
+      checks
+        .filter(
+          (item) => !item.complete
+        )
+        .map(
+          (item) => item.label
+        );
 
-    if (profile?.role === "freelancer") {
-      await loadFreelancerDashboard(user.id);
-    }
+    const percentage =
+      Math.round(
+        (completed /
+          checks.length) *
+          100
+      );
 
-    setLoading(false);
+    setProfileCompletion(
+      percentage
+    );
+
+    setMissingItems(
+      missing
+    );
   };
 
-  const loadClientDashboard = async (userId: string) => {
-    const { count: jobsCount } = await supabase
-      .from("jobs")
-      .select("*", { count: "exact", head: true })
-      .eq("client_id", userId);
+  // ============================================
+  // LOAD DASHBOARD
+  // ============================================
 
-    const { count: contractsCount } = await supabase
-      .from("contracts")
-      .select("*", { count: "exact", head: true })
-      .eq("client_id", userId);
+  const loadDashboard =
+    async () => {
+      const {
+        data: { user },
+      } =
+        await supabase.auth.getUser();
 
-    const { count: applicationsCount } = await supabase
-      .from("applications")
-      .select("*", { count: "exact", head: true });
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
-    const { count: savedCount } = await supabase
-      .from("favorites")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", userId);
+      // Update last active time
+      await supabase
+        .from("profiles")
+        .update({
+          last_seen:
+            new Date().toISOString(),
+        })
+        .eq(
+          "id",
+          user.id
+        );
 
-    const { data: latestJobs } = await supabase
-      .from("jobs")
-      .select("id, title, budget, created_at")
-      .eq("client_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(5);
+      // Load profile
+      const {
+        data: profile,
+      } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq(
+          "id",
+          user.id
+        )
+        .single();
 
-    const jobActivities =
-      latestJobs?.map((job) => ({
-        id: `job-${job.id}`,
-        title: "Job posted",
-        description: `${job.title || "Untitled job"} • Budget ZAR ${
-          job.budget || "N/A"
-        }`,
-        created_at: job.created_at,
-      })) || [];
+      setRole(
+        profile?.role || ""
+      );
 
-    setStats({
-      jobs: jobsCount || 0,
-      applications: applicationsCount || 0,
-      contracts: contractsCount || 0,
-      saved: savedCount || 0,
-    });
+      setIsAdmin(
+        profile?.is_admin ||
+          false
+      );
 
-    setActivities(jobActivities);
-  };
+      calculateProfileCompletion(
+        profile || {}
+      );
 
-  const loadFreelancerDashboard = async (userId: string) => {
-    const { count: applicationsCount } = await supabase
-      .from("applications")
-      .select("*", { count: "exact", head: true })
-      .eq("freelancer_id", userId);
+      // Client Dashboard
+      if (
+        profile?.role ===
+        "client"
+      ) {
+        await loadClientDashboard(
+          user.id
+        );
+      }
 
-    const { count: contractsCount } = await supabase
-      .from("contracts")
-      .select("*", { count: "exact", head: true })
-      .eq("freelancer_id", userId);
+      // Freelancer Dashboard
+      if (
+        profile?.role ===
+        "freelancer"
+      ) {
+        await loadFreelancerDashboard(
+          user.id
+        );
+      }
 
-    const { count: completedCount } = await supabase
-      .from("contracts")
-      .select("*", { count: "exact", head: true })
-      .eq("freelancer_id", userId)
-      .eq("status", "completed");
+      setLoading(false);
+    };
 
-    const { count: savedCount } = await supabase
-      .from("favorites")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", userId);
+  // ============================================
+  // CLIENT DASHBOARD
+  // ============================================
 
-    const { data: latestApplications } = await supabase
-      .from("applications")
-      .select("id, status, proposed_budget, created_at")
-      .eq("freelancer_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(5);
+  const loadClientDashboard =
+    async (
+      userId: string
+    ) => {
+      const {
+        count: jobsCount,
+      } = await supabase
+        .from("jobs")
+        .select("*", {
+          count: "exact",
+          head: true,
+        })
+        .eq(
+          "client_id",
+          userId
+        );
 
-    const applicationActivities =
-      latestApplications?.map((app) => ({
-        id: `application-${app.id}`,
-        title: "Application update",
-        description: `Status: ${app.status || "pending"} • ZAR ${
-          app.proposed_budget || "N/A"
-        }`,
-        created_at: app.created_at,
-      })) || [];
+      const {
+        count:
+          contractsCount,
+      } = await supabase
+        .from("contracts")
+        .select("*", {
+          count: "exact",
+          head: true,
+        })
+        .eq(
+          "client_id",
+          userId
+        );
 
-    setStats({
-      jobs: completedCount || 0,
-      applications: applicationsCount || 0,
-      contracts: contractsCount || 0,
-      saved: savedCount || 0,
-    });
+      const {
+        count:
+          applicationsCount,
+      } = await supabase
+        .from("applications")
+        .select("*", {
+          count: "exact",
+          head: true,
+        });
 
-    setActivities(applicationActivities);
-  };
+      const {
+        count: savedCount,
+      } = await supabase
+        .from("favorites")
+        .select("*", {
+          count: "exact",
+          head: true,
+        })
+        .eq(
+          "user_id",
+          userId
+        );
 
-  if (loading) return <LoadingSkeleton />;
+      const {
+        data: latestJobs,
+      } = await supabase
+        .from("jobs")
+        .select(
+          "id, title, budget, created_at"
+        )
+        .eq(
+          "client_id",
+          userId
+        )
+        .order(
+          "created_at",
+          {
+            ascending: false,
+          }
+        )
+        .limit(5);
+
+      const jobActivities =
+        latestJobs?.map(
+          (job) => ({
+            id: `job-${job.id}`,
+            title:
+              "Job posted",
+            description: `${
+              job.title ||
+              "Untitled job"
+            } • Budget ZAR ${
+              job.budget ||
+              "N/A"
+            }`,
+            created_at:
+              job.created_at,
+          })
+        ) || [];
+
+      setStats({
+        jobs:
+          jobsCount || 0,
+        applications:
+          applicationsCount ||
+          0,
+        contracts:
+          contractsCount || 0,
+        saved:
+          savedCount || 0,
+      });
+
+      setActivities(
+        jobActivities
+      );
+    };
+
+  // ============================================
+  // FREELANCER DASHBOARD
+  // ============================================
+
+  const loadFreelancerDashboard =
+    async (
+      userId: string
+    ) => {
+      const {
+        count:
+          applicationsCount,
+      } = await supabase
+        .from("applications")
+        .select("*", {
+          count: "exact",
+          head: true,
+        })
+        .eq(
+          "freelancer_id",
+          userId
+        );
+
+      const {
+        count:
+          contractsCount,
+      } = await supabase
+        .from("contracts")
+        .select("*", {
+          count: "exact",
+          head: true,
+        })
+        .eq(
+          "freelancer_id",
+          userId
+        );
+
+      const {
+        count:
+          completedCount,
+      } = await supabase
+        .from("contracts")
+        .select("*", {
+          count: "exact",
+          head: true,
+        })
+        .eq(
+          "freelancer_id",
+          userId
+        )
+        .eq(
+          "status",
+          "completed"
+        );
+
+      const {
+        count: savedCount,
+      } = await supabase
+        .from("favorites")
+        .select("*", {
+          count: "exact",
+          head: true,
+        })
+        .eq(
+          "user_id",
+          userId
+        );
+
+      const {
+        data:
+          latestApplications,
+      } = await supabase
+        .from("applications")
+        .select(
+          "id, status, proposed_budget, created_at"
+        )
+        .eq(
+          "freelancer_id",
+          userId
+        )
+        .order(
+          "created_at",
+          {
+            ascending: false,
+          }
+        )
+        .limit(5);
+
+      const applicationActivities =
+        latestApplications?.map(
+          (app) => ({
+            id: `application-${app.id}`,
+            title:
+              "Application update",
+            description: `Status: ${
+              app.status ||
+              "pending"
+            } • ZAR ${
+              app.proposed_budget ||
+              "N/A"
+            }`,
+            created_at:
+              app.created_at,
+          })
+        ) || [];
+
+      setStats({
+        jobs:
+          completedCount ||
+          0,
+        applications:
+          applicationsCount ||
+          0,
+        contracts:
+          contractsCount ||
+          0,
+        saved:
+          savedCount || 0,
+      });
+
+      setActivities(
+        applicationActivities
+      );
+    };
+
+  // ============================================
+  // LOADING
+  // ============================================
+
+  if (loading) {
+    return (
+      <LoadingSkeleton />
+    );
+  }
+
+  // ============================================
+  // PAGE
+  // ============================================
 
   return (
     <div className="dashboard-home">
+
+      {/* ======================================
+          HERO
+      ====================================== */}
+
       <section className="dashboard-hero dark-card">
         <div>
           <p className="dashboard-badge">
             {role === "client"
               ? "Client Dashboard"
-              : role === "freelancer"
+              : role ===
+                "freelancer"
               ? "Freelancer Dashboard"
               : "Dashboard"}
           </p>
 
           <h1>
-            {role === "client" ? (
+            {role ===
+            "client" ? (
               <>
                 Manage your
-                <span> hiring</span>
+                <span>
+                  {" "}
+                  hiring
+                </span>
               </>
-            ) : role === "freelancer" ? (
+            ) : role ===
+              "freelancer" ? (
               <>
-                Build your freelance
-                <span> career faster</span>
+                Build your
+                freelance
+                <span>
+                  {" "}
+                  career faster
+                </span>
               </>
             ) : (
               <>
                 Manage your
-                <span> account</span>
+                <span>
+                  {" "}
+                  account
+                </span>
               </>
             )}
           </h1>
@@ -253,75 +655,205 @@ export default function DashboardPage() {
           <p className="dashboard-description">
             {role === "client"
               ? "Post jobs, review applications, hire freelancers and manage contracts from one client workspace."
-              : role === "freelancer"
+              : role ===
+                "freelancer"
               ? "Find jobs, apply safely, manage contracts, upload deliveries and grow your freelance profile."
               : "Manage your account from one professional dashboard."}
           </p>
         </div>
       </section>
 
+      {/* ======================================
+          QUICK ACTIONS
+      ====================================== */}
+
       <section className="dashboard-quick-actions">
-        {role === "client" && (
+
+        {/* CLIENT ACTIONS */}
+
+        {role ===
+          "client" && (
           <>
-            <Link href="/dashboard/post-job" className="dark-card quick-action-card">
-              <span>➕</span>
-              <h3>Post Job</h3>
-              <p>Create a new project and receive freelancer proposals.</p>
+            <Link
+              href="/dashboard/post-job"
+              className="dark-card quick-action-card"
+            >
+              <span>
+                ➕
+              </span>
+
+              <h3>
+                Post Job
+              </h3>
+
+              <p>
+                Create a new
+                project and
+                receive freelancer
+                proposals.
+              </p>
             </Link>
 
-            <Link href="/dashboard/jobs" className="dark-card quick-action-card">
-              <span>💼</span>
-              <h3>My Jobs</h3>
-              <p>View posted jobs and manage applications.</p>
+            <Link
+              href="/dashboard/jobs"
+              className="dark-card quick-action-card"
+            >
+              <span>
+                💼
+              </span>
+
+              <h3>
+                My Jobs
+              </h3>
+
+              <p>
+                View posted jobs
+                and manage
+                applications.
+              </p>
             </Link>
 
-            <Link href="/dashboard/client-contracts" className="dark-card quick-action-card">
-              <span>📨</span>
-              <h3>Sent Contracts</h3>
-              <p>Track contracts sent to freelancers.</p>
+            <Link
+              href="/dashboard/client-contracts"
+              className="dark-card quick-action-card"
+            >
+              <span>
+                📨
+              </span>
+
+              <h3>
+                Sent Contracts
+              </h3>
+
+              <p>
+                Track contracts
+                sent to
+                freelancers.
+              </p>
             </Link>
           </>
         )}
 
-        {role === "freelancer" && (
+        {/* FREELANCER ACTIONS */}
+
+        {role ===
+          "freelancer" && (
           <>
-            <Link href="/search" className="dark-card quick-action-card">
-              <span>🔍</span>
-              <h3>Marketplace</h3>
-              <p>Find jobs and clients looking for your skills.</p>
+            <Link
+              href="/search"
+              className="dark-card quick-action-card"
+            >
+              <span>
+                🔍
+              </span>
+
+              <h3>
+                Marketplace
+              </h3>
+
+              <p>
+                Find jobs and
+                clients looking
+                for your skills.
+              </p>
             </Link>
 
-            <Link href="/dashboard/contracts" className="dark-card quick-action-card">
-              <span>📄</span>
-              <h3>Contracts</h3>
-              <p>Review hiring requests and manage accepted work.</p>
+            <Link
+              href="/dashboard/contracts"
+              className="dark-card quick-action-card"
+            >
+              <span>
+                📄
+              </span>
+
+              <h3>
+                Contracts
+              </h3>
+
+              <p>
+                Review hiring
+                requests and
+                manage accepted
+                work.
+              </p>
             </Link>
           </>
         )}
 
-        <Link href="/dashboard/notifications" className="dark-card quick-action-card">
-          <span>🔔</span>
-          <h3>Notifications</h3>
-          <p>Check hiring requests, contract updates and platform alerts.</p>
+        {/* NOTIFICATIONS */}
+
+        <Link
+          href="/dashboard/notifications"
+          className="dark-card quick-action-card"
+        >
+          <span>
+            🔔
+          </span>
+
+          <h3>
+            Notifications
+          </h3>
+
+          <p>
+            Check hiring
+            requests, contract
+            updates and platform
+            alerts.
+          </p>
         </Link>
 
+        {/* ADMIN */}
+
         {isAdmin && (
-          <Link href="/dashboard/admin" className="dark-card quick-action-card">
-            <span>🛡️</span>
-            <h3>Admin</h3>
-            <p>Manage users, reports, moderation and platform activity.</p>
+          <Link
+            href="/dashboard/admin"
+            className="dark-card quick-action-card"
+          >
+            <span>
+              🛡️
+            </span>
+
+            <h3>
+              Admin
+            </h3>
+
+            <p>
+              Manage users,
+              reports,
+              moderation and
+              platform activity.
+            </p>
           </Link>
         )}
       </section>
 
+      {/* ======================================
+          PROFILE COMPLETION
+      ====================================== */}
+
       <section className="dark-card profile-completion-card">
-        <div style={{ width: "100%" }}>
-          <p className="dashboard-badge">Profile Completion</p>
+        <div
+          style={{
+            width: "100%",
+          }}
+        >
+          <p className="dashboard-badge">
+            Profile Completion
+          </p>
 
           <div className="profile-progress-top">
-            <h2>{profileCompletion}% Complete</h2>
 
-            <Link href="/dashboard/profile" className="primary-action-link">
+            <h2>
+              {
+                profileCompletion
+              }
+              % Complete
+            </h2>
+
+            <Link
+              href="/dashboard/profile"
+              className="primary-action-link"
+            >
               Complete Profile
             </Link>
           </div>
@@ -329,62 +861,143 @@ export default function DashboardPage() {
           <div className="profile-progress-bar">
             <div
               className="profile-progress-fill"
-              style={{ width: `${profileCompletion}%` }}
+              style={{
+                width: `${profileCompletion}%`,
+              }}
             />
           </div>
 
-          {missingItems.length > 0 && (
+          {missingItems.length >
+            0 && (
             <div className="profile-missing-list">
-              <strong>Missing:</strong>
+
+              <strong>
+                Missing:
+              </strong>
 
               <div className="profile-tags">
-                {missingItems.map((item) => (
-                  <span key={item}>{item}</span>
-                ))}
+                {missingItems.map(
+                  (item) => (
+                    <span
+                      key={
+                        item
+                      }
+                    >
+                      {
+                        item
+                      }
+                    </span>
+                  )
+                )}
               </div>
             </div>
           )}
         </div>
       </section>
 
+      {/* ======================================
+          STATS
+      ====================================== */}
+
       <section className="dashboard-stats">
+
         <div className="dark-card stat-card">
-          <h3>{stats.jobs}</h3>
-          <p>{role === "client" ? "Posted Jobs" : "Completed Jobs"}</p>
+          <h3>
+            {stats.jobs}
+          </h3>
+
+          <p>
+            {role ===
+            "client"
+              ? "Posted Jobs"
+              : "Completed Jobs"}
+          </p>
         </div>
 
         <div className="dark-card stat-card">
-          <h3>{stats.applications}</h3>
-          <p>{role === "client" ? "Applications Received" : "Applications Sent"}</p>
+          <h3>
+            {
+              stats.applications
+            }
+          </h3>
+
+          <p>
+            {role ===
+            "client"
+              ? "Applications Received"
+              : "Applications Sent"}
+          </p>
         </div>
 
         <div className="dark-card stat-card">
-          <h3>{stats.contracts}</h3>
-          <p>{role === "client" ? "Sent Contracts" : "Contracts"}</p>
+          <h3>
+            {
+              stats.contracts
+            }
+          </h3>
+
+          <p>
+            {role ===
+            "client"
+              ? "Sent Contracts"
+              : "Contracts"}
+          </p>
         </div>
 
         <div className="dark-card stat-card">
-          <h3>{stats.saved}</h3>
-          <p>Saved Items</p>
+          <h3>
+            {stats.saved}
+          </h3>
+
+          <p>
+            Saved Items
+          </p>
         </div>
       </section>
 
+      {/* ======================================
+          RECENT ACTIVITY
+      ====================================== */}
+
       <section className="dark-card dashboard-activity">
-        <h2>Recent Activity</h2>
 
-        {activities.length === 0 ? (
-          <p>No recent activity yet.</p>
+        <h2>
+          Recent Activity
+        </h2>
+
+        {activities.length ===
+        0 ? (
+          <p>
+            No recent activity
+            yet.
+          </p>
         ) : (
-          activities.map((activity) => (
-            <div key={activity.id} className="activity-item">
-              <div className="activity-dot" />
+          activities.map(
+            (activity) => (
+              <div
+                key={
+                  activity.id
+                }
+                className="activity-item"
+              >
+                <div className="activity-dot" />
 
-              <div>
-                <strong>{activity.title}</strong>
-                <p>{activity.description}</p>
+                <div>
+                  <strong>
+                    {
+                      activity.title
+                    }
+                  </strong>
+
+                  <p>
+                    {
+                      activity.description
+                    }
+                  </p>
+                </div>
               </div>
-            </div>
-          ))
+            )
+          )
         )}
       </section>
     </div>

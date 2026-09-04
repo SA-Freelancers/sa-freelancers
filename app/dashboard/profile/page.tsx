@@ -137,10 +137,29 @@ export default function ProfilePage() {
       setWebsite(data.website_url || "");
 
       setSkills(
-        Array.isArray(data.skills)
-          ? data.skills.join(", ")
-          : ""
-      );
+  Array.isArray(data.skills)
+    ? data.skills.join(", ")
+    : typeof data.skills === "string"
+    ? (() => {
+        try {
+          const parsed = JSON.parse(data.skills);
+
+          return Array.isArray(parsed)
+            ? parsed
+                .filter(
+                  (item): item is string =>
+                    typeof item === "string"
+                )
+                .map((item) => item.trim())
+                .filter(Boolean)
+                .join(", ")
+            : data.skills;
+        } catch {
+          return data.skills;
+        }
+      })()
+    : ""
+);
 
       setLanguages(
         Array.isArray(data.languages)

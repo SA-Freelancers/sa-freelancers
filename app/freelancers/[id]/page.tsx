@@ -3,7 +3,6 @@
 import EmptyState from "@/app/components/EmptyState";
 import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 import RecommendedJobs from "@/app/components/RecommendedJobs";
-import ProfileCompleteness from "@/app/components/ProfileCompleteness";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -233,19 +232,6 @@ export default function FreelancerPublicProfilePage() {
 
       /*
        * Load portfolio projects.
-       *
-       * These columns match the portfolio_projects
-       * table you showed:
-       *
-       * id
-       * title
-       * description
-       * category
-       * software
-       * image_url
-       * project_url
-       * created_at
-       * featured
        */
       const {
         data: portfolioData,
@@ -410,27 +396,54 @@ export default function FreelancerPublicProfilePage() {
           ) / reviews.length
         ).toFixed(1)
       : "No ratings";
-const profileCompletionChecks = [
-  !!profile.full_name,
-  !!profile.bio,
-  !!profile.category,
-  !!profile.avatar_url,
-  !!profile.cv_url,
-  !!profile.portfolio_url,
-];
 
-const profileCompletionPercentage = Math.round(
-  (profileCompletionChecks.filter(Boolean).length /
-    profileCompletionChecks.length) *
-    100
-);
+  /*
+   * Profile completion.
+   *
+   * IMPORTANT:
+   * These 10 requirements match the freelancer
+   * Profile Completion card and Dashboard.
+   */
+  const profileCompletionChecks = [
+    !!profile.full_name?.trim(),
 
-const profileStrength =
-  profileCompletionPercentage >= 100
-    ? "Excellent"
-    : profileCompletionPercentage >= 75
-    ? "Good"
-    : "Needs Improvement";
+    !!profile.headline?.trim(),
+
+    !!profile.bio?.trim(),
+
+    !!profile.category?.trim(),
+
+    !!profile.avatar_url?.trim(),
+
+    !!profile.cv_url?.trim(),
+
+    !!profile.portfolio_url?.trim(),
+
+    Array.isArray(profile.skills) &&
+      profile.skills.length > 0,
+
+    typeof profile.hourly_rate === "number" &&
+      Number.isFinite(profile.hourly_rate) &&
+      profile.hourly_rate > 0,
+
+    typeof profile.years_experience === "number" &&
+      Number.isFinite(profile.years_experience) &&
+      profile.years_experience >= 0,
+  ];
+
+  const profileCompletionPercentage = Math.round(
+    (profileCompletionChecks.filter(Boolean).length /
+      profileCompletionChecks.length) *
+      100
+  );
+
+  const profileStrength =
+    profileCompletionPercentage === 100
+      ? "Excellent"
+      : profileCompletionPercentage >= 70
+      ? "Good"
+      : "Needs Improvement";
+
   /*
    * Make sure skills is ALWAYS an array.
    */
@@ -449,13 +462,6 @@ const profileStrength =
   )
     ? profile.certifications
     : [];
-
-  /*
- * Profile strength.
- *
- * Each important profile area contributes to the
- * overall completion percentage.
- */
 
   return (
     <main className="contracts-page">
@@ -554,25 +560,22 @@ const profileStrength =
               )}
 
               {profile.verified && (
-  <span className="verified-badge">
-    ✔ Verified
-  </span>
-)}
+                <span className="verified-badge">
+                  ✔ Verified
+                </span>
+              )}
 
-<span className="verified-badge">
-  💪 Profile Strength: {profileStrength} (
-  {profileCompletionPercentage}%)
-</span>
+              <span className="verified-badge">
+                💪 Profile Strength:{" "}
+                {profileStrength} (
+                {profileCompletionPercentage}%)
+              </span>
 
               {profile.top_rated && (
                 <span className="top-rated-badge">
                   ★ Top Rated
                 </span>
               )}
-              <span className="verified-badge">
-                💪 Profile Strength:{" "}
-                {profileStrength}
-              </span>
 
             </div>
 
@@ -694,6 +697,7 @@ const profileStrength =
                 <p>
                   {profile.years_experience ??
                     "Not specified"}
+
                   {profile.years_experience !==
                     null &&
                   profile.years_experience !==
@@ -743,10 +747,21 @@ const profileStrength =
                 </strong>
 
                 <p>
-                  {profile.completion_rate !=
-                  null
+                  {profile.completion_rate != null
                     ? `${profile.completion_rate}%`
                     : "Not specified"}
+                </p>
+              </div>
+
+              <div>
+                <strong>
+                  Rating
+                </strong>
+
+                <p>
+                  {averageRating === "No ratings"
+                    ? "No ratings"
+                    : `${averageRating} / 5`}
                 </p>
               </div>
 
@@ -1238,7 +1253,7 @@ const profileStrength =
 
         <p>
           Jobs that may match this
-          freelancer's skills and category.
+          freelancer&apos;s skills and category.
         </p>
 
         <RecommendedJobs />
