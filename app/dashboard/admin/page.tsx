@@ -18,7 +18,6 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   const [recentUsers, setRecentUsers] = useState<UserProfile[]>([]);
-
   const [recentJobs, setRecentJobs] = useState<any[]>([]);
 
   const [stats, setStats] = useState({
@@ -105,14 +104,16 @@ export default function AdminDashboard() {
       // RECENT USERS
       // ==================================================
 
-      const { data: latestUsers, error: usersError } =
-        await supabase
-          .from("profiles")
-          .select("*")
-          .order("created_at", {
-            ascending: false,
-          })
-          .limit(5);
+      const {
+        data: latestUsers,
+        error: usersError,
+      } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", {
+          ascending: false,
+        })
+        .limit(5);
 
       if (usersError) {
         console.error(
@@ -128,24 +129,30 @@ export default function AdminDashboard() {
       // ==================================================
       // RECENT JOBS
       // ==================================================
+      //
+      // Important:
+      // We intentionally do not include the nested
+      // `profiles (...)` relationship here.
+      //
+      // The previous nested relationship was causing
+      // the Recent Jobs query to fail on the admin
+      // dashboard.
+      // ==================================================
 
-      const { data: latestJobs, error: jobsError } =
-        await supabase
-          .from("jobs")
-          .select(`
-            id,
-            title,
-            budget,
-            status,
-            created_at,
-            profiles (
-              full_name
-            )
-          `)
-          .order("created_at", {
-            ascending: false,
-          })
-          .limit(5);
+      const {
+  data: latestJobs,
+  error: jobsError,
+} = await supabase
+  .from("jobs")
+  .select(`
+    id,
+    title,
+    created_at
+  `)
+  .order("created_at", {
+    ascending: false,
+  })
+  .limit(5);
 
       if (jobsError) {
         console.error(
@@ -168,16 +175,13 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <main className="contracts-page">
-        <h1>
-          Loading Dashboard...
-        </h1>
+        <h1>Loading Dashboard...</h1>
       </main>
     );
   }
 
   return (
     <main className="contracts-page">
-
       <DashboardHeader />
 
       <DashboardStats
@@ -226,7 +230,6 @@ export default function AdminDashboard() {
           ================================================== */}
 
       <DashboardQuickActions />
-
     </main>
   );
 }
