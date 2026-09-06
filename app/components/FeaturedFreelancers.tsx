@@ -1,117 +1,762 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
 import Link from "next/link";
-import { supabase } from "@/app/lib/supabase";
+
+import {
+  supabase,
+} from "@/app/lib/supabase";
+
+
+type Review = {
+  rating: number;
+};
+
 
 type Freelancer = {
   id: string;
-  full_name?: string;
-  category?: string;
-  bio?: string;
-  avatar_url?: string;
-  verified?: boolean;
-  top_rated?: boolean;
-  email_verified?: boolean;
-  reviews?: {
-    rating: number;
-  }[];
+
+  full_name?: string | null;
+  headline?: string | null;
+  category?: string | null;
+  bio?: string | null;
+  avatar_url?: string | null;
+
+  verified?: boolean | null;
+  verification_status?:
+    | "not_submitted"
+    | "pending"
+    | "verified"
+    | "rejected"
+    | null;
+
+  top_rated?: boolean | null;
+  email_verified?: boolean | null;
+
+  city?: string | null;
+  province?: string | null;
+  country?: string | null;
+
+  hourly_rate?: number | null;
+
+  skills?:
+    | string[]
+    | string
+    | null;
+
+  reviews?: Review[];
 };
 
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+
+function getInitials(
+  name?: string | null
+) {
+
+  if (!name?.trim()) {
+    return "FH";
+  }
+
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(
+      (part) =>
+        part
+          .charAt(0)
+          .toUpperCase()
+    )
+    .join("");
+}
+
+
+function normaliseSkills(
+  value:
+    | string[]
+    | string
+    | null
+    | undefined
+): string[] {
+
+  if (
+    Array.isArray(
+      value
+    )
+  ) {
+
+    return value
+      .filter(
+        (
+          item
+        ): item is string =>
+          typeof item ===
+            "string" &&
+          item
+            .trim()
+            .length >
+            0
+      )
+      .map(
+        (item) =>
+          item.trim()
+      );
+
+  }
+
+  if (
+    typeof value ===
+    "string"
+  ) {
+
+    const trimmed =
+      value.trim();
+
+    if (!trimmed) {
+      return [];
+    }
+
+    try {
+
+      const parsed:
+        unknown =
+          JSON.parse(
+            trimmed
+          );
+
+      if (
+        Array.isArray(
+          parsed
+        )
+      ) {
+
+        return parsed
+          .filter(
+            (
+              item
+            ): item is string =>
+              typeof item ===
+                "string" &&
+              item
+                .trim()
+                .length >
+                0
+          )
+          .map(
+            (item) =>
+              item.trim()
+          );
+
+      }
+
+    } catch {
+      // Not JSON, so continue as comma-separated text.
+    }
+
+    return trimmed
+      .split(",")
+      .map(
+        (item) =>
+          item.trim()
+      )
+      .filter(
+        Boolean
+      );
+
+  }
+
+  return [];
+}
+
+
+function getLocation(
+  freelancer:
+    Freelancer
+) {
+
+  const parts = [
+    freelancer.city,
+    freelancer.province,
+    freelancer.country,
+  ].filter(
+    (
+      value
+    ): value is string =>
+      typeof value ===
+        "string" &&
+      value
+        .trim()
+        .length >
+        0
+  );
+
+  if (
+    parts.length === 0
+  ) {
+
+    return "South Africa";
+
+  }
+
+  return parts.join(", ");
+}
+
+
+/* =========================================================
+   COMPONENT
+   ========================================================= */
+
 export default function FeaturedFreelancers() {
-  const [freelancers, setFreelancers] = useState<Freelancer[]>([]);
+
+  const [
+    freelancers,
+    setFreelancers,
+  ] =
+    useState<
+      Freelancer[]
+    >([]);
+
+  const [
+    loading,
+    setLoading,
+  ] =
+    useState(true);
+
+
+  /* =========================================================
+     LOAD FREELANCERS
+     ========================================================= */
 
   useEffect(() => {
-    loadFreelancers();
+
+    const loadFreelancers =
+      async () => {
+
+        try {
+
+          const {
+            data,
+            error,
+          } =
+            await supabase
+              .from(
+                "profiles"
+              )
+              .select(
+                `
+                *,
+                reviews!reviews_freelancer_id_fkey (
+    rating
+                )
+              `
+              )
+              .eq(
+                "role",
+                "freelancer"
+              )
+              .eq(
+                "suspended",
+                false
+              )
+              .order(
+                "top_rated",
+                {
+                  ascending:
+                    false,
+                }
+              )
+              .limit(6);
+
+
+          if (error) {
+
+            console.error(
+              "Featured freelancers loading error:",
+              error
+            );
+
+            return;
+
+          }
+
+
+          setFreelancers(
+            (
+              data as
+                Freelancer[]
+            ) || []
+          );
+
+        } catch (
+          error
+        ) {
+
+          console.error(
+            "Featured freelancers unexpected error:",
+            error
+          );
+
+        } finally {
+
+          setLoading(
+            false
+          );
+
+        }
+
+      };
+
+
+    void loadFreelancers();
+
   }, []);
 
-  const loadFreelancers = async () => {
-    const { data } = await supabase
-      .from("profiles")
-      .select(
-        `
-        *,
-        reviews (
-          rating
-        )
-      `
-      )
-      .eq("role", "freelancer")
-      .eq("suspended", false)
-      .order("top_rated", { ascending: false })
-      .limit(6);
 
-    setFreelancers((data as Freelancer[]) || []);
-  };
+  /* =========================================================
+     AVERAGE RATING
+     ========================================================= */
 
-  const getAverageRating = (reviews?: { rating: number }[]) => {
-    if (!reviews || reviews.length === 0) return "No ratings";
+  const getAverageRating =
+    (
+      reviews?: Review[]
+    ) => {
 
-    const total = reviews.reduce((sum, review) => sum + review.rating, 0);
-    return (total / reviews.length).toFixed(1);
-  };
+      if (
+        !reviews ||
+        reviews.length ===
+          0
+      ) {
 
-  if (freelancers.length === 0) return null;
+        return null;
+
+      }
+
+      const total =
+        reviews.reduce(
+          (
+            sum,
+            review
+          ) =>
+            sum +
+            Number(
+              review.rating ||
+                0
+            ),
+          0
+        );
+
+      return (
+        total /
+        reviews.length
+      ).toFixed(1);
+
+    };
+
+
+  if (
+    loading
+  ) {
+
+    return null;
+
+  }
+
+
+  if (
+    freelancers.length ===
+    0
+  ) {
+
+    return null;
+
+  }
+
+
+  /* =========================================================
+     PAGE
+     ========================================================= */
 
   return (
-    <section className="home-section">
+
+    <section className="home-section featured-freelancers-section">
+
+
+      {/* HEADER */}
+
       <div className="home-section-header">
-        <p className="dashboard-badge">Featured Freelancers</p>
-        <h2>Hire skilled South African talent</h2>
+
+        <p className="dashboard-badge">
+          Featured Freelancers
+        </p>
+
+        <h2>
+          Hire skilled South
+          African talent
+        </h2>
+
+        <p className="featured-freelancers-subtitle">
+
+          Discover professionals
+          ready to help bring your
+          next project to life.
+
+        </p>
+
       </div>
 
-      <div className="home-grid">
-        {freelancers.map((freelancer) => (
-          <div key={freelancer.id} className="dark-card home-card">
-            <div className="profile-preview-placeholder">
-              {freelancer.avatar_url ? (
-                <img
-                  src={freelancer.avatar_url}
-                  alt={freelancer.full_name || "Freelancer"}
-                  className="profile-preview-avatar"
-                />
-              ) : (
-                "👤"
-              )}
-            </div>
 
-            <h3>{freelancer.full_name || "Freelancer"}</h3>
+      {/* GRID */}
 
-            <p>
-              <strong>Category:</strong>{" "}
-              {freelancer.category || "General Freelancer"}
-            </p>
+      <div className="featured-freelancers-grid">
 
-            <p>
-              ⭐ {getAverageRating(freelancer.reviews)} (
-              {freelancer.reviews?.length || 0} reviews)
-            </p>
+        {freelancers.map(
+          (
+            freelancer
+          ) => {
 
-            <p>{freelancer.bio?.slice(0, 120) || "Professional freelancer."}</p>
+            const rating =
+              getAverageRating(
+                freelancer.reviews
+              );
 
-            <div className="marketplace-badges">
-              {freelancer.email_verified && (
-                <span className="verified-badge">✔ Email Verified</span>
-              )}
+            const skills =
+              normaliseSkills(
+                freelancer.skills
+              ).slice(
+                0,
+                3
+              );
 
-              {freelancer.verified && (
-                <span className="verified-badge">✔ Verified</span>
-              )}
+            const isVerified =
+              freelancer
+                .verification_status ===
+                "verified" ||
+              freelancer
+                .verified ===
+                true;
 
-              {freelancer.top_rated && (
-                <span className="top-rated-badge">★ Top Rated</span>
-              )}
-            </div>
+            const location =
+              getLocation(
+                freelancer
+              );
 
-            <Link
-              href={`/freelancers/${freelancer.id}`}
-              className="primary-action-link"
-            >
-              View Profile
-            </Link>
-          </div>
-        ))}
+
+            return (
+
+              <article
+                key={
+                  freelancer.id
+                }
+                className="featured-freelancer-card"
+              >
+
+
+                {/* TOP */}
+
+                <div className="featured-freelancer-top">
+
+
+                  {/* AVATAR */}
+
+                  <div className="featured-freelancer-avatar-wrap">
+
+                    {freelancer.avatar_url ? (
+
+                      <img
+                        src={
+                          freelancer.avatar_url
+                        }
+                        alt={
+                          freelancer.full_name ||
+                          "Freelancer"
+                        }
+                        className="featured-freelancer-avatar"
+                      />
+
+                    ) : (
+
+                      <div className="featured-freelancer-avatar featured-freelancer-avatar-fallback">
+
+                        {getInitials(
+                          freelancer.full_name
+                        )}
+
+                      </div>
+
+                    )}
+
+
+                    {isVerified && (
+
+                      <span
+                        className="featured-freelancer-verified-icon"
+                        title="Identity Verified"
+                      >
+                        ✓
+                      </span>
+
+                    )}
+
+                  </div>
+
+
+                  {/* RATE */}
+
+                  {typeof freelancer.hourly_rate ===
+                    "number" &&
+                    freelancer.hourly_rate >
+                      0 && (
+
+                      <div className="featured-freelancer-rate">
+
+                        <strong>
+                          R
+                          {
+                            freelancer.hourly_rate
+                          }
+                        </strong>
+
+                        <span>
+                          /hr
+                        </span>
+
+                      </div>
+
+                    )}
+
+                </div>
+
+
+                {/* IDENTITY */}
+
+                <div className="featured-freelancer-identity">
+
+                  <h3>
+
+                    {
+                      freelancer.full_name ||
+                      "Freelancer"
+                    }
+
+                  </h3>
+
+
+                  <p className="featured-freelancer-headline">
+
+                    {
+                      freelancer.headline ||
+                      freelancer.category ||
+                      "Professional Freelancer"
+                    }
+
+                  </p>
+
+
+                  <p className="featured-freelancer-location">
+
+                    📍 {location}
+
+                  </p>
+
+                </div>
+
+
+                {/* RATING */}
+
+                <div className="featured-freelancer-rating-row">
+
+                  {rating ? (
+
+                    <>
+
+                      <span className="featured-freelancer-stars">
+                        ★
+                      </span>
+
+                      <strong>
+                        {rating}
+                      </strong>
+
+                      <span>
+
+                        (
+                        {
+                          freelancer.reviews
+                            ?.length ||
+                          0
+                        }{" "}
+                        {
+                          freelancer.reviews
+                            ?.length ===
+                          1
+                            ? "review"
+                            : "reviews"
+                        }
+                        )
+
+                      </span>
+
+                    </>
+
+                  ) : (
+
+                    <span className="featured-freelancer-no-rating">
+
+                      New freelancer
+
+                    </span>
+
+                  )}
+
+                </div>
+
+
+                {/* BIO */}
+
+                <p className="featured-freelancer-bio">
+
+                  {
+                    freelancer.bio
+                      ?.trim()
+                      .slice(
+                        0,
+                        125
+                      ) ||
+                    "Professional freelancer ready to help with your next project."
+                  }
+
+                  {freelancer.bio &&
+                    freelancer.bio
+                      .trim()
+                      .length >
+                      125 &&
+                    "..."}
+
+                </p>
+
+
+                {/* SKILLS */}
+
+                {skills.length >
+                  0 && (
+
+                  <div className="featured-freelancer-skills">
+
+                    {skills.map(
+                      (
+                        skill
+                      ) => (
+
+                        <span
+                          key={
+                            skill
+                          }
+                        >
+                          {skill}
+                        </span>
+
+                      )
+                    )}
+
+                  </div>
+
+                )}
+
+
+                {/* BADGES */}
+
+                <div className="featured-freelancer-badges">
+
+                  {isVerified && (
+
+                    <span className="featured-badge verified">
+
+                      ✓ Identity Verified
+
+                    </span>
+
+                  )}
+
+
+                  {freelancer.email_verified && (
+
+                    <span className="featured-badge email">
+
+                      ✓ Email Verified
+
+                    </span>
+
+                  )}
+
+
+                  {freelancer.top_rated && (
+
+                    <span className="featured-badge top-rated">
+
+                      ★ Top Rated
+
+                    </span>
+
+                  )}
+
+                </div>
+
+
+                {/* ACTION */}
+
+                <Link
+                  href={`/freelancers/${freelancer.id}`}
+                  className="featured-freelancer-button"
+                >
+
+                  View Profile
+
+                  <span>
+                    →
+                  </span>
+
+                </Link>
+
+
+              </article>
+
+            );
+
+          }
+        )}
+
       </div>
+
+
+      {/* VIEW MORE */}
+
+      <div className="featured-freelancers-footer">
+
+        <Link
+          href="/search"
+          className="featured-view-all"
+        >
+
+          Browse All Freelancers
+
+          <span>
+            →
+          </span>
+
+        </Link>
+
+      </div>
+
+
     </section>
+
   );
+
 }
