@@ -48,10 +48,18 @@ type Profile = {
   cv_url?: string | null;
   portfolio_url?: string | null;
 
-  verified?: boolean | null;
-  top_rated?: boolean | null;
-  suspended?: boolean | null;
-  email_verified?: boolean | null;
+ verified?: boolean | null;
+
+verification_status?:
+  | "not_submitted"
+  | "pending"
+  | "verified"
+  | "rejected"
+  | null;
+
+top_rated?: boolean | null;
+suspended?: boolean | null;
+email_verified?: boolean | null;
 
   created_at?: string | null;
 };
@@ -559,11 +567,14 @@ export default function FreelancerPublicProfilePage() {
                 </span>
               )}
 
-              {profile.verified && (
-                <span className="verified-badge">
-                  ✔ Verified
-                </span>
-              )}
+              {(
+  profile.verification_status === "verified" ||
+  profile.verified === true
+) && (
+  <span className="verified-badge">
+    ✔ Identity Verified
+  </span>
+)}
 
               <span className="verified-badge">
                 💪 Profile Strength:{" "}
