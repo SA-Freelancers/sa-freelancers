@@ -10644,3 +10644,215 @@ span:last-child {
   }
 
 }
+/* =========================================================
+   MOBILE HERO MARKETPLACE FIX
+   Prevent floating cards overlapping
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+  .home-marketplace-stage {
+    display: grid;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(
+          0,
+          1fr
+        )
+      );
+
+    gap: 12px;
+
+    width: 100%;
+
+    max-width: 100%;
+
+    height: auto !important;
+
+    min-height: 0 !important;
+
+    margin-top: 28px;
+
+    padding:
+      20px
+      14px;
+
+    align-items: stretch;
+  }
+
+
+  /* CENTRAL MARKETPLACE CARD */
+
+  .home-marketplace-core {
+    position: relative !important;
+
+    inset: auto !important;
+
+    transform: none !important;
+
+    grid-column:
+      1 / -1;
+
+    grid-row: 1;
+
+    width: 100%;
+
+    max-width: 320px;
+
+    min-height: 180px;
+
+    margin:
+      0 auto
+      10px;
+
+    z-index: 2;
+  }
+
+
+  /* REMOVE DESKTOP FLOATING POSITIONING */
+
+  .home-floating-card {
+    position: relative !important;
+
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+
+    transform: none !important;
+
+    width: 100% !important;
+
+    max-width: none !important;
+
+    min-width: 0 !important;
+
+    height: auto;
+
+    margin: 0;
+
+    z-index: 2;
+
+    animation:
+      none !important;
+  }
+
+
+  /* FREELANCER */
+
+  .home-card-profile {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+
+  /* PROJECT */
+
+  .home-card-job {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+
+  /* PAYMENT */
+
+  .home-card-payment {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+
+  /* ACTIVITY */
+
+  .home-card-hired {
+    grid-column: 2;
+    grid-row: 3;
+  }
+
+
+  /* GLOW STAYS BEHIND EVERYTHING */
+
+  .home-stage-glow {
+    position: absolute;
+
+    inset: 0;
+
+    pointer-events: none;
+
+    z-index: 0;
+  }
+
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+  .home-marketplace-stage {
+    gap: 10px;
+
+    padding:
+      18px
+      10px;
+  }
+
+
+  .home-floating-card {
+    padding: 12px !important;
+
+    border-radius: 16px;
+  }
+
+
+  .home-floating-avatar {
+    width: 42px !important;
+    height: 42px !important;
+
+    flex:
+      0 0
+      42px;
+  }
+
+
+  .home-floating-card strong {
+    font-size:
+      12px !important;
+  }
+
+
+  .home-floating-card small {
+    font-size:
+      10px !important;
+  }
+
+
+  .home-floating-card span {
+    font-size:
+      11px;
+  }
+
+
+  .home-floating-icon {
+    width: 36px;
+    height: 36px;
+
+    flex:
+      0 0
+      36px;
+
+    font-size: 18px;
+  }
+
+
+  .home-marketplace-core {
+    max-width: 270px;
+
+    min-height: 160px;
+  }
+
+}
