@@ -10856,3 +10856,38 @@ span:last-child {
   }
 
 }
+/* =========================================================
+   MOBILE MARKETPLACE - TRUE CENTERING FIX
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+  .home-marketplace-stage {
+    width: 100% !important;
+    max-width: 520px !important;
+
+    margin-left: auto !important;
+    margin-right: auto !important;
+
+    box-sizing: border-box !important;
+
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+
+    justify-content: center !important;
+  }
+
+  .home-marketplace-core {
+    justify-self: center !important;
+
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .home-card-profile,
+  .home-card-job,
+  .home-card-payment,
+  .home-card-hired {
+    justify-self: stretch !important;
+  }
+}
