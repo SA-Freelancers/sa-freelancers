@@ -10891,3 +10891,41 @@ span:last-child {
     justify-self: stretch !important;
   }
 }
+/* =========================================================
+   MOBILE HERO SPACING CLEANUP
+   Remove old marketplace scaling
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+  .home-live-hero-inner {
+    gap: 12px !important;
+  }
+
+  .home-marketplace-stage {
+    min-height: 0 !important;
+
+    transform: none !important;
+
+    transform-origin: center !important;
+
+    margin-top: 10px !important;
+  }
+
+}
+
+
+@media (max-width: 430px) {
+
+  .home-marketplace-stage {
+    width: 100% !important;
+
+    margin-left: auto !important;
+    margin-right: auto !important;
+
+    transform: none !important;
+
+    min-height: 0 !important;
+  }
+
+}
