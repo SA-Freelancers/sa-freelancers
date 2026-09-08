@@ -833,7 +833,7 @@ export default function HomePage() {
               </Link>
 
               <Link
-                href="/search"
+                href="/freelancers"
                 className="home-secondary-btn"
               >
                 Find Freelancers
@@ -1815,10 +1815,10 @@ export default function HomePage() {
               return (
 
                 <Link
-                  key={item}
-                  href={`/search?category=${encodeURIComponent(item)}`}
-                  className="popular-service-card"
-                >
+  key={item}
+  href={`/freelancers?category=${encodeURIComponent(item)}`}
+  className="popular-service-card"
+>
 
                   <div className="popular-service-icon">
 
@@ -1866,7 +1866,7 @@ export default function HomePage() {
         <div className="popular-services-footer">
 
           <Link
-            href="/search"
+            href="/freelancers"
             className="popular-services-view-all"
           >
             Browse All Services

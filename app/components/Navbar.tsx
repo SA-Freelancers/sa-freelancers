@@ -668,7 +668,24 @@ export default function Navbar() {
             user &&
             role ===
               "client" && (
-              <Link
+              <>
+                <Link
+                  href="/freelancers"
+                  onClick={
+                    closeMenu
+                  }
+                  className={`navbar-link ${
+                    pathname.startsWith(
+                      "/freelancers"
+                    )
+                      ? "active"
+                      : ""
+                  }`}
+                >
+                  Find Freelancers
+                </Link>
+
+                <Link
                 href="/dashboard/post-job"
                 onClick={
                   closeMenu
@@ -683,6 +700,7 @@ export default function Navbar() {
               >
                 Post Job
               </Link>
+              </>
             )}
 
           {/* THEME */}
@@ -811,6 +829,15 @@ export default function Navbar() {
                   {role ===
                     "client" && (
                     <>
+                      <Link
+                        href="/freelancers"
+                        onClick={
+                          closeMenu
+                        }
+                      >
+                        Find Freelancers
+                      </Link>
+
                       <Link
                         href="/dashboard/post-job"
                         onClick={

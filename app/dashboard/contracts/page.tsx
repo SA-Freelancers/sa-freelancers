@@ -16,11 +16,31 @@ type Contract = {
   created_at?: string;
 };
 
+type JobInvitation = {
+  id: string;
+  job_id: string;
+  client_id: string;
+  freelancer_id: string;
+  status: "pending" | "accepted" | "declined";
+  created_at?: string;
+  responded_at?: string | null;
+  job?: {
+    id: string;
+    title?: string;
+    description?: string;
+    budget?: number;
+    category?: string;
+  };
+};
+
 export default function ContractsPage() {
   const [contracts, setContracts] = useState<Contract[]>([]);
+  const [invitations, setInvitations] = useState<JobInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [allowed, setAllowed] = useState(false);
   const [message, setMessage] = useState("");
+  const [respondingInvitationId, setRespondingInvitationId] =
+    useState<string | null>(null);
 
   useEffect(() => {
     loadContracts();
@@ -62,33 +82,215 @@ export default function ContractsPage() {
 
     setAllowed(true);
 
-    const {
-      data,
-      error,
-    } = await supabase
-      .from("contracts")
-      .select("*")
-      .eq("freelancer_id", user.id)
-      .order("created_at", {
-        ascending: false,
-      });
+    const [
+      contractsResult,
+      invitationsResult,
+    ] = await Promise.all([
+      supabase
+        .from("contracts")
+        .select("*")
+        .eq("freelancer_id", user.id)
+        .order("created_at", {
+          ascending: false,
+        }),
 
-    if (error) {
+      supabase
+        .from("job_invitations")
+        .select(
+          "id, job_id, client_id, freelancer_id, status, created_at, responded_at"
+        )
+        .eq("freelancer_id", user.id)
+        .order("created_at", {
+          ascending: false,
+        }),
+    ]);
+
+    if (contractsResult.error) {
       console.error(
         "Contracts loading error:",
-        error
+        contractsResult.error
       );
 
       setContracts([]);
-      setLoading(false);
+    } else {
+      setContracts(
+        (contractsResult.data as Contract[]) || []
+      );
+    }
+
+    if (invitationsResult.error) {
+      console.error(
+        "Job invitations loading error:",
+        invitationsResult.error
+      );
+
+      setInvitations([]);
+    } else {
+      const invitationRows =
+        (invitationsResult.data as JobInvitation[]) || [];
+
+      const jobIds = Array.from(
+        new Set(
+          invitationRows
+            .map((invitation) => invitation.job_id)
+            .filter(Boolean)
+        )
+      );
+
+      if (jobIds.length === 0) {
+        setInvitations(invitationRows);
+      } else {
+        const {
+          data: jobsData,
+          error: jobsError,
+        } = await supabase
+          .from("jobs")
+          .select(
+            "id, title, description, budget, category"
+          )
+          .in("id", jobIds);
+
+        if (jobsError) {
+          console.error(
+            "Invitation jobs loading error:",
+            jobsError
+          );
+
+          setInvitations(invitationRows);
+        } else {
+          const jobsMap = new Map(
+            (
+              (jobsData as {
+                id: string;
+                title?: string;
+                description?: string;
+                budget?: number;
+                category?: string;
+              }[]) || []
+            ).map((job) => [
+              job.id,
+              job,
+            ])
+          );
+
+          setInvitations(
+            invitationRows.map(
+              (invitation) => ({
+                ...invitation,
+                job: jobsMap.get(
+                  invitation.job_id
+                ),
+              })
+            )
+          );
+        }
+      }
+    }
+
+    setLoading(false);
+  };
+
+  const respondToInvitation = async (
+    invitationId: string,
+    status: "accepted" | "declined"
+  ) => {
+    setMessage("");
+
+    const invitation =
+      invitations.find(
+        (item) =>
+          item.id === invitationId
+      );
+
+    if (
+      !invitation ||
+      invitation.status !== "pending"
+    ) {
       return;
     }
 
-    setContracts(
-      (data as Contract[]) || []
+    setRespondingInvitationId(
+      invitationId
     );
 
-    setLoading(false);
+    try {
+      const {
+        data: { user },
+      } =
+        await supabase.auth.getUser();
+
+      if (!user) {
+        setMessage(
+          "You must be logged in to respond to an invitation."
+        );
+        return;
+      }
+
+      const {
+        error: invitationError,
+      } = await supabase
+        .from("job_invitations")
+        .update({
+          status,
+        })
+        .eq("id", invitationId)
+        .eq("freelancer_id", user.id)
+        .eq("status", "pending");
+
+      if (invitationError) {
+        console.error(
+          "Job invitation update error:",
+          invitationError
+        );
+
+        setMessage(
+          `Unable to update invitation: ${invitationError.message}`
+        );
+        return;
+      }
+
+      const jobTitle =
+        invitation.job?.title ||
+        "Job invitation";
+
+      const {
+        error: notificationError,
+      } = await supabase
+        .from("notifications")
+        .insert({
+          user_id:
+            invitation.client_id,
+          title:
+            status === "accepted"
+              ? "Job Invitation Accepted"
+              : "Job Invitation Declined",
+          body:
+            status === "accepted"
+              ? `${jobTitle} was accepted by the invited freelancer.`
+              : `${jobTitle} was declined by the invited freelancer.`,
+          link: `/dashboard/jobs/${invitation.job_id}`,
+          is_read: false,
+        });
+
+      if (notificationError) {
+        console.error(
+          "Invitation notification error:",
+          notificationError
+        );
+      }
+
+      await loadContracts();
+
+      setMessage(
+        status === "accepted"
+          ? "Invitation accepted. The client has been notified."
+          : "Invitation declined. The client has been notified."
+      );
+    } finally {
+      setRespondingInvitationId(
+        null
+      );
+    }
   };
 
   const updateContract = async (
@@ -459,6 +661,12 @@ export default function ContractsPage() {
    * =======================================================
    */
 
+  const pendingInvitations =
+    invitations.filter(
+      (invitation) =>
+        invitation.status === "pending"
+    );
+
   const pendingContracts =
     contracts.filter(
       (contract) =>
@@ -521,7 +729,7 @@ export default function ContractsPage() {
       )}
 
       {/* ===================================================
-          PENDING REQUESTS
+          JOB INVITATIONS
           =================================================== */}
 
       <section>
@@ -530,15 +738,130 @@ export default function ContractsPage() {
             marginBottom: 18,
           }}
         >
-          Pending Requests
+          Job Invitations
+        </h2>
+
+        {pendingInvitations.length ===
+        0 ? (
+          <EmptyState
+            emoji="💌"
+            title="No pending invitations"
+            description="Direct job invitations from clients will appear here."
+          />
+        ) : (
+          <div className="contracts-grid">
+            {pendingInvitations.map(
+              (invitation) => (
+                <div
+                  key={invitation.id}
+                  className="dark-card contract-card"
+                >
+                  <div className="contract-top">
+                    <h2>
+                      {invitation.job?.title ||
+                        "Job Invitation"}
+                    </h2>
+
+                    <span className="contract-status pending">
+                      invited
+                    </span>
+                  </div>
+
+                  {invitation.job?.category && (
+                    <p
+                      style={{
+                        marginTop: 8,
+                        marginBottom: 8,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {invitation.job.category}
+                    </p>
+                  )}
+
+                  <p className="contract-budget">
+                    Budget: ZAR{" "}
+                    {invitation.job?.budget ??
+                      0}
+                  </p>
+
+                  <p className="contract-description">
+                    {invitation.job?.description ||
+                      "No description provided."}
+                  </p>
+
+                  <div className="contract-actions">
+                    <a
+                      href={`/dashboard/jobs/${invitation.job_id}`}
+                      className="primary-action-link"
+                    >
+                      View Job
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        respondToInvitation(
+                          invitation.id,
+                          "accepted"
+                        )
+                      }
+                      className="accept-btn"
+                      disabled={
+                        respondingInvitationId ===
+                        invitation.id
+                      }
+                    >
+                      {respondingInvitationId ===
+                      invitation.id
+                        ? "Working..."
+                        : "Accept Invitation"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        respondToInvitation(
+                          invitation.id,
+                          "declined"
+                        )
+                      }
+                      className="reject-btn"
+                      disabled={
+                        respondingInvitationId ===
+                        invitation.id
+                      }
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* ===================================================
+          PENDING CONTRACT REQUESTS
+          =================================================== */}
+
+
+      <section>
+        <h2
+          style={{
+            marginBottom: 18,
+          }}
+        >
+          Pending Contract Requests
         </h2>
 
         {pendingContracts.length ===
         0 ? (
           <EmptyState
             emoji="📭"
-            title="No pending requests"
-            description="New hiring requests will appear here."
+            title="No pending contract requests"
+            description="New contract requests will appear here."
           />
         ) : (
           <div className="contracts-grid">
