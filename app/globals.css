@@ -2707,12 +2707,16 @@ body:not(.dark) .quick-action-card p {
 }
 
   /* WHATSAPP BUTTON */
-  .whatsapp-float {
-    width: 60px;
-    height: 60px;
-    right: 20px;
-    bottom: 20px;
-  }
+
+.whatsapp-float {
+  width: 54px;
+  height: 54px;
+
+  right: 14px;
+  bottom: 16px;
+
+  z-index: 1000;
+}
 }
 /* =========================
    MOBILE DASHBOARD FIX
@@ -10928,4 +10932,27 @@ span:last-child {
     min-height: 0 !important;
   }
 
+}
+/* =========================================================
+   HOMEPAGE SECTION SPACING - FINAL OVERRIDE
+   ========================================================= */
+
+@media (min-width: 769px) {
+
+  .home-live-page .home-section {
+    margin-top: 0 !important;
+    padding-top: 42px !important;
+    padding-bottom: 42px !important;
+  }
+
+  .home-live-page .home-benefits-section {
+    margin-top: 0 !important;
+    padding-top: 42px !important;
+    padding-bottom: 42px !important;
+  }
+
+  .home-live-page .home-motivation-section {
+    margin-top: 32px !important;
+    margin-bottom: 32px !important;
+  }
 }
