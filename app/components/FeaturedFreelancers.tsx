@@ -740,7 +740,7 @@ export default function FeaturedFreelancers() {
       <div className="featured-freelancers-footer">
 
         <Link
-          href="/search"
+          href="/freelancers"
           className="featured-view-all"
         >
 

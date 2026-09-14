@@ -1,246 +1,366 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import {
+  Suspense,
+  useEffect,
+  useState,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/app/lib/supabase";
 import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 
+type Project = {
+  id: string;
+  client_id: string | null;
+  freelancer_id: string | null;
+  status: string | null;
+  payment_status: string | null;
+  paid_at: string | null;
+};
+
+type Milestone = {
+  id: string;
+  project_id: string | null;
+  contract_id: string | null;
+  title: string | null;
+  amount: number | null;
+  status: string | null;
+};
+
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
 
-  // IMPORTANT:
-  // Payment page sends ?projectId=...
-  const projectId = searchParams.get("projectId");
+  const projectId =
+    searchParams.get("projectId");
 
-  // Payment page also sends ?milestoneId=...
-  const milestoneId = searchParams.get("milestoneId");
+  const milestoneId =
+    searchParams.get("milestoneId");
 
-  const [loading, setLoading] = useState(true);
-  const [success, setSuccess] = useState(false);
-  const [message, setMessage] = useState("");
+  const [loading, setLoading] =
+    useState(true);
+
+  const [success, setSuccess] =
+    useState(false);
+
+  const [message, setMessage] =
+    useState("");
 
   useEffect(() => {
-    updatePayment();
+    verifyPayment();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, milestoneId]);
 
-  const updatePayment = async () => {
-    setLoading(true);
-    setMessage("");
+  // --------------------------------------------------
+  // WAIT
+  // --------------------------------------------------
 
-    try {
-      // --------------------------------------------------
-      // CHECK PAYMENT PARAMETERS
-      // --------------------------------------------------
+  const wait = (
+    milliseconds: number
+  ) =>
+    new Promise((resolve) =>
+      setTimeout(
+        resolve,
+        milliseconds
+      )
+    );
 
-      if (!projectId) {
-        setMessage("Payment project information is missing.");
-        setLoading(false);
-        return;
-      }
+  // --------------------------------------------------
+  // VERIFY PAYMENT
+  // --------------------------------------------------
 
-      // --------------------------------------------------
-      // GET CURRENT USER
-      // --------------------------------------------------
+  const verifyPayment =
+    async () => {
+      setLoading(true);
+      setSuccess(false);
+      setMessage("");
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      try {
+        // ----------------------------------------------
+        // CHECK PARAMETERS
+        // ----------------------------------------------
 
-      if (!user) {
-        setMessage("Please login first.");
-        setLoading(false);
-        return;
-      }
-
-      // --------------------------------------------------
-      // LOAD PROJECT
-      // --------------------------------------------------
-
-      const {
-        data: project,
-        error: projectError,
-      } = await supabase
-        .from("projects")
-        .select(
-          "id, client_id, freelancer_id, status, payment_status, paid_at"
-        )
-        .eq("id", projectId)
-        .single();
-
-      if (projectError || !project) {
-        console.error(
-          "Payment success project error:",
-          projectError
-        );
-
-        setMessage(
-          projectError?.message ||
-            "The project could not be found."
-        );
-
-        setLoading(false);
-        return;
-      }
-
-      // --------------------------------------------------
-      // SECURITY
-      // --------------------------------------------------
-
-      if (project.client_id !== user.id) {
-        setMessage(
-          "You are not authorised to update this payment."
-        );
-
-        setLoading(false);
-        return;
-      }
-
-      // --------------------------------------------------
-      // UPDATE PROJECT PAYMENT
-      // --------------------------------------------------
-
-      const {
-        error: updateProjectError,
-      } = await supabase
-        .from("projects")
-        .update({
-  payment_status: "paid",
-  paid_at: new Date().toISOString(),
-  status: "active",
-})
-        .eq("id", projectId)
-        .eq("client_id", user.id);
-
-      if (updateProjectError) {
-        console.error(
-          "Project payment update error:",
-          updateProjectError
-        );
-
-        setMessage(
-          updateProjectError.message ||
-            "The project payment could not be updated."
-        );
-
-        setLoading(false);
-        return;
-      }
-
-      // --------------------------------------------------
-      // UPDATE MILESTONE TO PAID
-      // --------------------------------------------------
-
-      if (milestoneId) {
-        const {
-          data: milestone,
-          error: milestoneError,
-        } = await supabase
-          .from("milestones")
-          .select(
-            "id, project_id, contract_id, title, amount, status"
-          )
-          .eq("id", milestoneId)
-          .eq("project_id", projectId)
-          .single();
-
-        if (milestoneError || !milestone) {
-          console.error(
-            "Payment milestone loading error:",
-            milestoneError
-          );
-
+        if (!projectId) {
           setMessage(
-            "The payment was received, but the milestone could not be verified."
+            "Payment project information is missing."
           );
 
           setLoading(false);
           return;
         }
 
-        // --------------------------------------------------
-        // MARK MILESTONE AS PAID
-        // --------------------------------------------------
+        // ----------------------------------------------
+        // CURRENT USER
+        // ----------------------------------------------
 
         const {
-          error: milestoneUpdateError,
-        } = await supabase
-          .from("milestones")
-          .update({
-            status: "paid",
-          })
-          .eq("id", milestoneId)
-          .eq("project_id", projectId);
+          data: {
+            user,
+          },
+          error:
+            userError,
+        } =
+          await supabase.auth.getUser();
 
-        if (milestoneUpdateError) {
-          console.error(
-            "Milestone payment update error:",
-            milestoneUpdateError
-          );
-
+        if (
+          userError ||
+          !user
+        ) {
           setMessage(
-            "The payment was received, but the milestone status could not be updated."
+            "Please login first."
           );
 
           setLoading(false);
           return;
         }
 
-        // --------------------------------------------------
-        // RECORD CONTRACT ACTIVITY
-        // --------------------------------------------------
+        // ----------------------------------------------
+        // PAYFAST ITN MAY ARRIVE AFTER REDIRECT
+        //
+        // Poll briefly so the browser does not mark
+        // anything as paid itself.
+        // ----------------------------------------------
 
-        if (milestone.contract_id) {
-          await supabase
-            .from("contract_activity")
-            .insert({
-              contract_id: milestone.contract_id,
-              action: `Milestone "${milestone.title || "Untitled"}" payment completed`,
-            });
+        const maxAttempts = 10;
+        const delayMs = 1500;
+
+        for (
+          let attempt = 1;
+          attempt <= maxAttempts;
+          attempt++
+        ) {
+          // --------------------------------------------
+          // LOAD PROJECT
+          // --------------------------------------------
+
+          const {
+            data:
+              projectData,
+            error:
+              projectError,
+          } =
+            await supabase
+              .from("projects")
+              .select(
+                `
+                id,
+                client_id,
+                freelancer_id,
+                status,
+                payment_status,
+                paid_at
+                `
+              )
+              .eq(
+                "id",
+                projectId
+              )
+              .maybeSingle();
+
+          if (
+            projectError
+          ) {
+            console.error(
+              "Payment verification project error:",
+              projectError
+            );
+
+            setMessage(
+              "The project payment could not be verified."
+            );
+
+            setLoading(false);
+            return;
+          }
+
+          if (
+            !projectData
+          ) {
+            setMessage(
+              "The project could not be found."
+            );
+
+            setLoading(false);
+            return;
+          }
+
+          const project =
+            projectData as Project;
+
+          // --------------------------------------------
+          // SECURITY
+          // --------------------------------------------
+
+          if (
+            project.client_id !==
+            user.id
+          ) {
+            setMessage(
+              "You are not authorised to view this payment."
+            );
+
+            setLoading(false);
+            return;
+          }
+
+          // --------------------------------------------
+          // OPTIONAL MILESTONE
+          // --------------------------------------------
+
+          let milestone:
+            Milestone | null =
+            null;
+
+          if (
+            milestoneId
+          ) {
+            const {
+              data:
+                milestoneData,
+              error:
+                milestoneError,
+            } =
+              await supabase
+                .from(
+                  "milestones"
+                )
+                .select(
+                  `
+                  id,
+                  project_id,
+                  contract_id,
+                  title,
+                  amount,
+                  status
+                  `
+                )
+                .eq(
+                  "id",
+                  milestoneId
+                )
+                .eq(
+                  "project_id",
+                  projectId
+                )
+                .maybeSingle();
+
+            if (
+              milestoneError
+            ) {
+              console.error(
+                "Payment milestone verification error:",
+                milestoneError
+              );
+
+              setMessage(
+                "The payment project was found, but the milestone could not be verified."
+              );
+
+              setLoading(false);
+              return;
+            }
+
+            if (
+              !milestoneData
+            ) {
+              setMessage(
+                "The payment milestone could not be found."
+              );
+
+              setLoading(false);
+              return;
+            }
+
+            milestone =
+              milestoneData as Milestone;
+          }
+
+          // --------------------------------------------
+          // VERIFY SERVER-WRITTEN PAYMENT STATE
+          // --------------------------------------------
+
+          const projectPaid =
+            project.payment_status ===
+            "paid";
+
+          const milestonePaid =
+            !milestoneId ||
+            milestone?.status ===
+              "paid" ||
+            milestone?.status ===
+              "submitted" ||
+            milestone?.status ===
+              "completed";
+
+          if (
+            projectPaid &&
+            milestonePaid
+          ) {
+            setSuccess(true);
+
+            setMessage(
+              "Your payment has been verified successfully."
+            );
+
+            setLoading(false);
+            return;
+          }
+
+          // --------------------------------------------
+          // WAIT FOR PAYFAST ITN
+          // --------------------------------------------
+
+          if (
+            attempt <
+            maxAttempts
+          ) {
+            await wait(
+              delayMs
+            );
+          }
         }
 
-        // --------------------------------------------------
-        // NOTIFY FREELANCER
-        // --------------------------------------------------
+        // ----------------------------------------------
+        // ITN NOT CONFIRMED YET
+        // ----------------------------------------------
 
-        if (project.freelancer_id) {
-          await supabase
-            .from("notifications")
-            .insert({
-              user_id: project.freelancer_id,
-              title: "Payment Received",
-              body: `Payment received for milestone "${milestone.title || "Untitled Milestone"}".`,
-              link: `/dashboard/contracts/${
-                milestone.contract_id || ""
-              }/milestones`,
-              is_read: false,
-            });
-        }
-      }
+        setSuccess(false);
 
-      // --------------------------------------------------
-      // SUCCESS
-      // --------------------------------------------------
+        setMessage(
+          "PayFast returned you successfully, but the payment confirmation is still being processed. Please refresh this page shortly."
+        );
 
-      setSuccess(true);
-      setLoading(false);
-    } catch (error) {
-      console.error(
-        "Payment success error:",
+        setLoading(false);
+      } catch (
         error
-      );
+      ) {
+        console.error(
+          "Payment verification error:",
+          error
+        );
 
-      setMessage(
-        "An unexpected error occurred while confirming the payment."
-      );
+        setMessage(
+          "An unexpected error occurred while verifying the payment."
+        );
 
-      setLoading(false);
-    }
-  };
+        setLoading(false);
+      }
+    };
+
+  // --------------------------------------------------
+  // LOADING
+  // --------------------------------------------------
 
   if (loading) {
-    return <LoadingSkeleton />;
+    return (
+      <LoadingSkeleton />
+    );
   }
+
+  // --------------------------------------------------
+  // PAGE
+  // --------------------------------------------------
 
   return (
     <main className="dashboard-main">
@@ -251,18 +371,24 @@ function PaymentSuccessContent() {
               Payment Completed
             </p>
 
-            <h1>Payment Successful</h1>
+            <h1>
+              Payment Successful
+            </h1>
 
             <p>
-              Your payment was successfully recorded.
-              The project payment status has been updated
-              and the milestone has been marked as paid.
+              Your payment has been
+              successfully verified.
+              The project payment and
+              milestone status were
+              confirmed by the secure
+              payment process.
             </p>
 
             <div
               className="contract-actions"
               style={{
-                justifyContent: "center",
+                justifyContent:
+                  "center",
                 marginTop: 25,
               }}
             >
@@ -290,21 +416,32 @@ function PaymentSuccessContent() {
             </p>
 
             <h1>
-              Payment Could Not Be Verified
+              Payment Confirmation Pending
             </h1>
 
             <p>
               {message ||
-                "We could not verify the payment."}
+                "We could not verify the payment yet."}
             </p>
 
             <div
               className="contract-actions"
               style={{
-                justifyContent: "center",
+                justifyContent:
+                  "center",
                 marginTop: 25,
               }}
             >
+              <button
+                type="button"
+                className="primary-action-btn"
+                onClick={
+                  verifyPayment
+                }
+              >
+                Check Again
+              </button>
+
               <Link
                 href="/dashboard/projects"
                 className="primary-action-link"
@@ -321,7 +458,11 @@ function PaymentSuccessContent() {
 
 export default function PaymentSuccessPage() {
   return (
-    <Suspense fallback={<LoadingSkeleton />}>
+    <Suspense
+      fallback={
+        <LoadingSkeleton />
+      }
+    >
       <PaymentSuccessContent />
     </Suspense>
   );

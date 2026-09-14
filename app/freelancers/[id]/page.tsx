@@ -169,6 +169,18 @@ export default function FreelancerPublicProfilePage() {
   const [errorMessage, setErrorMessage] =
     useState("");
 
+  const [viewerId, setViewerId] =
+    useState<string | null>(null);
+
+  const [viewerRole, setViewerRole] =
+    useState<string | null>(null);
+
+  const [viewerIsAdmin, setViewerIsAdmin] =
+    useState(false);
+
+  const [authChecked, setAuthChecked] =
+    useState(false);
+
   useEffect(() => {
     if (!id) {
       setLoading(false);
@@ -177,6 +189,70 @@ export default function FreelancerPublicProfilePage() {
 
     loadProfile();
   }, [id]);
+
+  useEffect(() => {
+    async function loadViewer() {
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError) {
+          console.error(
+            "Viewer authentication error:",
+            userError
+          );
+        }
+
+        if (!user) {
+          setViewerId(null);
+          setViewerRole(null);
+          setViewerIsAdmin(false);
+          return;
+        }
+
+        setViewerId(user.id);
+
+        const {
+          data: viewerProfile,
+          error: viewerProfileError,
+        } = await supabase
+          .from("profiles")
+          .select("role, is_admin")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (viewerProfileError) {
+          console.error(
+            "Viewer profile loading error:",
+            viewerProfileError
+          );
+        }
+
+        setViewerRole(
+          viewerProfile?.role || null
+        );
+
+        setViewerIsAdmin(
+          viewerProfile?.is_admin === true
+        );
+      } catch (error) {
+        console.error(
+          "Viewer loading error:",
+          error
+        );
+
+        setViewerId(null);
+        setViewerRole(null);
+        setViewerIsAdmin(false);
+      } finally {
+        setAuthChecked(true);
+      }
+    }
+
+    void loadViewer();
+  }, []);
 
   async function loadProfile() {
     setLoading(true);
@@ -471,6 +547,20 @@ export default function FreelancerPublicProfilePage() {
     ? profile.certifications
     : [];
 
+  const isOwnProfile =
+    viewerId === profile.id;
+
+  const canHire =
+    authChecked &&
+    !!viewerId &&
+    viewerRole === "client" &&
+    !viewerIsAdmin &&
+    !isOwnProfile;
+
+  const showSignInToHire =
+    authChecked &&
+    !viewerId;
+
   return (
     <main className="contracts-page">
 
@@ -638,19 +728,34 @@ export default function FreelancerPublicProfilePage() {
               }}
             >
 
-              <Link
-                href={`/hire/${profile.id}`}
-                className="primary-action-link"
-              >
-                Hire Freelancer
-              </Link>
+              {canHire && (
+                <Link
+                  href={`/hire/${profile.id}`}
+                  className="primary-action-link"
+                >
+                  Hire Freelancer
+                </Link>
+              )}
 
-              <Link
-                href={`/freelancers/${profile.id}/report`}
-                className="reject-btn"
-              >
-                Report User
-              </Link>
+              {showSignInToHire && (
+                <Link
+                  href="/login"
+                  className="primary-action-link"
+                >
+                  Sign in to Hire
+                </Link>
+              )}
+
+              {authChecked &&
+                !!viewerId &&
+                !isOwnProfile && (
+                  <Link
+                    href={`/freelancers/${profile.id}/report`}
+                    className="reject-btn"
+                  >
+                    Report User
+                  </Link>
+                )}
 
             </div>
 

@@ -22,27 +22,18 @@ const senderMap: Record<
   }
 > = {
   support: {
-    email:
-      "support@freelancehubsa.co.za",
-
-    name:
-      "Freelance Hub SA Support",
+    email: "support@freelancehubsa.co.za",
+    name: "Freelance Hub SA Support",
   },
 
   billing: {
-    email:
-      "billing@freelancehubsa.co.za",
-
-    name:
-      "Freelance Hub SA Billing",
+    email: "billing@freelancehubsa.co.za",
+    name: "Freelance Hub SA Billing",
   },
 
   security: {
-    email:
-      "security@freelancehubsa.co.za",
-
-    name:
-      "Freelance Hub SA Security",
+    email: "security@freelancehubsa.co.za",
+    name: "Freelance Hub SA Security",
   },
 };
 
@@ -55,16 +46,13 @@ export async function POST(
     // ==================================================
 
     const supabaseUrl =
-      process.env
-        .NEXT_PUBLIC_SUPABASE_URL;
+      process.env.NEXT_PUBLIC_SUPABASE_URL;
 
     const serviceRoleKey =
-      process.env
-        .SUPABASE_SERVICE_ROLE_KEY;
+      process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     const resendApiKey =
-      process.env
-        .RESEND_API_KEY;
+      process.env.RESEND_API_KEY;
 
     if (
       !supabaseUrl ||
@@ -88,9 +76,7 @@ export async function POST(
     // ==================================================
 
     const authorization =
-      request.headers.get(
-        "authorization"
-      );
+      request.headers.get("authorization");
 
     if (
       !authorization ||
@@ -119,11 +105,8 @@ export async function POST(
         serviceRoleKey,
         {
           auth: {
-            autoRefreshToken:
-              false,
-
-            persistSession:
-              false,
+            autoRefreshToken: false,
+            persistSession: false,
           },
         }
       );
@@ -165,13 +148,12 @@ export async function POST(
       error: adminProfileError,
     } = await admin
       .from("profiles")
-      .select(
-        `
+      .select(`
         id,
         full_name,
-        is_admin
-        `
-      )
+        is_admin,
+        suspended
+      `)
       .eq(
         "id",
         userData.user.id
@@ -180,7 +162,9 @@ export async function POST(
 
     if (
       adminProfileError ||
-      !adminProfile?.is_admin
+      !adminProfile ||
+      adminProfile.is_admin !== true ||
+      adminProfile.suspended === true
     ) {
       return NextResponse.json(
         {
@@ -225,22 +209,19 @@ export async function POST(
 
     const recipientUserId =
       String(
-        body.recipientUserId ||
-          ""
+        body.recipientUserId || ""
       ).trim();
 
     const recipientEmail =
       String(
-        body.recipientEmail ||
-          ""
+        body.recipientEmail || ""
       )
         .trim()
         .toLowerCase();
 
     const recipientName =
       String(
-        body.recipientName ||
-          ""
+        body.recipientName || ""
       ).trim();
 
     const senderType =
@@ -248,14 +229,12 @@ export async function POST(
 
     const subject =
       String(
-        body.subject ||
-          ""
+        body.subject || ""
       ).trim();
 
     const message =
       String(
-        body.message ||
-          ""
+        body.message || ""
       ).trim();
 
     // ==================================================
@@ -299,9 +278,7 @@ export async function POST(
 
     if (
       !senderType ||
-      !senderMap[
-        senderType
-      ]
+      !senderMap[senderType]
     ) {
       return NextResponse.json(
         {
@@ -342,8 +319,7 @@ export async function POST(
     }
 
     if (
-      subject.length >
-      200
+      subject.length > 200
     ) {
       return NextResponse.json(
         {
@@ -358,8 +334,7 @@ export async function POST(
     }
 
     if (
-      message.length >
-      20000
+      message.length > 20000
     ) {
       return NextResponse.json(
         {
@@ -374,9 +349,7 @@ export async function POST(
     }
 
     const sender =
-      senderMap[
-        senderType
-      ];
+      senderMap[senderType];
 
     // ==================================================
     // EMAIL HTML
@@ -546,15 +519,13 @@ export async function POST(
         )
         .insert({
           recipient_user_id:
-            recipientUserId ||
-            null,
+            recipientUserId || null,
 
           recipient_email:
             recipientEmail,
 
           recipient_name:
-            recipientName ||
-            null,
+            recipientName || null,
 
           sender_email:
             sender.email,
@@ -595,8 +566,7 @@ export async function POST(
     // ==================================================
 
     const providerMessageId =
-      resendResult?.id ||
-      null;
+      resendResult?.id || null;
 
     const {
       error: logError,
@@ -606,15 +576,13 @@ export async function POST(
       )
       .insert({
         recipient_user_id:
-          recipientUserId ||
-          null,
+          recipientUserId || null,
 
         recipient_email:
           recipientEmail,
 
         recipient_name:
-          recipientName ||
-          null,
+          recipientName || null,
 
         sender_email:
           sender.email,
