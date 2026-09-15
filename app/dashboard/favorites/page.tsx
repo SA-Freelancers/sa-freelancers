@@ -8,22 +8,24 @@ import EmptyState from "@/app/components/EmptyState";
 
 type Favorite = {
   id: string;
-  job_id?: string;
-  freelancer_id?: string;
+  job_id?: string | null;
+  freelancer_id?: string | null;
+
   jobs?: {
     id: string;
     title?: string;
     description?: string;
     budget?: number | string;
     category?: string;
-  };
+  } | null;
+
   profiles?: {
     id: string;
     full_name?: string;
     role?: string;
     category?: string;
     bio?: string;
-  };
+  } | null;
 };
 
 export default function FavoritesPage() {
@@ -36,11 +38,15 @@ export default function FavoritesPage() {
   }, []);
 
   const loadFavorites = async () => {
+    setLoading(true);
+    setMessage("");
+
     const {
       data: { user },
+      error: userError,
     } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (userError || !user) {
       setMessage("Please login first.");
       setLoading(false);
       return;
@@ -53,6 +59,7 @@ export default function FavoritesPage() {
         id,
         job_id,
         freelancer_id,
+
         jobs (
           id,
           title,
@@ -60,7 +67,8 @@ export default function FavoritesPage() {
           budget,
           category
         ),
-        profiles (
+
+        profiles:profiles!favorites_freelancer_id_fkey (
           id,
           full_name,
           role,
@@ -70,24 +78,31 @@ export default function FavoritesPage() {
       `
       )
       .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("created_at", {
+        ascending: false,
+      });
 
     if (error) {
+      console.error("Favorites loading error:", error);
       setMessage(error.message);
       setLoading(false);
       return;
     }
 
-setFavorites((data as unknown as Favorite[]) || []);
+    setFavorites((data as unknown as Favorite[]) || []);
     setLoading(false);
   };
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading) {
+    return <LoadingSkeleton />;
+  }
 
   return (
     <main className="favorites-page">
       <section className="favorites-hero dark-card">
-        <p className="dashboard-badge">Saved Items</p>
+        <p className="dashboard-badge">
+          Saved Items
+        </p>
 
         <h1>Your favorites</h1>
 
@@ -96,7 +111,11 @@ setFavorites((data as unknown as Favorite[]) || []);
         </p>
       </section>
 
-      {message && <p className="search-message">{message}</p>}
+      {message && (
+        <p className="search-message">
+          {message}
+        </p>
+      )}
 
       {favorites.length === 0 ? (
         <EmptyState
@@ -113,17 +132,38 @@ setFavorites((data as unknown as Favorite[]) || []);
             const freelancer = favorite.profiles;
 
             return (
-              <div key={favorite.id} className="dark-card marketplace-card">
+              <div
+                key={favorite.id}
+                className="dark-card marketplace-card"
+              >
                 <span className="marketplace-badge">
-                  {job ? "Saved Job" : "Saved Freelancer"}
+                  {job
+                    ? "Saved Job"
+                    : "Saved Freelancer"}
                 </span>
 
                 {job && (
                   <>
-                    <h3>{job.title || "Untitled Job"}</h3>
-                    <p>{job.description?.slice(0, 140) || "No description."}</p>
+                    <h3>
+                      {job.title ||
+                        "Untitled Job"}
+                    </h3>
+
                     <p>
-                      <strong>Budget:</strong> ZAR {job.budget || "N/A"}
+                      {job.description?.slice(
+                        0,
+                        140
+                      ) ||
+                        "No description."}
+                    </p>
+
+                    <p>
+                      <strong>
+                        Budget:
+                      </strong>{" "}
+                      ZAR{" "}
+                      {job.budget ||
+                        "N/A"}
                     </p>
 
                     <Link
@@ -137,11 +177,26 @@ setFavorites((data as unknown as Favorite[]) || []);
 
                 {freelancer && (
                   <>
-                    <h3>{freelancer.full_name || "Unnamed Freelancer"}</h3>
+                    <h3>
+                      {freelancer.full_name ||
+                        "Unnamed Freelancer"}
+                    </h3>
+
                     <p>
-                      <strong>Role:</strong> {freelancer.role || "N/A"}
+                      <strong>
+                        Role:
+                      </strong>{" "}
+                      {freelancer.role ||
+                        "N/A"}
                     </p>
-                    <p>{freelancer.bio?.slice(0, 140) || "No bio yet."}</p>
+
+                    <p>
+                      {freelancer.bio?.slice(
+                        0,
+                        140
+                      ) ||
+                        "No bio yet."}
+                    </p>
 
                     <Link
                       href={`/freelancers/${freelancer.id}`}
