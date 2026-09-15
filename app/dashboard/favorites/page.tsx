@@ -32,10 +32,15 @@ export default function FavoritesPage() {
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadFavorites();
   }, []);
+
+  // =========================================================
+  // LOAD FAVORITES
+  // =========================================================
 
   const loadFavorites = async () => {
     setLoading(true);
@@ -83,19 +88,95 @@ export default function FavoritesPage() {
       });
 
     if (error) {
-      console.error("Favorites loading error:", error);
+      console.error(
+        "Favorites loading error:",
+        error
+      );
+
       setMessage(error.message);
       setLoading(false);
       return;
     }
 
-    setFavorites((data as unknown as Favorite[]) || []);
+    setFavorites(
+      (data as unknown as Favorite[]) || []
+    );
+
     setLoading(false);
   };
+
+  // =========================================================
+  // REMOVE FAVORITE
+  // =========================================================
+
+  const removeFavorite = async (
+    favoriteId: string
+  ) => {
+    if (removingId) {
+      return;
+    }
+
+    setMessage("");
+    setRemovingId(favoriteId);
+
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        setMessage(
+          "Please login first."
+        );
+        return;
+      }
+
+      const { error } = await supabase
+        .from("favorites")
+        .delete()
+        .eq("id", favoriteId)
+        .eq("user_id", user.id);
+
+      if (error) {
+        console.error(
+          "Favorite removal error:",
+          error
+        );
+
+        setMessage(
+          error.message
+        );
+
+        return;
+      }
+
+      setFavorites((current) =>
+        current.filter(
+          (favorite) =>
+            favorite.id !== favoriteId
+        )
+      );
+
+      setMessage(
+        "Removed from favorites."
+      );
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
+  // =========================================================
+  // LOADING
+  // =========================================================
 
   if (loading) {
     return <LoadingSkeleton />;
   }
+
+  // =========================================================
+  // PAGE
+  // =========================================================
 
   return (
     <main className="favorites-page">
@@ -127,88 +208,153 @@ export default function FavoritesPage() {
         />
       ) : (
         <section className="marketplace-grid">
-          {favorites.map((favorite) => {
-            const job = favorite.jobs;
-            const freelancer = favorite.profiles;
+          {favorites.map(
+            (favorite) => {
+              const job =
+                favorite.jobs;
 
-            return (
-              <div
-                key={favorite.id}
-                className="dark-card marketplace-card"
-              >
-                <span className="marketplace-badge">
-                  {job
-                    ? "Saved Job"
-                    : "Saved Freelancer"}
-                </span>
+              const freelancer =
+                favorite.profiles;
 
-                {job && (
-                  <>
-                    <h3>
-                      {job.title ||
-                        "Untitled Job"}
-                    </h3>
+              return (
+                <div
+                  key={favorite.id}
+                  className="dark-card marketplace-card"
+                >
+                  <span className="marketplace-badge">
+                    {job
+                      ? "Saved Job"
+                      : "Saved Freelancer"}
+                  </span>
 
-                    <p>
-                      {job.description?.slice(
-                        0,
-                        140
-                      ) ||
-                        "No description."}
-                    </p>
+                  {/* =====================================
+                      SAVED JOB
+                      ===================================== */}
 
-                    <p>
-                      <strong>
-                        Budget:
-                      </strong>{" "}
-                      ZAR{" "}
-                      {job.budget ||
-                        "N/A"}
-                    </p>
+                  {job && (
+                    <>
+                      <h3>
+                        {job.title ||
+                          "Untitled Job"}
+                      </h3>
 
-                    <Link
-                      href={`/dashboard/jobs/${job.id}`}
-                      className="primary-action-link"
-                    >
-                      View Job
-                    </Link>
-                  </>
-                )}
+                      <p>
+                        {job.description?.slice(
+                          0,
+                          140
+                        ) ||
+                          "No description."}
+                      </p>
 
-                {freelancer && (
-                  <>
-                    <h3>
-                      {freelancer.full_name ||
-                        "Unnamed Freelancer"}
-                    </h3>
+                      <p>
+                        <strong>
+                          Budget:
+                        </strong>{" "}
+                        ZAR{" "}
+                        {job.budget ||
+                          "N/A"}
+                      </p>
 
-                    <p>
-                      <strong>
-                        Role:
-                      </strong>{" "}
-                      {freelancer.role ||
-                        "N/A"}
-                    </p>
+                      <div
+                        className="contract-actions"
+                        style={{
+                          marginTop: 18,
+                        }}
+                      >
+                        <Link
+                          href={`/dashboard/jobs/${job.id}`}
+                          className="primary-action-link"
+                        >
+                          View Job
+                        </Link>
 
-                    <p>
-                      {freelancer.bio?.slice(
-                        0,
-                        140
-                      ) ||
-                        "No bio yet."}
-                    </p>
+                        <button
+                          type="button"
+                          className="reject-btn"
+                          disabled={
+                            removingId ===
+                            favorite.id
+                          }
+                          onClick={() =>
+                            removeFavorite(
+                              favorite.id
+                            )
+                          }
+                        >
+                          {removingId ===
+                          favorite.id
+                            ? "Removing..."
+                            : "Remove Favorite"}
+                        </button>
+                      </div>
+                    </>
+                  )}
 
-                    <Link
-                      href={`/freelancers/${freelancer.id}`}
-                      className="primary-action-link"
-                    >
-                      View Profile
-                    </Link>
-                  </>
-                )}
-              </div>
-            );
-          })}
+                  {/* =====================================
+                      SAVED FREELANCER
+                      ===================================== */}
+
+                  {freelancer && (
+                    <>
+                      <h3>
+                        {freelancer.full_name ||
+                          "Unnamed Freelancer"}
+                      </h3>
+
+                      <p>
+                        <strong>
+                          Role:
+                        </strong>{" "}
+                        {freelancer.role ||
+                          "N/A"}
+                      </p>
+
+                      <p>
+                        {freelancer.bio?.slice(
+                          0,
+                          140
+                        ) ||
+                          "No bio yet."}
+                      </p>
+
+                      <div
+                        className="contract-actions"
+                        style={{
+                          marginTop: 18,
+                        }}
+                      >
+                        <Link
+                          href={`/freelancers/${freelancer.id}`}
+                          className="primary-action-link"
+                        >
+                          View Profile
+                        </Link>
+
+                        <button
+                          type="button"
+                          className="reject-btn"
+                          disabled={
+                            removingId ===
+                            favorite.id
+                          }
+                          onClick={() =>
+                            removeFavorite(
+                              favorite.id
+                            )
+                          }
+                        >
+                          {removingId ===
+                          favorite.id
+                            ? "Removing..."
+                            : "Remove Favorite"}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            }
+          )}
         </section>
       )}
     </main>
