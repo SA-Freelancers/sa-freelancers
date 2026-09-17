@@ -1,5 +1,6 @@
 "use client";
 
+import "./home-live.css";
 import Link from "next/link";
 import {
   useEffect,
@@ -56,30 +57,24 @@ const movingCategories = [
    ========================================================= */
 
 const rotatingFreelancers = [
-  {
-    initials: "NM",
-    name: "Nomsa Mokoena",
-    role: "Graphic Designer",
-    rating: "4.9",
-  },
-  {
-    initials: "SD",
-    name: "Sipho Dlamini",
-    role: "Web Developer",
-    rating: "5.0",
-  },
-  {
-    initials: "LM",
-    name: "Lerato Molefe",
-    role: "Virtual Assistant",
-    rating: "4.8",
-  },
-  {
-    initials: "KN",
-    name: "Kagiso Ndlovu",
-    role: "Mechanical Designer",
-    rating: "4.9",
-  },
+  { initials: "NM", name: "Nomsa Mokoena", role: "Graphic Designer", rating: "4.9" },
+  { initials: "KD", name: "Kabelo Dlamini", role: "Web Developer", rating: "5.0" },
+  { initials: "LN", name: "Lerato Nkosi", role: "Virtual Assistant", rating: "4.8" },
+  { initials: "TM", name: "Thabo Mokoena", role: "Mechanical Draughtsman", rating: "4.9" },
+  { initials: "AZ", name: "Anele Zulu", role: "Social Media Manager", rating: "4.8" },
+  { initials: "KM", name: "Karabo Molefe", role: "Data Analyst", rating: "5.0" },
+  { initials: "SN", name: "Siyabonga Ndlovu", role: "CAD Designer", rating: "4.9" },
+  { initials: "PN", name: "Precious Ngwenya", role: "Bookkeeper", rating: "4.8" },
+  { initials: "MM", name: "Mpho Maseko", role: "UI / UX Designer", rating: "4.9" },
+  { initials: "TN", name: "Thandiwe Nkosi", role: "Content Writer", rating: "5.0" },
+  { initials: "BM", name: "Bongani Mthembu", role: "Electrical Designer", rating: "4.8" },
+  { initials: "LP", name: "Lebohang Phiri", role: "Video Editor", rating: "4.9" },
+  { initials: "ZN", name: "Zanele Nkomo", role: "Marketing Specialist", rating: "4.9" },
+  { initials: "MO", name: "Musa Olivier", role: "Full Stack Developer", rating: "5.0" },
+  { initials: "NR", name: "Naledi Radebe", role: "Architectural Draughtsperson", rating: "4.8" },
+  { initials: "ST", name: "Sibusiso Tshabalala", role: "Mechanical Designer", rating: "4.9" },
+  { initials: "AM", name: "Ayanda Mkhize", role: "Business Administrator", rating: "4.8" },
+  { initials: "CN", name: "Chantel Naidoo", role: "Graphic Designer", rating: "5.0" },
 ];
 
 
@@ -89,83 +84,64 @@ const rotatingFreelancers = [
 
 const marketplaceEvents = [
   {
-    project: {
-      label: "New Project",
-      title: "Mechanical CAD Drawing",
-      value: "ZAR 6,500",
-    },
-
-    payment: {
-      label: "Milestone",
-      title: "Payment Secured",
-      value: "ZAR 3,250",
-    },
-
-    activity: {
-      label: "Project Update",
-      title: "Freelancer Hired",
-      value: "Contract Active",
-    },
+    project: { label: "New Project", title: "Mechanical CAD Drawing", value: "ZAR 6,500" },
+    payment: { label: "Client Update", title: "Milestone Funded", value: "ZAR 3,250" },
+    activity: { label: "Project Update", title: "Freelancer Hired", value: "Contract Active" },
   },
-
   {
-    project: {
-      label: "New Project",
-      title: "WordPress Website",
-      value: "ZAR 8,000",
-    },
-
-    payment: {
-      label: "Payment",
-      title: "Milestone Funded",
-      value: "ZAR 4,000",
-    },
-
-    activity: {
-      label: "Marketplace",
-      title: "Proposal Accepted",
-      value: "Work Starting",
-    },
+    project: { label: "New Project", title: "WordPress Website", value: "ZAR 8,000" },
+    payment: { label: "Payment", title: "Payment Secured", value: "ZAR 4,000" },
+    activity: { label: "Marketplace", title: "Proposal Accepted", value: "Work Starting" },
   },
-
   {
-    project: {
-      label: "New Project",
-      title: "Company Logo Design",
-      value: "ZAR 2,200",
-    },
-
-    payment: {
-      label: "Client Update",
-      title: "Work Approved",
-      value: "Payment Ready",
-    },
-
-    activity: {
-      label: "Project Update",
-      title: "Project Completed",
-      value: "★★★★★",
-    },
+    project: { label: "New Project", title: "Company Logo Design", value: "ZAR 2,200" },
+    payment: { label: "Client Update", title: "Work Approved", value: "Payment Ready" },
+    activity: { label: "Project Update", title: "Project Completed", value: "★★★★★" },
   },
-
   {
-    project: {
-      label: "New Project",
-      title: "Electrical Drawing",
-      value: "ZAR 5,800",
-    },
-
-    payment: {
-      label: "Payout",
-      title: "Freelancer Paid",
-      value: "ZAR 5,220",
-    },
-
-    activity: {
-      label: "Marketplace",
-      title: "New Review",
-      value: "★★★★★",
-    },
+    project: { label: "New Project", title: "Excel Sales Dashboard", value: "ZAR 4,800" },
+    payment: { label: "Milestone", title: "Milestone Approved", value: "ZAR 2,400" },
+    activity: { label: "Marketplace", title: "New Contract", value: "Project Started" },
+  },
+  {
+    project: { label: "New Project", title: "React Admin Dashboard", value: "ZAR 12,000" },
+    payment: { label: "Payment", title: "Project Funded", value: "ZAR 6,000" },
+    activity: { label: "Project Update", title: "First Milestone", value: "In Progress" },
+  },
+  {
+    project: { label: "New Project", title: "Mining Equipment Drawing", value: "ZAR 7,500" },
+    payment: { label: "Client Update", title: "Work Approved", value: "Payment Ready" },
+    activity: { label: "Marketplace", title: "5-Star Review", value: "★★★★★" },
+  },
+  {
+    project: { label: "New Project", title: "Social Media Campaign", value: "ZAR 3,500" },
+    payment: { label: "Milestone", title: "Payment Secured", value: "ZAR 1,750" },
+    activity: { label: "Project Update", title: "Freelancer Hired", value: "Contract Active" },
+  },
+  {
+    project: { label: "New Project", title: "Product 3D Model", value: "ZAR 5,200" },
+    payment: { label: "Payout", title: "Freelancer Paid", value: "ZAR 4,680" },
+    activity: { label: "Marketplace", title: "Project Completed", value: "★★★★★" },
+  },
+  {
+    project: { label: "New Project", title: "Business Website", value: "ZAR 9,500" },
+    payment: { label: "Payment", title: "Milestone Funded", value: "ZAR 4,750" },
+    activity: { label: "Marketplace", title: "Proposal Accepted", value: "Work Starting" },
+  },
+  {
+    project: { label: "New Project", title: "Electrical Panel Drawing", value: "ZAR 5,800" },
+    payment: { label: "Client Update", title: "Final Work Approved", value: "Payment Released" },
+    activity: { label: "Project Update", title: "Project Completed", value: "★★★★★" },
+  },
+  {
+    project: { label: "New Project", title: "Shopify Product Upload", value: "ZAR 3,200" },
+    payment: { label: "Payment", title: "Milestone Funded", value: "ZAR 1,600" },
+    activity: { label: "Marketplace", title: "Proposal Accepted", value: "Work Starting" },
+  },
+  {
+    project: { label: "New Project", title: "Architectural Floor Plan", value: "ZAR 7,200" },
+    payment: { label: "Client Update", title: "Design Approved", value: "Payment Ready" },
+    activity: { label: "Project Update", title: "Milestone Completed", value: "Next Stage Ready" },
   },
 ];
 
@@ -340,7 +316,7 @@ export default function HomePage() {
             rotatingFreelancers.length
         );
 
-      }, 4000);
+      }, 4500);
 
     return () => {
       clearInterval(interval);

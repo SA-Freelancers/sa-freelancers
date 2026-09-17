@@ -4943,7 +4943,7 @@ button {
 
   width: 100%;
 
-  min-height: 720px;
+  min-height: 560px;
 
   overflow: hidden;
 
@@ -4952,7 +4952,7 @@ button {
   display: flex;
   align-items: center;
 
-  padding: 80px 30px;
+  padding: 28px 30px;
 
   background:
     radial-gradient(
@@ -5374,8 +5374,7 @@ button {
 
   width: 100%;
 
-  min-height:
-    520px;
+  min-height: 420px;
 }
 
 
@@ -10954,5 +10953,140 @@ span:last-child {
   .home-live-page .home-motivation-section {
     margin-top: 32px !important;
     margin-bottom: 32px !important;
+  }
+}
+/* =========================================================
+   FINAL DESKTOP LIVE MARKETPLACE COMPOSITION
+   ========================================================= */
+
+@media (min-width: 1051px) {
+
+  /* Central Freelance Hub card */
+  .home-marketplace-core {
+    width: 225px;
+    min-height: 215px;
+
+    top: 105px;
+  }
+
+  .home-core-logo {
+    width: 60px;
+    height: 60px;
+
+    border-radius: 18px;
+    font-size: 1.2rem;
+  }
+
+  .home-marketplace-core strong {
+    margin-top: 14px;
+    font-size: 1.05rem;
+  }
+
+  .home-core-status {
+    margin-top: 14px;
+    padding: 7px 11px;
+  }
+
+
+  /* Top-left freelancer */
+  .home-card-profile {
+    width: 285px;
+
+    left: 0;
+    top: 30px;
+  }
+
+
+  /* Top-right project */
+  .home-card-job {
+    width: 205px;
+
+    right: 0;
+    top: 38px;
+  }
+
+
+  /* Bottom-left update */
+  .home-card-payment {
+    width: 220px;
+
+    left: 5px;
+    bottom: 30px;
+  }
+
+
+  /* Bottom-right update */
+  .home-card-hired {
+    width: 220px;
+
+    right: 0;
+    bottom: 30px;
+  }
+}
+/* =========================================================
+   FINAL DESKTOP LIVE MARKETPLACE COMPOSITION
+   NO OVERLAPPING CARDS
+   ========================================================= */
+
+@media (min-width: 1051px) {
+
+  /* Centre card — smaller and higher */
+  .home-marketplace-core {
+    width: 210px;
+    min-height: 195px;
+
+    top: 102px;
+    left: 50%;
+
+    transform: translateX(-50%);
+  }
+
+  .home-core-logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 17px;
+    font-size: 1.15rem;
+  }
+
+  .home-marketplace-core strong {
+    margin-top: 12px;
+    font-size: 1rem;
+  }
+
+  .home-core-status {
+    margin-top: 12px;
+    padding: 6px 10px;
+  }
+
+
+  /* TOP LEFT */
+  .home-card-profile {
+    width: 285px;
+    left: 0;
+    top: 25px;
+  }
+
+
+  /* TOP RIGHT */
+  .home-card-job {
+    width: 205px;
+    right: 0;
+    top: 32px;
+  }
+
+
+  /* BOTTOM LEFT */
+  .home-card-payment {
+    width: 220px;
+    left: 5px;
+    bottom: 5px;
+  }
+
+
+  /* BOTTOM RIGHT */
+  .home-card-hired {
+    width: 220px;
+    right: 0;
+    bottom: 5px;
   }
 }
