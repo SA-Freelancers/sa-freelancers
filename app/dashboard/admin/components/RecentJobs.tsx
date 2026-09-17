@@ -3,48 +3,21 @@
 type Job = {
   id: string;
 
-  title: string;
-
-  budget:
-    | number
-    | null;
-
-  status:
+  title:
     | string
     | null;
 
   created_at:
     | string
     | null;
-
-  profiles?: {
-    full_name:
-      | string
-      | null;
-  } | null;
 };
 
 type Props = {
   jobs: Job[];
 };
 
-function formatBudget(
-  budget:
-    number | null
-) {
-  if (
-    budget === null ||
-    budget === undefined
-  ) {
-    return "-";
-  }
-
-  return `R ${budget.toLocaleString()}`;
-}
-
 function formatDate(
-  date:
-    string | null
+  date: string | null
 ) {
   if (!date) {
     return "-";
@@ -52,22 +25,13 @@ function formatDate(
 
   return new Date(
     date
-  ).toLocaleDateString();
-}
-
-function formatStatus(
-  status:
-    string | null
-) {
-  if (!status) {
-    return "Closed";
-  }
-
-  return (
-    status
-      .charAt(0)
-      .toUpperCase() +
-    status.slice(1)
+  ).toLocaleDateString(
+    "en-ZA",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }
   );
 }
 
@@ -76,9 +40,23 @@ export default function RecentJobs({
 }: Props) {
   return (
     <section className="dark-card admin-recent-card">
-      <h2>
-        Recent Jobs
-      </h2>
+      <div>
+        <h2>
+          Recent Jobs
+        </h2>
+
+        <p
+          style={{
+            marginTop: 6,
+            marginBottom: 18,
+            opacity: 0.65,
+            fontSize: 13,
+          }}
+        >
+          Latest real jobs posted
+          on Freelance Hub SA
+        </p>
+      </div>
 
       {/* DESKTOP TABLE */}
 
@@ -91,18 +69,6 @@ export default function RecentJobs({
               </th>
 
               <th>
-                Client
-              </th>
-
-              <th>
-                Budget
-              </th>
-
-              <th>
-                Status
-              </th>
-
-              <th>
                 Posted
               </th>
             </tr>
@@ -110,43 +76,15 @@ export default function RecentJobs({
 
           <tbody>
             {jobs.map(
-              (
-                job
-              ) => (
+              (job) => (
                 <tr
                   key={
                     job.id
                   }
                 >
                   <td>
-                    {job.title}
-                  </td>
-
-                  <td>
-                    {job.profiles
-                      ?.full_name ??
-                      "-"}
-                  </td>
-
-                  <td>
-                    {formatBudget(
-                      job.budget
-                    )}
-                  </td>
-
-                  <td>
-                    {job.status ===
-                    "open" ? (
-                      <span className="accept-btn">
-                        Open
-                      </span>
-                    ) : (
-                      <span className="reject-btn">
-                        {formatStatus(
-                          job.status
-                        )}
-                      </span>
-                    )}
+                    {job.title ||
+                      "Untitled Job"}
                   </td>
 
                   <td>
@@ -162,12 +100,10 @@ export default function RecentJobs({
               0 && (
               <tr>
                 <td
-                  colSpan={
-                    5
-                  }
+                  colSpan={2}
                   className="admin-empty-table"
                 >
-                  No jobs
+                  No recent jobs
                   found.
                 </td>
               </tr>
@@ -180,9 +116,7 @@ export default function RecentJobs({
 
       <div className="admin-mobile-list">
         {jobs.map(
-          (
-            job
-          ) => (
+          (job) => (
             <article
               key={
                 job.id
@@ -191,44 +125,8 @@ export default function RecentJobs({
             >
               <div className="admin-mobile-record-top">
                 <strong>
-                  {job.title}
-                </strong>
-
-                {job.status ===
-                "open" ? (
-                  <span className="accept-btn">
-                    Open
-                  </span>
-                ) : (
-                  <span className="reject-btn">
-                    {formatStatus(
-                      job.status
-                    )}
-                  </span>
-                )}
-              </div>
-
-              <div className="admin-mobile-record-row">
-                <span>
-                  Client
-                </span>
-
-                <span>
-                  {job.profiles
-                    ?.full_name ??
-                    "-"}
-                </span>
-              </div>
-
-              <div className="admin-mobile-record-row">
-                <span>
-                  Budget
-                </span>
-
-                <strong>
-                  {formatBudget(
-                    job.budget
-                  )}
+                  {job.title ||
+                    "Untitled Job"}
                 </strong>
               </div>
 
@@ -250,7 +148,8 @@ export default function RecentJobs({
         {jobs.length ===
           0 && (
           <div className="admin-empty-mobile">
-            No jobs found.
+            No recent jobs
+            found.
           </div>
         )}
       </div>

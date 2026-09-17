@@ -23,54 +23,47 @@ ChartJS.register(
   Legend
 );
 
-export default function AnalyticsChart() {
+type MonthlyGrowth = {
+  label: string;
+  count: number;
+};
+
+type AnalyticsChartProps = {
+  monthlyGrowth: MonthlyGrowth[];
+};
+
+export default function AnalyticsChart({
+  monthlyGrowth,
+}: AnalyticsChartProps) {
+  const labels = monthlyGrowth.map(
+    (item) => item.label
+  );
+
+  const values = monthlyGrowth.map(
+    (item) => item.count
+  );
+
   const data = {
-    labels: [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ],
+    labels,
 
     datasets: [
       {
         label: "New Users",
 
-        data: [
-          15,
-          24,
-          31,
-          40,
-          55,
-          68,
-          72,
-          83,
-          90,
-          101,
-          115,
-          130,
-        ],
+        data: values,
 
         borderColor: "#22c55e",
 
         backgroundColor:
-          "rgba(34,197,94,.25)",
+          "rgba(34,197,94,.18)",
 
-        tension: 0.35,
+        tension: 0.3,
 
         fill: true,
 
-        pointRadius: 3,
+        pointRadius: 4,
 
-        pointHoverRadius: 5,
+        pointHoverRadius: 6,
       },
     ],
   };
@@ -90,6 +83,25 @@ export default function AnalyticsChart() {
           padding: 14,
         },
       },
+
+      tooltip: {
+        callbacks: {
+          label: (
+            context: {
+              parsed: {
+                y: number | null;
+              };
+            }
+          ) =>
+            `${
+              context.parsed.y ?? 0
+            } new user${
+              context.parsed.y === 1
+                ? ""
+                : "s"
+            }`,
+        },
+      },
     },
 
     scales: {
@@ -101,7 +113,7 @@ export default function AnalyticsChart() {
 
           autoSkip: true,
 
-          maxTicksLimit: 6,
+          maxTicksLimit: 12,
         },
 
         grid: {
@@ -115,6 +127,8 @@ export default function AnalyticsChart() {
 
         ticks: {
           color: "white",
+
+          precision: 0,
         },
 
         grid: {
@@ -127,15 +141,45 @@ export default function AnalyticsChart() {
 
   return (
     <section className="dark-card admin-analytics-card">
-      <h2>
-        User Growth
-      </h2>
+      <div>
+        <h2>
+          User Growth
+        </h2>
+
+        <p
+          style={{
+            marginTop: 6,
+            opacity: 0.65,
+            fontSize: 13,
+          }}
+        >
+          Actual new registrations
+          during the last 12 months
+        </p>
+      </div>
 
       <div className="admin-chart-container">
-        <Line
-          data={data}
-          options={options}
-        />
+        {monthlyGrowth.length >
+        0 ? (
+          <Line
+            data={data}
+            options={options}
+          />
+        ) : (
+          <div
+            style={{
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent:
+                "center",
+              opacity: 0.65,
+            }}
+          >
+            No registration data
+            available yet.
+          </div>
+        )}
       </div>
     </section>
   );
