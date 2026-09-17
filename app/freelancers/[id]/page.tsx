@@ -175,9 +175,6 @@ export default function FreelancerPublicProfilePage() {
   const [viewerRole, setViewerRole] =
     useState<string | null>(null);
 
-  const [viewerIsAdmin, setViewerIsAdmin] =
-    useState(false);
-
   const [authChecked, setAuthChecked] =
     useState(false);
 
@@ -208,8 +205,7 @@ export default function FreelancerPublicProfilePage() {
         if (!user) {
           setViewerId(null);
           setViewerRole(null);
-          setViewerIsAdmin(false);
-          return;
+            return;
         }
 
         setViewerId(user.id);
@@ -219,7 +215,7 @@ export default function FreelancerPublicProfilePage() {
           error: viewerProfileError,
         } = await supabase
           .from("profiles")
-          .select("role, is_admin")
+          .select("role")
           .eq("id", user.id)
           .maybeSingle();
 
@@ -234,9 +230,6 @@ export default function FreelancerPublicProfilePage() {
           viewerProfile?.role || null
         );
 
-        setViewerIsAdmin(
-          viewerProfile?.is_admin === true
-        );
       } catch (error) {
         console.error(
           "Viewer loading error:",
@@ -245,7 +238,6 @@ export default function FreelancerPublicProfilePage() {
 
         setViewerId(null);
         setViewerRole(null);
-        setViewerIsAdmin(false);
       } finally {
         setAuthChecked(true);
       }
@@ -554,7 +546,6 @@ export default function FreelancerPublicProfilePage() {
     authChecked &&
     !!viewerId &&
     viewerRole === "client" &&
-    !viewerIsAdmin &&
     !isOwnProfile;
 
   const showSignInToHire =

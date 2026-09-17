@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+
 import {
   useEffect,
   useState,
 } from "react";
+
 import {
   usePathname,
   useRouter,
@@ -20,180 +22,249 @@ type SidebarLink = {
   icon: string;
 };
 
+// ==================================================
+// CLIENT LINKS
+// ==================================================
+
 const clientLinks:
   SidebarLink[] = [
   {
-    href: "/dashboard",
-    label: "Overview",
-    icon: "📊",
+    href:
+      "/dashboard",
+    label:
+      "Overview",
+    icon:
+      "📊",
   },
   {
-    href: "/freelancers",
+    href:
+      "/freelancers",
     label:
       "Browse Freelancers",
-    icon: "👨‍💻",
+    icon:
+      "👨‍💻",
   },
   {
     href:
       "/dashboard/post-job",
-    label: "Post Job",
-    icon: "➕",
+    label:
+      "Post Job",
+    icon:
+      "➕",
   },
   {
     href:
       "/dashboard/jobs",
-    label: "My Jobs",
-    icon: "💼",
+    label:
+      "My Jobs",
+    icon:
+      "💼",
   },
   {
     href:
       "/dashboard/client-contracts",
-    label: "Sent Contracts",
-    icon: "📨",
+    label:
+      "Sent Contracts",
+    icon:
+      "📨",
   },
   {
     href:
       "/dashboard/notifications",
     label:
       "Notifications",
-    icon: "🔔",
+    icon:
+      "🔔",
   },
   {
     href:
       "/dashboard/profile",
     label:
       "Profile Settings",
-    icon: "👤",
+    icon:
+      "👤",
   },
 ];
+
+// ==================================================
+// FREELANCER LINKS
+// ==================================================
 
 const freelancerLinks:
   SidebarLink[] = [
   {
-    href: "/dashboard",
-    label: "Overview",
-    icon: "📊",
+    href:
+      "/dashboard",
+    label:
+      "Overview",
+    icon:
+      "📊",
   },
   {
-    href: "/search",
-    label: "Browse Jobs",
-    icon: "💼",
+    href:
+      "/search",
+    label:
+      "Browse Jobs",
+    icon:
+      "💼",
   },
   {
     href:
       "/dashboard/contracts",
-    label: "Contracts",
-    icon: "📄",
+    label:
+      "Contracts",
+    icon:
+      "📄",
   },
   {
     href:
       "/dashboard/freelancer/earnings",
-    label: "My Earnings",
-    icon: "💰",
+    label:
+      "My Earnings",
+    icon:
+      "💰",
   },
   {
     href:
       "/dashboard/favorites",
-    label: "Favorites",
-    icon: "❤️",
+    label:
+      "Favorites",
+    icon:
+      "❤️",
   },
   {
     href:
       "/dashboard/notifications",
     label:
       "Notifications",
-    icon: "🔔",
+    icon:
+      "🔔",
   },
   {
     href:
       "/dashboard/profile",
     label:
       "Profile Settings",
-    icon: "👤",
+    icon:
+      "👤",
   },
   {
     href:
       "/dashboard/upload",
-    label: "Upload",
-    icon: "⬆️",
+    label:
+      "Upload",
+    icon:
+      "⬆️",
   },
   {
     href:
       "/dashboard/portfolio",
-    label: "Portfolio",
-    icon: "🖼️",
+    label:
+      "Portfolio",
+    icon:
+      "🖼️",
   },
 ];
+
+// ==================================================
+// ADMIN LINKS
+// ==================================================
 
 const adminLinks:
   SidebarLink[] = [
   {
     href:
       "/dashboard/admin",
-    label: "Analytics",
-    icon: "📊",
+    label:
+      "Analytics",
+    icon:
+      "📊",
   },
   {
     href:
       "/dashboard/admin/users",
-    label: "Users",
-    icon: "👥",
+    label:
+      "Users",
+    icon:
+      "👥",
   },
   {
     href:
       "/dashboard/admin/reports",
-    label: "Reports",
-    icon: "🚩",
+    label:
+      "Reports",
+    icon:
+      "🚩",
   },
   {
     href:
       "/dashboard/admin/moderation",
-    label: "Moderation",
-    icon: "🛡️",
+    label:
+      "Moderation",
+    icon:
+      "🛡️",
   },
   {
     href:
       "/dashboard/admin/messages",
-    label: "Messages",
-    icon: "✉️",
+    label:
+      "Messages",
+    icon:
+      "✉️",
   },
   {
-  href: "/dashboard/admin/conversations",
-  label: "Conversations",
-  icon: "💬",
-},
-{
-  href: "/dashboard/admin/email",
-  label: "Send Email",
-  icon: "📧",
-},
+    href:
+      "/dashboard/admin/conversations",
+    label:
+      "Conversations",
+    icon:
+      "💬",
+  },
+  {
+    href:
+      "/dashboard/admin/email",
+    label:
+      "Send Email",
+    icon:
+      "📧",
+  },
   {
     href:
       "/dashboard/admin/jobs",
-    label: "Jobs",
-    icon: "💼",
+    label:
+      "Jobs",
+    icon:
+      "💼",
   },
   {
     href:
       "/dashboard/admin/payouts",
-    label: "Payouts",
-    icon: "💳",
+    label:
+      "Payouts",
+    icon:
+      "💳",
   },
   {
     href:
       "/dashboard/admin/finance",
     label:
       "Financial Reconciliation",
-    icon: "💰",
+    icon:
+      "💰",
   },
   {
     href:
       "/dashboard/admin/marketplace-health",
     label:
       "Marketplace Health",
-    icon: "📊",
+    icon:
+      "📊",
   },
 ];
+
+// ==================================================
+// COMPONENT
+// ==================================================
 
 export default function DashboardSidebar() {
   const pathname =
@@ -217,99 +288,139 @@ export default function DashboardSidebar() {
     setLoading,
   ] = useState(true);
 
+  // ==================================================
+  // DETERMINE ACTIVE PLATFORM
+  // ==================================================
+
+  const isAdminPlatform =
+    isAdmin &&
+    pathname.startsWith(
+      "/dashboard/admin"
+    );
+
+  // ==================================================
+  // LOAD PROFILE
+  // ==================================================
+
   useEffect(() => {
-    loadProfile();
+    void loadProfile();
   }, []);
 
   const loadProfile =
     async () => {
-      const {
-        data: {
-          user,
-        },
-      } =
-        await supabase.auth.getUser();
+      try {
+        const {
+          data: {
+            user,
+          },
+        } =
+          await supabase.auth.getUser();
 
-      if (!user) {
+        if (!user) {
+          setLoading(
+            false
+          );
+
+          return;
+        }
+
+        const {
+          data:
+            profile,
+
+          error,
+        } =
+          await supabase
+            .from(
+              "profiles"
+            )
+            .select(
+              "role, is_admin"
+            )
+            .eq(
+              "id",
+              user.id
+            )
+            .single();
+
+        if (error) {
+          console.error(
+            "Sidebar profile loading error:",
+            error
+          );
+
+          setLoading(
+            false
+          );
+
+          return;
+        }
+
+        setRole(
+          profile?.role ||
+            ""
+        );
+
+        setIsAdmin(
+          Boolean(
+            profile?.is_admin
+          )
+        );
+      } catch (error) {
+        console.error(
+          "Sidebar loading error:",
+          error
+        );
+      } finally {
         setLoading(
           false
         );
-
-        return;
       }
-
-      const {
-        data:
-          profile,
-
-        error,
-      } =
-        await supabase
-          .from(
-            "profiles"
-          )
-          .select(
-            "role, is_admin"
-          )
-          .eq(
-            "id",
-            user.id
-          )
-          .single();
-
-      if (error) {
-        console.error(
-          "Sidebar profile loading error:",
-          error
-        );
-      }
-
-      setRole(
-        profile?.role ||
-          ""
-      );
-
-      setIsAdmin(
-        profile?.is_admin ||
-          false
-      );
-
-      setLoading(
-        false
-      );
     };
 
+  // ==================================================
+  // SELECT SIDEBAR LINKS
+  // ==================================================
+
   const getLinks =
-    () => {
-      let baseLinks:
-        SidebarLink[] =
-          [];
+    (): SidebarLink[] => {
+      /*
+       * IMPORTANT:
+       *
+       * Admin links are NEVER appended to
+       * Client or Freelancer links.
+       *
+       * The active route decides whether an
+       * administrator is currently using the
+       * Admin Platform.
+       */
+
+      if (
+        isAdminPlatform
+      ) {
+        return adminLinks;
+      }
 
       if (
         role ===
         "client"
       ) {
-        baseLinks =
-          clientLinks;
+        return clientLinks;
       }
 
       if (
         role ===
         "freelancer"
       ) {
-        baseLinks =
-          freelancerLinks;
+        return freelancerLinks;
       }
 
-      if (isAdmin) {
-        baseLinks = [
-          ...baseLinks,
-          ...adminLinks,
-        ];
-      }
-
-      return baseLinks;
+      return [];
     };
+
+  // ==================================================
+  // LOGOUT
+  // ==================================================
 
   const handleLogout =
     async () => {
@@ -318,7 +429,13 @@ export default function DashboardSidebar() {
       router.push(
         "/login"
       );
+
+      router.refresh();
     };
+
+  // ==================================================
+  // LOADING
+  // ==================================================
 
   if (loading) {
     return (
@@ -330,37 +447,93 @@ export default function DashboardSidebar() {
     );
   }
 
+  // ==================================================
+  // WORKSPACE TITLE
+  // ==================================================
+
+  const workspaceTitle =
+    isAdminPlatform
+      ? "Admin"
+      : role ===
+        "client"
+      ? "Client"
+      : role ===
+        "freelancer"
+      ? "Freelancer"
+      : "Dashboard";
+
+  const workspaceDescription =
+    isAdminPlatform
+      ? "Administrator workspace"
+      : role ===
+        "client"
+      ? "Client workspace"
+      : role ===
+        "freelancer"
+      ? "Freelancer workspace"
+      : "Manage your work";
+
+  // ==================================================
+  // UI
+  // ==================================================
+
   return (
     <aside className="dashboard-sidebar dark-card">
+
+      {/* WORKSPACE HEADING */}
+
       <div>
         <h2>
-          Dashboard
+          {workspaceTitle}
         </h2>
 
         <p>
-  {isAdmin
-    ? "Administrator workspace"
-    : role === "client"
-    ? "Client workspace"
-    : role === "freelancer"
-    ? "Freelancer workspace"
-    : "Manage your work"}
-</p>
+          {
+            workspaceDescription
+          }
+        </p>
       </div>
+
+      {/* NAVIGATION */}
 
       <nav className="dashboard-sidebar-nav">
         {getLinks().map(
           (link) => {
-            const isActive =
-              pathname ===
-                link.href ||
-              (
-                link.href !==
-                  "/dashboard" &&
+            /*
+             * Analytics /dashboard/admin should
+             * only be active on the exact admin
+             * dashboard page.
+             *
+             * Other links use startsWith so their
+             * nested pages remain highlighted.
+             */
+
+            const isAdminHome =
+              link.href ===
+              "/dashboard/admin";
+
+            const isDashboardHome =
+              link.href ===
+              "/dashboard";
+
+            let isActive =
+              false;
+
+            if (
+              isAdminHome ||
+              isDashboardHome
+            ) {
+              isActive =
+                pathname ===
+                link.href;
+            } else {
+              isActive =
+                pathname ===
+                  link.href ||
                 pathname.startsWith(
-                  link.href
-                )
-              );
+                  `${link.href}/`
+                );
+            }
 
             return (
               <Link
@@ -390,6 +563,8 @@ export default function DashboardSidebar() {
           }
         )}
       </nav>
+
+      {/* LOGOUT */}
 
       <button
         type="button"

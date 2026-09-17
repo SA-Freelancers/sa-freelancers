@@ -27,6 +27,10 @@ type NavbarUser =
     }
   | null;
 
+type PlatformMode =
+  | "client"
+  | "admin";
+
 export default function Navbar() {
   const pathname =
     usePathname();
@@ -62,6 +66,13 @@ export default function Navbar() {
   ] = useState(false);
 
   const [
+    platformMode,
+    setPlatformMode,
+  ] = useState<PlatformMode>(
+    "client"
+  );
+
+  const [
     notificationCount,
     setNotificationCount,
   ] = useState(0);
@@ -90,9 +101,7 @@ export default function Navbar() {
             savedTheme !==
             "light";
 
-          if (
-            shouldUseDark
-          ) {
+          if (shouldUseDark) {
             document.documentElement.classList.add(
               "dark"
             );
@@ -110,16 +119,12 @@ export default function Navbar() {
             );
           }
 
-          if (
-            mounted
-          ) {
+          if (mounted) {
             setDarkMode(
               shouldUseDark
             );
           }
-        } catch (
-          error
-        ) {
+        } catch (error) {
           console.error(
             "Theme loading error:",
             error
@@ -133,12 +138,8 @@ export default function Navbar() {
             "dark"
           );
 
-          if (
-            mounted
-          ) {
-            setDarkMode(
-              true
-            );
+          if (mounted) {
+            setDarkMode(true);
           }
         }
       };
@@ -158,9 +159,7 @@ export default function Navbar() {
               ?.user ||
             null;
 
-          if (
-            !mounted
-          ) {
+          if (!mounted) {
             return;
           }
 
@@ -168,9 +167,7 @@ export default function Navbar() {
             sessionUser
           );
 
-          if (
-            sessionUser
-          ) {
+          if (sessionUser) {
             await Promise.all([
               loadProfile(
                 sessionUser.id
@@ -187,21 +184,21 @@ export default function Navbar() {
               false
             );
 
+            setPlatformMode(
+              "client"
+            );
+
             setNotificationCount(
               0
             );
           }
-        } catch (
-          error
-        ) {
+        } catch (error) {
           console.error(
             "Navbar user loading error:",
             error
           );
 
-          if (
-            mounted
-          ) {
+          if (mounted) {
             setUser(
               null
             );
@@ -214,14 +211,16 @@ export default function Navbar() {
               false
             );
 
+            setPlatformMode(
+              "client"
+            );
+
             setNotificationCount(
               0
             );
           }
         } finally {
-          if (
-            mounted
-          ) {
+          if (mounted) {
             setAuthReady(
               true
             );
@@ -242,9 +241,7 @@ export default function Navbar() {
           _event,
           session
         ) => {
-          if (
-            !mounted
-          ) {
+          if (!mounted) {
             return;
           }
 
@@ -256,9 +253,7 @@ export default function Navbar() {
             sessionUser
           );
 
-          if (
-            sessionUser
-          ) {
+          if (sessionUser) {
             try {
               await Promise.all([
                 loadProfile(
@@ -269,9 +264,7 @@ export default function Navbar() {
                   sessionUser.id
                 ),
               ]);
-            } catch (
-              error
-            ) {
+            } catch (error) {
               console.error(
                 "Navbar auth refresh error:",
                 error
@@ -284,6 +277,10 @@ export default function Navbar() {
 
             setIsAdmin(
               false
+            );
+
+            setPlatformMode(
+              "client"
             );
 
             setNotificationCount(
@@ -306,6 +303,57 @@ export default function Navbar() {
         .unsubscribe();
     };
   }, []);
+
+  // ==================================================
+  // PLATFORM MODE
+  // ==================================================
+
+  useEffect(() => {
+    if (
+      !authReady ||
+      !user
+    ) {
+      return;
+    }
+
+    /*
+      Admin pages automatically use Admin Platform.
+      Normal client pages use Client Platform.
+
+      This does NOT change role or is_admin in Supabase.
+    */
+
+    if (
+      isAdmin &&
+      role === "client" &&
+      pathname.startsWith(
+        "/dashboard/admin"
+      )
+    ) {
+      setPlatformMode(
+        "admin"
+      );
+
+      return;
+    }
+
+    if (
+      role === "client" &&
+      !pathname.startsWith(
+        "/dashboard/admin"
+      )
+    ) {
+      setPlatformMode(
+        "client"
+      );
+    }
+  }, [
+    pathname,
+    authReady,
+    user,
+    role,
+    isAdmin,
+  ]);
 
   // ==================================================
   // CLOSE MENU WHEN ROUTE CHANGES
@@ -341,9 +389,7 @@ export default function Navbar() {
         )
         .maybeSingle();
 
-    if (
-      error
-    ) {
+    if (error) {
       console.error(
         "Navbar profile loading error:",
         error
@@ -357,19 +403,43 @@ export default function Navbar() {
         false
       );
 
+      setPlatformMode(
+        "client"
+      );
+
       return;
     }
 
-    setRole(
+    const loadedRole =
       data?.role ||
-        ""
+      "";
+
+    const loadedIsAdmin =
+      Boolean(
+        data?.is_admin
+      );
+
+    setRole(
+      loadedRole
     );
 
     setIsAdmin(
-      Boolean(
-        data?.is_admin
-      )
+      loadedIsAdmin
     );
+
+    /*
+      If this is not a Client + Admin account,
+      there is no platform switching.
+    */
+
+    if (
+      loadedRole !== "client" ||
+      !loadedIsAdmin
+    ) {
+      setPlatformMode(
+        "client"
+      );
+    }
   }
 
   // ==================================================
@@ -406,9 +476,7 @@ export default function Navbar() {
           false
         );
 
-    if (
-      error
-    ) {
+    if (error) {
       console.error(
         "Navbar notification count error:",
         error
@@ -435,6 +503,50 @@ export default function Navbar() {
     };
 
   // ==================================================
+  // PLATFORM SWITCH
+  // ==================================================
+
+  const switchPlatform =
+    (
+      mode: PlatformMode
+    ) => {
+      /*
+        Only a profile that is BOTH:
+        - client
+        - admin
+
+        can use this UI switch.
+      */
+
+      if (
+        role !== "client" ||
+        !isAdmin
+      ) {
+        return;
+      }
+
+      setPlatformMode(
+        mode
+      );
+
+      closeMenu();
+
+      if (
+        mode === "admin"
+      ) {
+        router.push(
+          "/dashboard/admin"
+        );
+
+        return;
+      }
+
+      router.push(
+        "/dashboard"
+      );
+    };
+
+  // ==================================================
   // THEME
   // ==================================================
 
@@ -447,9 +559,7 @@ export default function Navbar() {
         newMode
       );
 
-      if (
-        newMode
-      ) {
+      if (newMode) {
         document.documentElement.classList.add(
           "dark"
         );
@@ -485,6 +595,10 @@ export default function Navbar() {
   const logout =
     async () => {
       closeMenu();
+
+      setPlatformMode(
+        "client"
+      );
 
       await supabase.auth.signOut();
 
@@ -533,12 +647,31 @@ export default function Navbar() {
     };
 
   // ==================================================
+  // ACCOUNT TYPE
+  // ==================================================
+
+  const hasPlatformSwitch =
+    role === "client" &&
+    isAdmin;
+
+  const isClientPlatform =
+    !hasPlatformSwitch ||
+    platformMode ===
+      "client";
+
+  const isAdminPlatform =
+    hasPlatformSwitch &&
+    platformMode ===
+      "admin";
+
+  // ==================================================
   // UI
   // ==================================================
 
   return (
     <header className="navbar-wrapper">
       <div className="navbar-container">
+
         {/* LOGO */}
 
         <Link
@@ -641,7 +774,7 @@ export default function Navbar() {
             Support
           </Link>
 
-          {/* AUTH-DEPENDENT LINKS */}
+          {/* FREELANCER NAVIGATION */}
 
           {authReady &&
             user &&
@@ -664,10 +797,13 @@ export default function Navbar() {
               </Link>
             )}
 
+          {/* CLIENT NAVIGATION */}
+
           {authReady &&
             user &&
             role ===
-              "client" && (
+              "client" &&
+            isClientPlatform && (
               <>
                 <Link
                   href="/freelancers"
@@ -686,21 +822,43 @@ export default function Navbar() {
                 </Link>
 
                 <Link
-                href="/dashboard/post-job"
+                  href="/dashboard/post-job"
+                  onClick={
+                    closeMenu
+                  }
+                  className={`navbar-link ${
+                    pathname.startsWith(
+                      "/dashboard/post-job"
+                    )
+                      ? "active"
+                      : ""
+                  }`}
+                >
+                  Post Job
+                </Link>
+              </>
+            )}
+
+          {/* ADMIN NAVIGATION */}
+
+          {authReady &&
+            user &&
+            isAdminPlatform && (
+              <Link
+                href="/dashboard/admin"
                 onClick={
                   closeMenu
                 }
                 className={`navbar-link ${
                   pathname.startsWith(
-                    "/dashboard/post-job"
+                    "/dashboard/admin"
                   )
                     ? "active"
                     : ""
                 }`}
               >
-                Post Job
+                Admin Dashboard
               </Link>
-              </>
             )}
 
           {/* THEME */}
@@ -738,6 +896,7 @@ export default function Navbar() {
             </div>
           ) : user ? (
             <>
+
               {/* NOTIFICATIONS */}
 
               <Link
@@ -772,23 +931,154 @@ export default function Navbar() {
                 </button>
 
                 <div className="navbar-user-dropdown">
-                  <Link
-                    href="/dashboard"
-                    onClick={
-                      closeMenu
-                    }
-                  >
-                    Dashboard
-                  </Link>
 
-                  <Link
-                    href="/dashboard/profile"
-                    onClick={
-                      closeMenu
-                    }
-                  >
-                    Profile
-                  </Link>
+                  {/* CLIENT + ADMIN SWITCH */}
+
+                  {hasPlatformSwitch && (
+                    <>
+                      <div
+                        style={{
+                          padding:
+                            "7px 14px",
+                          fontSize:
+                            "11px",
+                          fontWeight:
+                            700,
+                          textTransform:
+                            "uppercase",
+                          letterSpacing:
+                            "0.08em",
+                          opacity:
+                            0.65,
+                        }}
+                      >
+                        Switch Platform
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          switchPlatform(
+                            "client"
+                          )
+                        }
+                        style={{
+                          width:
+                            "100%",
+                          display:
+                            "flex",
+                          alignItems:
+                            "center",
+                          gap:
+                            "8px",
+                          textAlign:
+                            "left",
+                          fontWeight:
+                            isClientPlatform
+                              ? 700
+                              : 400,
+                        }}
+                      >
+                        <span>
+                          👤
+                        </span>
+
+                        <span>
+                          Client Platform
+                        </span>
+
+                        {isClientPlatform && (
+                          <span
+                            style={{
+                              marginLeft:
+                                "auto",
+                            }}
+                          >
+                            ✓
+                          </span>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          switchPlatform(
+                            "admin"
+                          )
+                        }
+                        style={{
+                          width:
+                            "100%",
+                          display:
+                            "flex",
+                          alignItems:
+                            "center",
+                          gap:
+                            "8px",
+                          textAlign:
+                            "left",
+                          fontWeight:
+                            isAdminPlatform
+                              ? 700
+                              : 400,
+                        }}
+                      >
+                        <span>
+                          🛡️
+                        </span>
+
+                        <span>
+                          Admin Platform
+                        </span>
+
+                        {isAdminPlatform && (
+                          <span
+                            style={{
+                              marginLeft:
+                                "auto",
+                            }}
+                          >
+                            ✓
+                          </span>
+                        )}
+                      </button>
+
+                      <div
+                        style={{
+                          borderTop:
+                            "1px solid rgba(148, 163, 184, 0.20)",
+                          margin:
+                            "6px 0",
+                        }}
+                      />
+                    </>
+                  )}
+
+                  {/* NORMAL DASHBOARD */}
+
+                  {!isAdminPlatform && (
+                    <Link
+                      href="/dashboard"
+                      onClick={
+                        closeMenu
+                      }
+                    >
+                      Dashboard
+                    </Link>
+                  )}
+
+                  {/* PROFILE */}
+
+                  {!isAdminPlatform && (
+                    <Link
+                      href="/dashboard/profile"
+                      onClick={
+                        closeMenu
+                      }
+                    >
+                      Profile
+                    </Link>
+                  )}
 
                   {/* FREELANCER */}
 
@@ -827,7 +1117,8 @@ export default function Navbar() {
                   {/* CLIENT */}
 
                   {role ===
-                    "client" && (
+                    "client" &&
+                    isClientPlatform && (
                     <>
                       <Link
                         href="/freelancers"
@@ -862,15 +1153,49 @@ export default function Navbar() {
                           closeMenu
                         }
                       >
-                        Sent
-                        Contracts
+                        Sent Contracts
                       </Link>
                     </>
                   )}
 
-                  {/* ADMIN */}
+                  {/* ADMIN PLATFORM */}
 
-                  {isAdmin && (
+                  {isAdminPlatform && (
+                    <>
+                      <Link
+                        href="/dashboard/admin"
+                        onClick={
+                          closeMenu
+                        }
+                      >
+                        Admin Dashboard
+                      </Link>
+
+                      <Link
+                        href="/dashboard/admin/moderation"
+                        onClick={
+                          closeMenu
+                        }
+                      >
+                        Moderation
+                      </Link>
+
+                      <Link
+                        href="/dashboard/admin/user-reports"
+                        onClick={
+                          closeMenu
+                        }
+                      >
+                        User Reports
+                      </Link>
+                    </>
+                  )}
+
+                  {/* ADMIN ACCOUNT THAT IS NOT A CLIENT */}
+
+                  {isAdmin &&
+                    role !==
+                      "client" && (
                     <>
                       <Link
                         href="/dashboard/admin"
@@ -896,11 +1221,12 @@ export default function Navbar() {
                           closeMenu
                         }
                       >
-                        User
-                        Reports
+                        User Reports
                       </Link>
                     </>
                   )}
+
+                  {/* LOGOUT */}
 
                   <button
                     type="button"
@@ -932,8 +1258,7 @@ export default function Navbar() {
                   closeMenu
                 }
               >
-                Create
-                Account
+                Create Account
               </Link>
             </>
           )}

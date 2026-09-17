@@ -1,8 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
 import Link from "next/link";
-import { supabase } from "@/app/lib/supabase";
+
+import {
+  supabase,
+} from "@/app/lib/supabase";
+
 import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 
 type Stats = {
@@ -21,7 +29,6 @@ type Activity = {
 
 type Profile = {
   role?: string;
-  is_admin?: boolean;
 
   full_name?: string | null;
   headline?: string | null;
@@ -38,8 +45,16 @@ type Profile = {
   years_experience?: number | null;
 };
 
+// ==================================================
+// PROFILE SKILLS CHECK
+// ==================================================
+
 function hasProfileSkills(
-  value: string[] | string | null | undefined
+  value:
+    | string[]
+    | string
+    | null
+    | undefined
 ): boolean {
   if (Array.isArray(value)) {
     return value.some(
@@ -50,50 +65,67 @@ function hasProfileSkills(
   }
 
   if (typeof value === "string") {
-    const trimmed = value.trim();
+    const trimmed =
+      value.trim();
 
     if (!trimmed) {
       return false;
     }
 
     try {
-      const parsed: unknown = JSON.parse(trimmed);
+      const parsed: unknown =
+        JSON.parse(trimmed);
 
       if (Array.isArray(parsed)) {
         return parsed.some(
           (item) =>
-            typeof item === "string" &&
-            item.trim().length > 0
+            typeof item ===
+              "string" &&
+            item.trim().length >
+              0
         );
       }
     } catch {
-      // Not JSON, so treat as comma-separated text.
+      // Not JSON.
+      // Treat it as comma-separated text.
     }
 
     return trimmed
       .split(",")
       .some(
-        (item: string) =>
-          item.trim().length > 0
+        (item) =>
+          item.trim().length >
+          0
       );
   }
 
   return false;
 }
 
-export default function DashboardPage() {
-  const [role, setRole] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
+// ==================================================
+// DASHBOARD
+// ==================================================
 
-  const [stats, setStats] = useState<Stats>({
+export default function DashboardPage() {
+  const [
+    role,
+    setRole,
+  ] = useState("");
+
+  const [
+    stats,
+    setStats,
+  ] = useState<Stats>({
     jobs: 0,
     applications: 0,
     contracts: 0,
     saved: 0,
   });
 
-  const [activities, setActivities] =
-    useState<Activity[]>([]);
+  const [
+    activities,
+    setActivities,
+  ] = useState<Activity[]>([]);
 
   const [
     profileCompletion,
@@ -105,53 +137,204 @@ export default function DashboardPage() {
     setMissingItems,
   ] = useState<string[]>([]);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  // ==================================================
+  // INITIAL LOAD
+  // ==================================================
 
   useEffect(() => {
-    loadDashboard();
+    void loadDashboard();
   }, []);
 
-  // ============================================
+  // ==================================================
   // PROFILE COMPLETION
-  // ============================================
+  // ==================================================
 
-  const calculateProfileCompletion = (
-    profile: Profile
-  ) => {
-    const isClient =
-      profile.role === "client";
+  const calculateProfileCompletion =
+    (
+      profile: Profile
+    ) => {
+      const isClient =
+        profile.role ===
+        "client";
 
-    // ============================================
-    // CLIENT PROFILE COMPLETION
-    // ============================================
+      // ==============================================
+      // CLIENT PROFILE COMPLETION
+      // ==============================================
 
-    if (isClient) {
+      if (isClient) {
+        const checks = [
+          {
+            label:
+              "Full Name",
+
+            complete:
+              !!profile.full_name?.trim(),
+          },
+
+          {
+            label:
+              "Client Bio",
+
+            complete:
+              !!profile.bio?.trim(),
+          },
+        ];
+
+        const completed =
+          checks.filter(
+            (item) =>
+              item.complete
+          ).length;
+
+        const missing =
+          checks
+            .filter(
+              (item) =>
+                !item.complete
+            )
+            .map(
+              (item) =>
+                item.label
+            );
+
+        const percentage =
+          Math.round(
+            (completed /
+              checks.length) *
+              100
+          );
+
+        setProfileCompletion(
+          percentage
+        );
+
+        setMissingItems(
+          missing
+        );
+
+        return;
+      }
+
+      // ==============================================
+      // FREELANCER PROFILE COMPLETION
+      // ==============================================
+
       const checks = [
         {
-          label: "Full Name",
+          label:
+            "Full Name",
+
           complete:
             !!profile.full_name?.trim(),
         },
+
         {
-          label: "Client Bio",
+          label:
+            "Professional Headline",
+
+          complete:
+            !!profile.headline?.trim(),
+        },
+
+        {
+          label:
+            "Professional Bio",
+
           complete:
             !!profile.bio?.trim(),
+        },
+
+        {
+          label:
+            "Category",
+
+          complete:
+            !!profile.category?.trim(),
+        },
+
+        {
+          label:
+            "Profile Picture",
+
+          complete:
+            !!profile.avatar_url?.trim(),
+        },
+
+        {
+          label:
+            "CV",
+
+          complete:
+            !!profile.cv_url?.trim(),
+        },
+
+        {
+          label:
+            "Portfolio",
+
+          complete:
+            !!profile.portfolio_url?.trim(),
+        },
+
+        {
+          label:
+            "Skills",
+
+          complete:
+            hasProfileSkills(
+              profile.skills
+            ),
+        },
+
+        {
+          label:
+            "Hourly Rate",
+
+          complete:
+            typeof profile.hourly_rate ===
+              "number" &&
+            Number.isFinite(
+              profile.hourly_rate
+            ) &&
+            profile.hourly_rate >
+              0,
+        },
+
+        {
+          label:
+            "Years of Experience",
+
+          complete:
+            typeof profile.years_experience ===
+              "number" &&
+            Number.isFinite(
+              profile.years_experience
+            ) &&
+            profile.years_experience >=
+              0,
         },
       ];
 
       const completed =
         checks.filter(
-          (item) => item.complete
+          (item) =>
+            item.complete
         ).length;
 
       const missing =
         checks
           .filter(
-            (item) => !item.complete
+            (item) =>
+              !item.complete
           )
           .map(
-            (item) => item.label
+            (item) =>
+              item.label
           );
 
       const percentage =
@@ -168,194 +351,127 @@ export default function DashboardPage() {
       setMissingItems(
         missing
       );
+    };
 
-      return;
-    }
-
-    // ============================================
-    // FREELANCER PROFILE COMPLETION
-    // MUST MATCH ProfileCompletionCard
-    // ============================================
-
-    const checks = [
-      {
-        label: "Full Name",
-        complete:
-          !!profile.full_name?.trim(),
-      },
-      {
-        label:
-          "Professional Headline",
-        complete:
-          !!profile.headline?.trim(),
-      },
-      {
-        label:
-          "Professional Bio",
-        complete:
-          !!profile.bio?.trim(),
-      },
-      {
-        label: "Category",
-        complete:
-          !!profile.category?.trim(),
-      },
-      {
-        label:
-          "Profile Picture",
-        complete:
-          !!profile.avatar_url?.trim(),
-      },
-      {
-        label: "CV",
-        complete:
-          !!profile.cv_url?.trim(),
-      },
-      {
-        label: "Portfolio",
-        complete:
-          !!profile.portfolio_url?.trim(),
-      },
-      {
-        label: "Skills",
-        complete:
-          hasProfileSkills(
-            profile.skills
-          ),
-      },
-      {
-        label: "Hourly Rate",
-        complete:
-          typeof profile.hourly_rate ===
-            "number" &&
-          Number.isFinite(
-            profile.hourly_rate
-          ) &&
-          profile.hourly_rate > 0,
-      },
-      {
-        label:
-          "Years of Experience",
-        complete:
-          typeof profile.years_experience ===
-            "number" &&
-          Number.isFinite(
-            profile.years_experience
-          ) &&
-          profile.years_experience >=
-            0,
-      },
-    ];
-
-    const completed =
-      checks.filter(
-        (item) => item.complete
-      ).length;
-
-    const missing =
-      checks
-        .filter(
-          (item) => !item.complete
-        )
-        .map(
-          (item) => item.label
-        );
-
-    const percentage =
-      Math.round(
-        (completed /
-          checks.length) *
-          100
-      );
-
-    setProfileCompletion(
-      percentage
-    );
-
-    setMissingItems(
-      missing
-    );
-  };
-
-  // ============================================
+  // ==================================================
   // LOAD DASHBOARD
-  // ============================================
+  // ==================================================
 
   const loadDashboard =
     async () => {
-      const {
-        data: { user },
-      } =
-        await supabase.auth.getUser();
+      try {
+        const {
+          data: {
+            user,
+          },
+        } =
+          await supabase.auth.getUser();
 
-      if (!user) {
+        if (!user) {
+          setLoading(false);
+          return;
+        }
+
+        // ============================================
+        // UPDATE LAST ACTIVE
+        // ============================================
+
+        await supabase
+          .from(
+            "profiles"
+          )
+          .update({
+            last_seen:
+              new Date().toISOString(),
+          })
+          .eq(
+            "id",
+            user.id
+          );
+
+        // ============================================
+        // LOAD PROFILE
+        // ============================================
+
+        const {
+          data: profile,
+          error:
+            profileError,
+        } =
+          await supabase
+            .from(
+              "profiles"
+            )
+            .select("*")
+            .eq(
+              "id",
+              user.id
+            )
+            .single();
+
+        if (
+          profileError ||
+          !profile
+        ) {
+          console.error(
+            "Dashboard profile loading error:",
+            profileError
+          );
+
+          setLoading(false);
+          return;
+        }
+
+        const userRole =
+          profile.role ||
+          "";
+
+        setRole(
+          userRole
+        );
+
+        calculateProfileCompletion(
+          profile
+        );
+
+        // ============================================
+        // CLIENT DASHBOARD
+        // ============================================
+
+        if (
+          userRole ===
+          "client"
+        ) {
+          await loadClientDashboard(
+            user.id
+          );
+        }
+
+        // ============================================
+        // FREELANCER DASHBOARD
+        // ============================================
+
+        if (
+          userRole ===
+          "freelancer"
+        ) {
+          await loadFreelancerDashboard(
+            user.id
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Dashboard loading error:",
+          error
+        );
+      } finally {
         setLoading(false);
-        return;
       }
-
-      // Update last active time
-      await supabase
-        .from("profiles")
-        .update({
-          last_seen:
-            new Date().toISOString(),
-        })
-        .eq(
-          "id",
-          user.id
-        );
-
-      // Load profile
-      const {
-        data: profile,
-      } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq(
-          "id",
-          user.id
-        )
-        .single();
-
-      setRole(
-        profile?.role || ""
-      );
-
-      setIsAdmin(
-        profile?.is_admin ||
-          false
-      );
-
-      calculateProfileCompletion(
-        profile || {}
-      );
-
-      // Client Dashboard
-      if (
-        profile?.role ===
-        "client"
-      ) {
-        await loadClientDashboard(
-          user.id
-        );
-      }
-
-      // Freelancer Dashboard
-      if (
-        profile?.role ===
-        "freelancer"
-      ) {
-        await loadFreelancerDashboard(
-          user.id
-        );
-      }
-
-      setLoading(false);
     };
 
-  // ============================================
+  // ==================================================
   // CLIENT DASHBOARD
-  // ============================================
+  // ==================================================
 
   const loadClientDashboard =
     async (
@@ -363,86 +479,140 @@ export default function DashboardPage() {
     ) => {
       const {
         count: jobsCount,
-      } = await supabase
-        .from("jobs")
-        .select("*", {
-          count: "exact",
-          head: true,
-        })
-        .eq(
-          "client_id",
-          userId
-        );
+      } =
+        await supabase
+          .from(
+            "jobs"
+          )
+          .select(
+            "*",
+            {
+              count:
+                "exact",
+
+              head:
+                true,
+            }
+          )
+          .eq(
+            "client_id",
+            userId
+          );
 
       const {
         count:
           contractsCount,
-      } = await supabase
-        .from("contracts")
-        .select("*", {
-          count: "exact",
-          head: true,
-        })
-        .eq(
-          "client_id",
-          userId
-        );
+      } =
+        await supabase
+          .from(
+            "contracts"
+          )
+          .select(
+            "*",
+            {
+              count:
+                "exact",
+
+              head:
+                true,
+            }
+          )
+          .eq(
+            "client_id",
+            userId
+          );
+
+      /*
+       * Applications received by this client's jobs.
+       *
+       * The existing RLS policies determine which
+       * application rows this client can see.
+       */
 
       const {
         count:
           applicationsCount,
-      } = await supabase
-        .from("applications")
-        .select("*", {
-          count: "exact",
-          head: true,
-        });
+      } =
+        await supabase
+          .from(
+            "applications"
+          )
+          .select(
+            "*",
+            {
+              count:
+                "exact",
+
+              head:
+                true,
+            }
+          );
 
       const {
-        count: savedCount,
-      } = await supabase
-        .from("favorites")
-        .select("*", {
-          count: "exact",
-          head: true,
-        })
-        .eq(
-          "user_id",
-          userId
-        );
+        count:
+          savedCount,
+      } =
+        await supabase
+          .from(
+            "favorites"
+          )
+          .select(
+            "*",
+            {
+              count:
+                "exact",
+
+              head:
+                true,
+            }
+          )
+          .eq(
+            "user_id",
+            userId
+          );
 
       const {
-        data: latestJobs,
-      } = await supabase
-        .from("jobs")
-        .select(
-          "id, title, budget, created_at"
-        )
-        .eq(
-          "client_id",
-          userId
-        )
-        .order(
-          "created_at",
-          {
-            ascending: false,
-          }
-        )
-        .limit(5);
+        data:
+          latestJobs,
+      } =
+        await supabase
+          .from(
+            "jobs"
+          )
+          .select(
+            "id, title, budget, created_at"
+          )
+          .eq(
+            "client_id",
+            userId
+          )
+          .order(
+            "created_at",
+            {
+              ascending:
+                false,
+            }
+          )
+          .limit(5);
 
       const jobActivities =
         latestJobs?.map(
           (job) => ({
-            id: `job-${job.id}`,
+            id:
+              `job-${job.id}`,
+
             title:
               "Job posted",
-            description: `${
-              job.title ||
-              "Untitled job"
-            } • Budget ZAR ${
-              job.budget ||
-              "N/A"
-            }`,
+
+            description:
+              `${
+                job.title ||
+                "Untitled job"
+              } • Budget ZAR ${
+                job.budget ||
+                "N/A"
+              }`,
+
             created_at:
               job.created_at,
           })
@@ -450,14 +620,20 @@ export default function DashboardPage() {
 
       setStats({
         jobs:
-          jobsCount || 0,
+          jobsCount ||
+          0,
+
         applications:
           applicationsCount ||
           0,
+
         contracts:
-          contractsCount || 0,
+          contractsCount ||
+          0,
+
         saved:
-          savedCount || 0,
+          savedCount ||
+          0,
       });
 
       setActivities(
@@ -465,9 +641,9 @@ export default function DashboardPage() {
       );
     };
 
-  // ============================================
+  // ==================================================
   // FREELANCER DASHBOARD
-  // ============================================
+  // ==================================================
 
   const loadFreelancerDashboard =
     async (
@@ -476,95 +652,141 @@ export default function DashboardPage() {
       const {
         count:
           applicationsCount,
-      } = await supabase
-        .from("applications")
-        .select("*", {
-          count: "exact",
-          head: true,
-        })
-        .eq(
-          "freelancer_id",
-          userId
-        );
+      } =
+        await supabase
+          .from(
+            "applications"
+          )
+          .select(
+            "*",
+            {
+              count:
+                "exact",
+
+              head:
+                true,
+            }
+          )
+          .eq(
+            "freelancer_id",
+            userId
+          );
 
       const {
         count:
           contractsCount,
-      } = await supabase
-        .from("contracts")
-        .select("*", {
-          count: "exact",
-          head: true,
-        })
-        .eq(
-          "freelancer_id",
-          userId
-        );
+      } =
+        await supabase
+          .from(
+            "contracts"
+          )
+          .select(
+            "*",
+            {
+              count:
+                "exact",
+
+              head:
+                true,
+            }
+          )
+          .eq(
+            "freelancer_id",
+            userId
+          );
 
       const {
         count:
           completedCount,
-      } = await supabase
-        .from("contracts")
-        .select("*", {
-          count: "exact",
-          head: true,
-        })
-        .eq(
-          "freelancer_id",
-          userId
-        )
-        .eq(
-          "status",
-          "completed"
-        );
+      } =
+        await supabase
+          .from(
+            "contracts"
+          )
+          .select(
+            "*",
+            {
+              count:
+                "exact",
+
+              head:
+                true,
+            }
+          )
+          .eq(
+            "freelancer_id",
+            userId
+          )
+          .eq(
+            "status",
+            "completed"
+          );
 
       const {
-        count: savedCount,
-      } = await supabase
-        .from("favorites")
-        .select("*", {
-          count: "exact",
-          head: true,
-        })
-        .eq(
-          "user_id",
-          userId
-        );
+        count:
+          savedCount,
+      } =
+        await supabase
+          .from(
+            "favorites"
+          )
+          .select(
+            "*",
+            {
+              count:
+                "exact",
+
+              head:
+                true,
+            }
+          )
+          .eq(
+            "user_id",
+            userId
+          );
 
       const {
         data:
           latestApplications,
-      } = await supabase
-        .from("applications")
-        .select(
-          "id, status, proposed_budget, created_at"
-        )
-        .eq(
-          "freelancer_id",
-          userId
-        )
-        .order(
-          "created_at",
-          {
-            ascending: false,
-          }
-        )
-        .limit(5);
+      } =
+        await supabase
+          .from(
+            "applications"
+          )
+          .select(
+            "id, status, proposed_budget, created_at"
+          )
+          .eq(
+            "freelancer_id",
+            userId
+          )
+          .order(
+            "created_at",
+            {
+              ascending:
+                false,
+            }
+          )
+          .limit(5);
 
       const applicationActivities =
         latestApplications?.map(
           (app) => ({
-            id: `application-${app.id}`,
+            id:
+              `application-${app.id}`,
+
             title:
               "Application update",
-            description: `Status: ${
-              app.status ||
-              "pending"
-            } • ZAR ${
-              app.proposed_budget ||
-              "N/A"
-            }`,
+
+            description:
+              `Status: ${
+                app.status ||
+                "pending"
+              } • ZAR ${
+                app.proposed_budget ||
+                "N/A"
+              }`,
+
             created_at:
               app.created_at,
           })
@@ -574,14 +796,18 @@ export default function DashboardPage() {
         jobs:
           completedCount ||
           0,
+
         applications:
           applicationsCount ||
           0,
+
         contracts:
           contractsCount ||
           0,
+
         saved:
-          savedCount || 0,
+          savedCount ||
+          0,
       });
 
       setActivities(
@@ -589,9 +815,9 @@ export default function DashboardPage() {
       );
     };
 
-  // ============================================
+  // ==================================================
   // LOADING
-  // ============================================
+  // ==================================================
 
   if (loading) {
     return (
@@ -599,21 +825,22 @@ export default function DashboardPage() {
     );
   }
 
-  // ============================================
+  // ==================================================
   // PAGE
-  // ============================================
+  // ==================================================
 
   return (
     <div className="dashboard-home">
 
-      {/* ======================================
+      {/* ============================================
           HERO
-      ====================================== */}
+      ============================================ */}
 
       <section className="dashboard-hero dark-card">
         <div>
           <p className="dashboard-badge">
-            {role === "client"
+            {role ===
+            "client"
               ? "Client Dashboard"
               : role ===
                 "freelancer"
@@ -653,7 +880,8 @@ export default function DashboardPage() {
           </h1>
 
           <p className="dashboard-description">
-            {role === "client"
+            {role ===
+            "client"
               ? "Post jobs, review applications, hire freelancers and manage contracts from one client workspace."
               : role ===
                 "freelancer"
@@ -663,13 +891,13 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* ======================================
+      {/* ============================================
           QUICK ACTIONS
-      ====================================== */}
+      ============================================ */}
 
       <section className="dashboard-quick-actions">
 
-        {/* CLIENT ACTIONS */}
+        {/* CLIENT */}
 
         {role ===
           "client" && (
@@ -734,7 +962,7 @@ export default function DashboardPage() {
           </>
         )}
 
-        {/* FREELANCER ACTIONS */}
+        {/* FREELANCER */}
 
         {role ===
           "freelancer" && (
@@ -801,40 +1029,17 @@ export default function DashboardPage() {
             alerts.
           </p>
         </Link>
-
-        {/* ADMIN */}
-
-        {isAdmin && (
-          <Link
-            href="/dashboard/admin"
-            className="dark-card quick-action-card"
-          >
-            <span>
-              🛡️
-            </span>
-
-            <h3>
-              Admin
-            </h3>
-
-            <p>
-              Manage users,
-              reports,
-              moderation and
-              platform activity.
-            </p>
-          </Link>
-        )}
       </section>
 
-      {/* ======================================
+      {/* ============================================
           PROFILE COMPLETION
-      ====================================== */}
+      ============================================ */}
 
       <section className="dark-card profile-completion-card">
         <div
           style={{
-            width: "100%",
+            width:
+              "100%",
           }}
         >
           <p className="dashboard-badge">
@@ -842,7 +1047,6 @@ export default function DashboardPage() {
           </p>
 
           <div className="profile-progress-top">
-
             <h2>
               {
                 profileCompletion
@@ -862,7 +1066,8 @@ export default function DashboardPage() {
             <div
               className="profile-progress-fill"
               style={{
-                width: `${profileCompletion}%`,
+                width:
+                  `${profileCompletion}%`,
               }}
             />
           </div>
@@ -870,7 +1075,6 @@ export default function DashboardPage() {
           {missingItems.length >
             0 && (
             <div className="profile-missing-list">
-
               <strong>
                 Missing:
               </strong>
@@ -895,9 +1099,9 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* ======================================
+      {/* ============================================
           STATS
-      ====================================== */}
+      ============================================ */}
 
       <section className="dashboard-stats">
 
@@ -955,12 +1159,11 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* ======================================
+      {/* ============================================
           RECENT ACTIVITY
-      ====================================== */}
+      ============================================ */}
 
       <section className="dark-card dashboard-activity">
-
         <h2>
           Recent Activity
         </h2>

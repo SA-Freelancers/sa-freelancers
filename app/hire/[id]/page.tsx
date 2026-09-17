@@ -34,9 +34,6 @@ export default function HireFreelancerPage() {
   const [viewerRole, setViewerRole] =
     useState<string | null>(null);
 
-  const [viewerIsAdmin, setViewerIsAdmin] =
-    useState(false);
-
   const [viewerSuspended, setViewerSuspended] =
     useState(false);
 
@@ -117,7 +114,6 @@ export default function HireFreelancerPage() {
             `
             id,
             role,
-            is_admin,
             suspended
           `
           )
@@ -148,14 +144,10 @@ export default function HireFreelancerPage() {
         const role =
           viewerProfile.role || null;
 
-        const isAdmin =
-          viewerProfile.is_admin === true;
-
         const isSuspended =
           viewerProfile.suspended === true;
 
         setViewerRole(role);
-        setViewerIsAdmin(isAdmin);
         setViewerSuspended(isSuspended);
 
         /*
@@ -164,18 +156,6 @@ export default function HireFreelancerPage() {
         if (isSuspended) {
           setAccessMessage(
             "Your account is suspended and cannot hire freelancers."
-          );
-
-          return;
-        }
-
-        /*
-         * Admin accounts should not use the normal
-         * client hiring workflow.
-         */
-        if (isAdmin) {
-          setAccessMessage(
-            "Administrator accounts cannot hire freelancers."
           );
 
           return;
@@ -381,7 +361,6 @@ export default function HireFreelancerPage() {
         .select(
           `
           role,
-          is_admin,
           suspended
         `
         )
@@ -414,16 +393,6 @@ export default function HireFreelancerPage() {
       ) {
         setMessage(
           "Your account is suspended and cannot hire freelancers."
-        );
-
-        return;
-      }
-
-      if (
-        clientProfile.is_admin === true
-      ) {
-        setMessage(
-          "Administrator accounts cannot hire freelancers."
         );
 
         return;
@@ -862,7 +831,6 @@ export default function HireFreelancerPage() {
   const canHire =
     !!viewerId &&
     viewerRole === "client" &&
-    !viewerIsAdmin &&
     !viewerSuspended &&
     viewerId !== profile.id &&
     profile.role === "freelancer" &&
