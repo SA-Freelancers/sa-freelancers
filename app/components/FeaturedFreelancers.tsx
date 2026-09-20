@@ -231,10 +231,13 @@ export default function FeaturedFreelancers() {
 
 
   /* =========================================================
-     LOAD FREELANCERS
+     DAILY FEATURED FREELANCERS
+     Real + complete profiles only; stable group per day.
      ========================================================= */
 
   useEffect(() => {
+
+    let mounted = true;
 
     const loadFreelancers =
       async () => {
@@ -253,7 +256,7 @@ export default function FeaturedFreelancers() {
                 `
                 *,
                 reviews!reviews_freelancer_id_fkey (
-    rating
+                  rating
                 )
               `
               )
@@ -271,9 +274,7 @@ export default function FeaturedFreelancers() {
                   ascending:
                     false,
                 }
-              )
-              .limit(6);
-
+              );
 
           if (error) {
 
@@ -286,13 +287,138 @@ export default function FeaturedFreelancers() {
 
           }
 
-
-          setFreelancers(
+          const eligibleFreelancers =
             (
-              data as
-                Freelancer[]
-            ) || []
-          );
+              (data as Freelancer[]) ||
+              []
+            ).filter(
+              (freelancer) => {
+
+                const hasName =
+                  Boolean(
+                    freelancer.full_name
+                      ?.trim()
+                  );
+
+                const hasProfessionalTitle =
+                  Boolean(
+                    freelancer.headline
+                      ?.trim() ||
+                    freelancer.category
+                      ?.trim()
+                  );
+
+                const hasBio =
+                  Boolean(
+                    freelancer.bio
+                      ?.trim()
+                  );
+
+                const hasLocation =
+                  Boolean(
+                    freelancer.city
+                      ?.trim() ||
+                    freelancer.province
+                      ?.trim()
+                  );
+
+                const hasSkills =
+                  normaliseSkills(
+                    freelancer.skills
+                  ).length >
+                  0;
+
+                return (
+                  hasName &&
+                  hasProfessionalTitle &&
+                  hasBio &&
+                  hasLocation &&
+                  hasSkills
+                );
+
+              }
+            );
+
+          const now =
+            new Date();
+
+          const dateKey =
+            Number(
+              `${now.getFullYear()}${String(
+                now.getMonth() + 1
+              ).padStart(
+                2,
+                "0"
+              )}${String(
+                now.getDate()
+              ).padStart(
+                2,
+                "0"
+              )}`
+            );
+
+          const dailyHash =
+            (
+              freelancer:
+                Freelancer
+            ) => {
+
+              const value =
+                `${dateKey}-${freelancer.id}`;
+
+              let hash =
+                2166136261;
+
+              for (
+                let index = 0;
+                index <
+                value.length;
+                index += 1
+              ) {
+
+                hash ^=
+                  value.charCodeAt(
+                    index
+                  );
+
+                hash =
+                  Math.imul(
+                    hash,
+                    16777619
+                  );
+
+              }
+
+              return hash >>> 0;
+
+            };
+
+          const dailyFreelancers =
+            [...eligibleFreelancers]
+              .sort(
+                (
+                  freelancerA,
+                  freelancerB
+                ) =>
+                  dailyHash(
+                    freelancerA
+                  ) -
+                  dailyHash(
+                    freelancerB
+                  )
+              )
+              .slice(
+                0,
+                6
+              );
+
+          if (mounted) {
+
+            setFreelancers(
+              dailyFreelancers
+            );
+
+          }
 
         } catch (
           error
@@ -305,16 +431,25 @@ export default function FeaturedFreelancers() {
 
         } finally {
 
-          setLoading(
-            false
-          );
+          if (mounted) {
+
+            setLoading(
+              false
+            );
+
+          }
 
         }
 
       };
 
-
     void loadFreelancers();
+
+    return () => {
+
+      mounted = false;
+
+    };
 
   }, []);
 
