@@ -1,6 +1,7 @@
 import VersionRefresh from "./components/VersionRefresh";
 import WhatsAppButton from "./components/WhatsAppButton";
 import GoogleAnalytics from "./components/GoogleAnalytics";
+import InactivityLogout from "./components/InactivityLogout";
 
 import type {
   ReactNode,
@@ -99,6 +100,8 @@ export default function RootLayout({
         <GoogleAnalytics />
 
         <VersionRefresh />
+
+        <InactivityLogout />
 
         <Navbar />
 
