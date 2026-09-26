@@ -11,6 +11,11 @@ import {
   supabase,
 } from "@/app/lib/supabase";
 
+import {
+  calculateProfileCompleteness,
+  type ProfileCompletenessProfile,
+} from "@/app/lib/profileCompleteness";
+
 
 type Review = {
   rating: number;
@@ -27,6 +32,7 @@ type Freelancer = {
   avatar_url?: string | null;
 
   verified?: boolean | null;
+
   verification_status?:
     | "not_submitted"
     | "pending"
@@ -41,12 +47,28 @@ type Freelancer = {
   province?: string | null;
   country?: string | null;
 
+  location?: string | null;
+
+  years_experience?: number | null;
   hourly_rate?: number | null;
 
   skills?:
     | string[]
     | string
     | null;
+
+  education?: string | null;
+
+  certifications?:
+    | string[]
+    | string
+    | null;
+
+  cv_url?: string | null;
+  portfolio_url?: string | null;
+
+  suspended?: boolean | null;
+  is_demo?: boolean | null;
 
   reviews?: Review[];
 };
@@ -59,7 +81,6 @@ type Freelancer = {
 function getInitials(
   name?: string | null
 ) {
-
   if (!name?.trim()) {
     return "FH";
   }
@@ -85,13 +106,11 @@ function normaliseSkills(
     | null
     | undefined
 ): string[] {
-
   if (
     Array.isArray(
       value
     )
   ) {
-
     return value
       .filter(
         (
@@ -108,14 +127,12 @@ function normaliseSkills(
         (item) =>
           item.trim()
       );
-
   }
 
   if (
     typeof value ===
     "string"
   ) {
-
     const trimmed =
       value.trim();
 
@@ -124,7 +141,6 @@ function normaliseSkills(
     }
 
     try {
-
       const parsed:
         unknown =
           JSON.parse(
@@ -136,7 +152,6 @@ function normaliseSkills(
           parsed
         )
       ) {
-
         return parsed
           .filter(
             (
@@ -153,11 +168,9 @@ function normaliseSkills(
             (item) =>
               item.trim()
           );
-
       }
-
     } catch {
-      // Not JSON, so continue as comma-separated text.
+      // Not JSON.
     }
 
     return trimmed
@@ -169,7 +182,6 @@ function normaliseSkills(
       .filter(
         Boolean
       );
-
   }
 
   return [];
@@ -180,7 +192,6 @@ function getLocation(
   freelancer:
     Freelancer
 ) {
-
   const parts = [
     freelancer.city,
     freelancer.province,
@@ -200,12 +211,53 @@ function getLocation(
   if (
     parts.length === 0
   ) {
+    if (
+      freelancer.location
+        ?.trim()
+    ) {
+      return freelancer.location
+        .trim();
+    }
 
     return "South Africa";
-
   }
 
   return parts.join(", ");
+}
+
+
+/* =========================================================
+   DAILY HASH
+   ========================================================= */
+
+function createDailyHash(
+  dateKey: string,
+  freelancerId: string
+) {
+  const value =
+    `${dateKey}-${freelancerId}`;
+
+  let hash =
+    2166136261;
+
+  for (
+    let index = 0;
+    index < value.length;
+    index += 1
+  ) {
+    hash ^=
+      value.charCodeAt(
+        index
+      );
+
+    hash =
+      Math.imul(
+        hash,
+        16777619
+      );
+  }
+
+  return hash >>> 0;
 }
 
 
@@ -214,7 +266,6 @@ function getLocation(
    ========================================================= */
 
 export default function FeaturedFreelancers() {
-
   const [
     freelancers,
     setFreelancers,
@@ -232,17 +283,25 @@ export default function FeaturedFreelancers() {
 
   /* =========================================================
      DAILY FEATURED FREELANCERS
-     Real + complete profiles only; stable group per day.
+
+     - Real freelancer accounts
+     - Not suspended
+     - Not demo accounts
+     - 100% complete profiles only
+     - Portfolio project counts as portfolio
+     - Same six freelancers during one day
+     - New selection the following day
      ========================================================= */
 
   useEffect(() => {
-
     let mounted = true;
 
     const loadFreelancers =
       async () => {
-
         try {
+          /* ===============================================
+             LOAD FREELANCERS
+             =============================================== */
 
           const {
             data,
@@ -254,11 +313,11 @@ export default function FeaturedFreelancers() {
               )
               .select(
                 `
-                *,
-                reviews!reviews_freelancer_id_fkey (
-                  rating
-                )
-              `
+                  *,
+                  reviews!reviews_freelancer_id_fkey (
+                    rating
+                  )
+                `
               )
               .eq(
                 "role",
@@ -268,143 +327,207 @@ export default function FeaturedFreelancers() {
                 "suspended",
                 false
               )
-              .order(
-                "top_rated",
-                {
-                  ascending:
-                    false,
-                }
+              .eq(
+                "is_demo",
+                false
               );
 
           if (error) {
-
             console.error(
               "Featured freelancers loading error:",
               error
             );
 
             return;
-
           }
 
-          const eligibleFreelancers =
+
+          const allFreelancers =
             (
               (data as Freelancer[]) ||
               []
-            ).filter(
-              (freelancer) => {
-
-                const hasName =
-                  Boolean(
-                    freelancer.full_name
-                      ?.trim()
-                  );
-
-                const hasProfessionalTitle =
-                  Boolean(
-                    freelancer.headline
-                      ?.trim() ||
-                    freelancer.category
-                      ?.trim()
-                  );
-
-                const hasBio =
-                  Boolean(
-                    freelancer.bio
-                      ?.trim()
-                  );
-
-                const hasLocation =
-                  Boolean(
-                    freelancer.city
-                      ?.trim() ||
-                    freelancer.province
-                      ?.trim()
-                  );
-
-                const hasSkills =
-                  normaliseSkills(
-                    freelancer.skills
-                  ).length >
-                  0;
-
-                return (
-                  hasName &&
-                  hasProfessionalTitle &&
-                  hasBio &&
-                  hasLocation &&
-                  hasSkills
-                );
-
-              }
             );
 
-          const now =
-            new Date();
 
-          const dateKey =
-            Number(
-              `${now.getFullYear()}${String(
-                now.getMonth() + 1
-              ).padStart(
-                2,
-                "0"
-              )}${String(
-                now.getDate()
-              ).padStart(
-                2,
-                "0"
-              )}`
+          if (
+            allFreelancers.length ===
+            0
+          ) {
+            if (mounted) {
+              setFreelancers(
+                []
+              );
+            }
+
+            return;
+          }
+
+
+          /* ===============================================
+             LOAD PORTFOLIO PROJECTS
+
+             A freelancer may satisfy the portfolio
+             requirement either through portfolio_url
+             or through portfolio_projects.
+             =============================================== */
+
+          const freelancerIds =
+            allFreelancers.map(
+              (freelancer) =>
+                freelancer.id
             );
 
-          const dailyHash =
-            (
-              freelancer:
-                Freelancer
-            ) => {
 
-              const value =
-                `${dateKey}-${freelancer.id}`;
+          const {
+            data:
+              portfolioRows,
+            error:
+              portfolioError,
+          } =
+            await supabase
+              .from(
+                "portfolio_projects"
+              )
+              .select(
+                "freelancer_id"
+              )
+              .in(
+                "freelancer_id",
+                freelancerIds
+              );
 
-              let hash =
-                2166136261;
 
-              for (
-                let index = 0;
-                index <
-                value.length;
-                index += 1
-              ) {
+          if (
+            portfolioError
+          ) {
+            console.error(
+              "Featured freelancer portfolio loading error:",
+              portfolioError
+            );
 
-                hash ^=
-                  value.charCodeAt(
-                    index
-                  );
+            return;
+          }
 
-                hash =
-                  Math.imul(
-                    hash,
-                    16777619
-                  );
 
+          const freelancersWithProjects =
+            new Set<string>();
+
+
+          for (
+            const project of
+              portfolioRows || []
+          ) {
+            if (
+              project.freelancer_id
+            ) {
+              freelancersWithProjects.add(
+                project.freelancer_id
+              );
+            }
+          }
+
+
+          /* ===============================================
+             REQUIRE 100% PROFILE COMPLETION
+
+             IMPORTANT:
+             We use exactly the same completeness
+             calculator used elsewhere on the platform.
+             =============================================== */
+
+          const eligibleFreelancers =
+  allFreelancers.filter(
+    (freelancer) => {
+      const result =
+        calculateProfileCompleteness({
+          ...(freelancer as ProfileCompletenessProfile),
+
+          portfolio_project_exists:
+            freelancersWithProjects.has(
+              freelancer.id
+            ),
+        });
+
+      /*
+       * Homepage eligibility is intentionally
+       * different from 100% profile completion.
+       *
+       * CV, education and certifications are
+       * encouraged and still count toward the
+       * user's full profile-completion score,
+       * but they are not required for a strong
+       * public freelancer profile.
+       */
+
+      return (
+        result.checks.fullName &&
+        result.checks.photo &&
+        result.checks.headline &&
+        result.checks.bio &&
+        result.checks.category &&
+        result.checks.location &&
+        result.checks.experience &&
+        result.checks.hourlyRate &&
+        result.checks.skills &&
+        result.checks.portfolio
+      );
+    }
+  );
+
+
+          /* ===============================================
+             DAILY DATE KEY
+
+             Use South African calendar date rather
+             than randomising on every refresh.
+             =============================================== */
+
+          const saDate =
+            new Intl.DateTimeFormat(
+              "en-CA",
+              {
+                timeZone:
+                  "Africa/Johannesburg",
+
+                year:
+                  "numeric",
+
+                month:
+                  "2-digit",
+
+                day:
+                  "2-digit",
               }
+            ).format(
+              new Date()
+            );
 
-              return hash >>> 0;
 
-            };
+          /*
+           * Example:
+           *
+           * 2026-09-26
+           *
+           * Everyone sees the same deterministic
+           * ordering for this date.
+           */
 
           const dailyFreelancers =
-            [...eligibleFreelancers]
+            [
+              ...eligibleFreelancers,
+            ]
               .sort(
                 (
                   freelancerA,
                   freelancerB
                 ) =>
-                  dailyHash(
-                    freelancerA
+                  createDailyHash(
+                    saDate,
+                    freelancerA.id
                   ) -
-                  dailyHash(
-                    freelancerB
+                  createDailyHash(
+                    saDate,
+                    freelancerB.id
                   )
               )
               .slice(
@@ -412,45 +535,35 @@ export default function FeaturedFreelancers() {
                 6
               );
 
-          if (mounted) {
 
+          if (mounted) {
             setFreelancers(
               dailyFreelancers
             );
-
           }
-
         } catch (
           error
         ) {
-
           console.error(
             "Featured freelancers unexpected error:",
             error
           );
-
         } finally {
-
           if (mounted) {
-
             setLoading(
               false
             );
-
           }
-
         }
-
       };
+
 
     void loadFreelancers();
 
+
     return () => {
-
       mounted = false;
-
     };
-
   }, []);
 
 
@@ -462,16 +575,14 @@ export default function FeaturedFreelancers() {
     (
       reviews?: Review[]
     ) => {
-
       if (
         !reviews ||
         reviews.length ===
           0
       ) {
-
         return null;
-
       }
+
 
       const total =
         reviews.reduce(
@@ -487,20 +598,18 @@ export default function FeaturedFreelancers() {
           0
         );
 
+
       return (
         total /
         reviews.length
       ).toFixed(1);
-
     };
 
 
   if (
     loading
   ) {
-
     return null;
-
   }
 
 
@@ -508,9 +617,7 @@ export default function FeaturedFreelancers() {
     freelancers.length ===
     0
   ) {
-
     return null;
-
   }
 
 
@@ -519,14 +626,11 @@ export default function FeaturedFreelancers() {
      ========================================================= */
 
   return (
-
     <section className="home-section featured-freelancers-section">
-
 
       {/* HEADER */}
 
       <div className="home-section-header">
-
         <p className="dashboard-badge">
           Featured Freelancers
         </p>
@@ -537,29 +641,25 @@ export default function FeaturedFreelancers() {
         </h2>
 
         <p className="featured-freelancers-subtitle">
-
           Discover professionals
           ready to help bring your
           next project to life.
-
         </p>
-
       </div>
 
 
       {/* GRID */}
 
       <div className="featured-freelancers-grid">
-
         {freelancers.map(
           (
             freelancer
           ) => {
-
             const rating =
               getAverageRating(
                 freelancer.reviews
               );
+
 
             const skills =
               normaliseSkills(
@@ -569,6 +669,7 @@ export default function FeaturedFreelancers() {
                 3
               );
 
+
             const isVerified =
               freelancer
                 .verification_status ===
@@ -577,6 +678,7 @@ export default function FeaturedFreelancers() {
                 .verified ===
                 true;
 
+
             const location =
               getLocation(
                 freelancer
@@ -584,7 +686,6 @@ export default function FeaturedFreelancers() {
 
 
             return (
-
               <article
                 key={
                   freelancer.id
@@ -592,18 +693,14 @@ export default function FeaturedFreelancers() {
                 className="featured-freelancer-card"
               >
 
-
                 {/* TOP */}
 
                 <div className="featured-freelancer-top">
 
-
                   {/* AVATAR */}
 
                   <div className="featured-freelancer-avatar-wrap">
-
                     {freelancer.avatar_url ? (
-
                       <img
                         src={
                           freelancer.avatar_url
@@ -614,31 +711,23 @@ export default function FeaturedFreelancers() {
                         }
                         className="featured-freelancer-avatar"
                       />
-
                     ) : (
-
                       <div className="featured-freelancer-avatar featured-freelancer-avatar-fallback">
-
                         {getInitials(
                           freelancer.full_name
                         )}
-
                       </div>
-
                     )}
 
 
                     {isVerified && (
-
                       <span
                         className="featured-freelancer-verified-icon"
                         title="Identity Verified"
                       >
                         ✓
                       </span>
-
                     )}
-
                   </div>
 
 
@@ -648,9 +737,7 @@ export default function FeaturedFreelancers() {
                     "number" &&
                     freelancer.hourly_rate >
                       0 && (
-
                       <div className="featured-freelancer-rate">
-
                         <strong>
                           R
                           {
@@ -661,56 +748,42 @@ export default function FeaturedFreelancers() {
                         <span>
                           /hr
                         </span>
-
                       </div>
-
                     )}
-
                 </div>
 
 
                 {/* IDENTITY */}
 
                 <div className="featured-freelancer-identity">
-
                   <h3>
-
                     {
                       freelancer.full_name ||
                       "Freelancer"
                     }
-
                   </h3>
 
 
                   <p className="featured-freelancer-headline">
-
                     {
                       freelancer.headline ||
                       freelancer.category ||
                       "Professional Freelancer"
                     }
-
                   </p>
 
 
                   <p className="featured-freelancer-location">
-
                     📍 {location}
-
                   </p>
-
                 </div>
 
 
                 {/* RATING */}
 
                 <div className="featured-freelancer-rating-row">
-
                   {rating ? (
-
                     <>
-
                       <span className="featured-freelancer-stars">
                         ★
                       </span>
@@ -720,7 +793,6 @@ export default function FeaturedFreelancers() {
                       </strong>
 
                       <span>
-
                         (
                         {
                           freelancer.reviews
@@ -735,28 +807,19 @@ export default function FeaturedFreelancers() {
                             : "reviews"
                         }
                         )
-
                       </span>
-
                     </>
-
                   ) : (
-
                     <span className="featured-freelancer-no-rating">
-
                       New freelancer
-
                     </span>
-
                   )}
-
                 </div>
 
 
                 {/* BIO */}
 
                 <p className="featured-freelancer-bio">
-
                   {
                     freelancer.bio
                       ?.trim()
@@ -773,7 +836,6 @@ export default function FeaturedFreelancers() {
                       .length >
                       125 &&
                     "..."}
-
                 </p>
 
 
@@ -781,14 +843,11 @@ export default function FeaturedFreelancers() {
 
                 {skills.length >
                   0 && (
-
                   <div className="featured-freelancer-skills">
-
                     {skills.map(
                       (
                         skill
                       ) => (
-
                         <span
                           key={
                             skill
@@ -796,51 +855,34 @@ export default function FeaturedFreelancers() {
                         >
                           {skill}
                         </span>
-
                       )
                     )}
-
                   </div>
-
                 )}
 
 
                 {/* BADGES */}
 
                 <div className="featured-freelancer-badges">
-
                   {isVerified && (
-
                     <span className="featured-badge verified">
-
                       ✓ Identity Verified
-
                     </span>
-
                   )}
 
 
                   {freelancer.email_verified && (
-
                     <span className="featured-badge email">
-
                       ✓ Email Verified
-
                     </span>
-
                   )}
 
 
                   {freelancer.top_rated && (
-
                     <span className="featured-badge top-rated">
-
                       ★ Top Rated
-
                     </span>
-
                   )}
-
                 </div>
 
 
@@ -850,48 +892,35 @@ export default function FeaturedFreelancers() {
                   href={`/freelancers/${freelancer.id}`}
                   className="featured-freelancer-button"
                 >
-
                   View Profile
 
                   <span>
                     →
                   </span>
-
                 </Link>
 
-
               </article>
-
             );
-
           }
         )}
-
       </div>
 
 
       {/* VIEW MORE */}
 
       <div className="featured-freelancers-footer">
-
         <Link
           href="/freelancers"
           className="featured-view-all"
         >
-
           Browse All Freelancers
 
           <span>
             →
           </span>
-
         </Link>
-
       </div>
 
-
     </section>
-
   );
-
 }
