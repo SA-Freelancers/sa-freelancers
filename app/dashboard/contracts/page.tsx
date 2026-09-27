@@ -19,6 +19,8 @@ type Contract = {
   project_status?: string | null;
   payment_status?: string | null;
   paid_at?: string | null;
+
+  has_delivery?: boolean;
 };
 
 type ProjectRow = {
@@ -29,6 +31,10 @@ type ProjectRow = {
   payment_status?: string | null;
   paid_at?: string | null;
   created_at?: string | null;
+};
+
+type DeliveryRow = {
+  contract_id: string;
 };
 
 type JobInvitation = {
@@ -101,40 +107,55 @@ export default function ContractsPage() {
 
     setAllowed(true);
 
-    const [contractsResult, invitationsResult, projectsResult] =
-      await Promise.all([
-        supabase
-          .from("contracts")
-          .select("*")
-          .eq("freelancer_id", user.id)
-          .order("created_at", {
-            ascending: false,
-          }),
+    /*
+     * =====================================================
+     * LOAD CONTRACTS, INVITATIONS, PROJECTS AND DELIVERIES
+     * =====================================================
+     */
 
-        supabase
-          .from("job_invitations")
-          .select(
-            "id, job_id, client_id, freelancer_id, status, created_at, responded_at"
-          )
-          .eq("freelancer_id", user.id)
-          .order("created_at", {
-            ascending: false,
-          }),
+    const [
+      contractsResult,
+      invitationsResult,
+      projectsResult,
+      deliveriesResult,
+    ] = await Promise.all([
+      supabase
+        .from("contracts")
+        .select("*")
+        .eq("freelancer_id", user.id)
+        .order("created_at", {
+          ascending: false,
+        }),
 
-        supabase
-          .from("projects")
-          .select(
-            "id, client_id, freelancer_id, status, payment_status, paid_at, created_at"
-          )
-          .eq("freelancer_id", user.id)
-          .order("created_at", {
-            ascending: false,
-          }),
-      ]);
+      supabase
+        .from("job_invitations")
+        .select(
+          "id, job_id, client_id, freelancer_id, status, created_at, responded_at"
+        )
+        .eq("freelancer_id", user.id)
+        .order("created_at", {
+          ascending: false,
+        }),
+
+      supabase
+        .from("projects")
+        .select(
+          "id, client_id, freelancer_id, status, payment_status, paid_at, created_at"
+        )
+        .eq("freelancer_id", user.id)
+        .order("created_at", {
+          ascending: false,
+        }),
+
+      supabase
+        .from("contract_deliveries")
+        .select("contract_id")
+        .eq("freelancer_id", user.id),
+    ]);
 
     /*
      * =====================================================
-     * CONTRACTS + PROJECT PAYMENT STATE
+     * CONTRACTS + PROJECT PAYMENT + DELIVERY STATE
      * =====================================================
      */
 
@@ -149,15 +170,37 @@ export default function ContractsPage() {
       const contractRows =
         (contractsResult.data as Contract[]) || [];
 
-      const projectRows =
-        projectsResult.error
-          ? []
-          : ((projectsResult.data as ProjectRow[]) || []);
+      const projectRows = projectsResult.error
+        ? []
+        : ((projectsResult.data as ProjectRow[]) || []);
 
       if (projectsResult.error) {
         console.error(
           "Projects loading error:",
           projectsResult.error
+        );
+      }
+
+      /*
+       * Build a Set containing every contract that
+       * currently has at least one uploaded delivery.
+       */
+
+      let deliveryContractIds = new Set<string>();
+
+      if (deliveriesResult.error) {
+        console.error(
+          "Contract deliveries loading error:",
+          deliveriesResult.error
+        );
+      } else {
+        const deliveryRows =
+          (deliveriesResult.data as DeliveryRow[]) || [];
+
+        deliveryContractIds = new Set(
+          deliveryRows.map(
+            (delivery) => delivery.contract_id
+          )
         );
       }
 
@@ -192,6 +235,9 @@ export default function ContractsPage() {
 
             paid_at:
               matchingProject?.paid_at ?? null,
+
+            has_delivery:
+              deliveryContractIds.has(contract.id),
           };
         }
       );
@@ -419,7 +465,15 @@ export default function ContractsPage() {
        * =====================================================
        * COMPLETION SECURITY CHECK
        *
-       * Do this BEFORE changing contract.status.
+       * IMPORTANT:
+       * Never rely only on hiding the UI button.
+       *
+       * Before completion we independently verify:
+       *
+       * 1. project exists
+       * 2. payment is confirmed
+       * 3. project is active
+       * 4. freelancer attached at least one work file
        * =====================================================
        */
 
@@ -438,6 +492,48 @@ export default function ContractsPage() {
         ) {
           setMessage(
             "This project cannot be completed until the client has paid and the project is active."
+          );
+
+          return;
+        }
+
+        /*
+         * Verify the work attachment directly from
+         * contract_deliveries.
+         */
+
+        const {
+          data: deliveryRows,
+          error: deliveryError,
+        } = await supabase
+          .from("contract_deliveries")
+          .select("id")
+          .eq("contract_id", contractId)
+          .eq(
+            "freelancer_id",
+            currentContract.freelancer_id
+          )
+          .limit(1);
+
+        if (deliveryError) {
+          console.error(
+            "Delivery verification error:",
+            deliveryError
+          );
+
+          setMessage(
+            "Unable to verify your attached work file. Please try again."
+          );
+
+          return;
+        }
+
+        if (
+          !deliveryRows ||
+          deliveryRows.length === 0
+        ) {
+          setMessage(
+            "Please attach at least one work file before marking this project as complete."
           );
 
           return;
@@ -485,8 +581,7 @@ export default function ContractsPage() {
        * Payment:
        * remains unpaid
        *
-       * PayFast confirmation is responsible for
-       * activating the project.
+       * PayFast confirmation activates the project.
        * =====================================================
        */
 
@@ -558,15 +653,16 @@ export default function ContractsPage() {
         /*
          * IMPORTANT:
          *
-         * Do NOT update the project to active here.
+         * Do NOT activate the project here.
          *
          * Expected state:
          *
-         * contract.status       = accepted
-         * project.status        = pending
-         * project.payment_status = unpaid
+         * contract.status         = accepted
+         * project.status          = pending
+         * project.payment_status  = unpaid
          *
-         * PayFast will activate it after payment.
+         * PayFast activates the project after
+         * successful payment confirmation.
          */
       }
 
@@ -606,24 +702,30 @@ export default function ContractsPage() {
        * STEP 4
        * COMPLETE CONTRACT
        *
-       * This is allowed ONLY when:
+       * Allowed ONLY when:
        *
        * payment_status = paid
        * project.status = active
+       * delivery exists
        * =====================================================
        */
 
       if (status === "completed") {
-        const { data: completedProjects, error: projectError } =
-          await supabase
-            .from("projects")
-            .update({
-              status: "completed",
-            })
-            .eq("id", currentContract.project_id!)
-            .eq("status", "active")
-            .eq("payment_status", "paid")
-            .select("id");
+        const {
+          data: completedProjects,
+          error: projectError,
+        } = await supabase
+          .from("projects")
+          .update({
+            status: "completed",
+          })
+          .eq(
+            "id",
+            currentContract.project_id!
+          )
+          .eq("status", "active")
+          .eq("payment_status", "paid")
+          .select("id");
 
         if (
           projectError ||
@@ -636,7 +738,7 @@ export default function ContractsPage() {
           );
 
           /*
-           * Roll the contract back because the
+           * Roll contract back because the
            * corresponding paid project was not
            * successfully completed.
            */
@@ -819,7 +921,7 @@ export default function ContractsPage() {
   );
 
   /*
-   * A contract is considered active for the freelancer
+   * A contract is active for the freelancer
    * ONLY when the project is paid and active.
    */
 
@@ -875,16 +977,12 @@ export default function ContractsPage() {
         </div>
       )}
 
-      {/* ===================================================
+      {/* ==========================================
           JOB INVITATIONS
-          =================================================== */}
+      ========================================== */}
 
       <section>
-        <h2
-          style={{
-            marginBottom: 18,
-          }}
-        >
+        <h2 style={{ marginBottom: 18 }}>
           Job Invitations
         </h2>
 
@@ -987,16 +1085,12 @@ export default function ContractsPage() {
         )}
       </section>
 
-      {/* ===================================================
+      {/* ==========================================
           PENDING CONTRACT REQUESTS
-          =================================================== */}
+      ========================================== */}
 
       <section>
-        <h2
-          style={{
-            marginBottom: 18,
-          }}
-        >
+        <h2 style={{ marginBottom: 18 }}>
           Pending Contract Requests
         </h2>
 
@@ -1022,7 +1116,8 @@ export default function ContractsPage() {
 
                     <span
                       className={`contract-status ${
-                        contract.status || "pending"
+                        contract.status ||
+                        "pending"
                       }`}
                     >
                       {contract.status ||
@@ -1092,20 +1187,12 @@ export default function ContractsPage() {
         )}
       </section>
 
-      {/* ===================================================
+      {/* ==========================================
           AWAITING CLIENT PAYMENT
-          =================================================== */}
+      ========================================== */}
 
-      <section
-        style={{
-          marginTop: 40,
-        }}
-      >
-        <h2
-          style={{
-            marginBottom: 18,
-          }}
-        >
+      <section style={{ marginTop: 40 }}>
+        <h2 style={{ marginBottom: 18 }}>
           Awaiting Client Payment
         </h2>
 
@@ -1187,20 +1274,12 @@ export default function ContractsPage() {
         )}
       </section>
 
-      {/* ===================================================
+      {/* ==========================================
           ACTIVE / PAID CONTRACTS
-          =================================================== */}
+      ========================================== */}
 
-      <section
-        style={{
-          marginTop: 40,
-        }}
-      >
-        <h2
-          style={{
-            marginBottom: 18,
-          }}
-        >
+      <section style={{ marginTop: 40 }}>
+        <h2 style={{ marginBottom: 18 }}>
           Active Contracts
         </h2>
 
@@ -1251,6 +1330,65 @@ export default function ContractsPage() {
                     </strong>
                   </div>
 
+                  {!contract.has_delivery && (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        marginBottom: 12,
+                        padding: 12,
+                        borderRadius: 10,
+                        background:
+                          "rgba(245, 158, 11, 0.10)",
+                      }}
+                    >
+                      <strong>
+                        Work file required
+                      </strong>
+
+                      <p
+                        style={{
+                          marginTop: 5,
+                          marginBottom: 0,
+                          fontSize: 13,
+                          opacity: 0.8,
+                        }}
+                      >
+                        Attach at least one completed
+                        work file before marking this
+                        project as complete.
+                      </p>
+                    </div>
+                  )}
+
+                  {contract.has_delivery && (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        marginBottom: 12,
+                        padding: 12,
+                        borderRadius: 10,
+                        background:
+                          "rgba(34, 197, 94, 0.10)",
+                      }}
+                    >
+                      <strong>
+                        Work file attached
+                      </strong>
+
+                      <p
+                        style={{
+                          marginTop: 5,
+                          marginBottom: 0,
+                          fontSize: 13,
+                          opacity: 0.8,
+                        }}
+                      >
+                        You can now mark this project
+                        as complete.
+                      </p>
+                    </div>
+                  )}
+
                   <div className="contract-actions">
                     <a
                       href={`/dashboard/contracts/${contract.id}`}
@@ -1259,25 +1397,34 @@ export default function ContractsPage() {
                       View Details
                     </a>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        updateContract(
-                          contract.id,
-                          "completed"
-                        )
-                      }
-                      className="accept-btn"
-                      disabled={
-                        updatingContractId ===
-                        contract.id
-                      }
+                    <a
+                      href={`/dashboard/contracts/${contract.id}/deliveries`}
+                      className="primary-action-link"
                     >
-                      {updatingContractId ===
-                      contract.id
-                        ? "Working..."
-                        : "Mark Completed"}
-                    </button>
+                      Attach Work File
+                    </a>
+
+                    {contract.has_delivery && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateContract(
+                            contract.id,
+                            "completed"
+                          )
+                        }
+                        className="accept-btn"
+                        disabled={
+                          updatingContractId ===
+                          contract.id
+                        }
+                      >
+                        {updatingContractId ===
+                        contract.id
+                          ? "Working..."
+                          : "Mark as Complete"}
+                      </button>
+                    )}
                   </div>
                 </div>
               )
@@ -1286,20 +1433,12 @@ export default function ContractsPage() {
         )}
       </section>
 
-      {/* ===================================================
+      {/* ==========================================
           COMPLETED CONTRACTS
-          =================================================== */}
+      ========================================== */}
 
-      <section
-        style={{
-          marginTop: 40,
-        }}
-      >
-        <h2
-          style={{
-            marginBottom: 18,
-          }}
-        >
+      <section style={{ marginTop: 40 }}>
+        <h2 style={{ marginBottom: 18 }}>
           Completed Contracts
         </h2>
 
@@ -1345,6 +1484,13 @@ export default function ContractsPage() {
                     >
                       View Details
                     </a>
+
+                    <a
+                      href={`/dashboard/contracts/${contract.id}/deliveries`}
+                      className="primary-action-link"
+                    >
+                      View Work Files
+                    </a>
                   </div>
                 </div>
               )
@@ -1353,21 +1499,13 @@ export default function ContractsPage() {
         )}
       </section>
 
-      {/* ===================================================
+      {/* ==========================================
           REJECTED CONTRACTS
-          =================================================== */}
+      ========================================== */}
 
       {rejectedContracts.length > 0 && (
-        <section
-          style={{
-            marginTop: 40,
-          }}
-        >
-          <h2
-            style={{
-              marginBottom: 18,
-            }}
-          >
+        <section style={{ marginTop: 40 }}>
+          <h2 style={{ marginBottom: 18 }}>
             Rejected Requests
           </h2>
 
