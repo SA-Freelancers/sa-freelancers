@@ -1,39 +1,64 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
+
+import {
+  createClient,
+} from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 
-// ============================================
-// SERVICE ROLE CLIENT
-// ============================================
+
+/* =========================================================
+   SERVICE ROLE CLIENT
+   ========================================================= */
 
 function createAdminClient() {
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env
+      .NEXT_PUBLIC_SUPABASE_URL!,
+
+    process.env
+      .SUPABASE_SERVICE_ROLE_KEY!,
+
     {
       auth: {
-        autoRefreshToken: false,
-        persistSession: false,
+        autoRefreshToken:
+          false,
+
+        persistSession:
+          false,
       },
     }
   );
 }
 
-// ============================================
-// POST - DELETE USER
-// ============================================
 
-export async function POST(req: NextRequest) {
+/* =========================================================
+   POST - DELETE USER
+   ========================================================= */
+
+export async function POST(
+  req: NextRequest
+) {
   try {
     const supabaseUrl =
-      process.env.NEXT_PUBLIC_SUPABASE_URL;
+      process.env
+        .NEXT_PUBLIC_SUPABASE_URL;
 
     const anonKey =
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      process.env
+        .NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     const serviceRoleKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY;
+      process.env
+        .SUPABASE_SERVICE_ROLE_KEY;
+
+
+    /* =====================================================
+       CHECK SERVER CONFIGURATION
+       ===================================================== */
 
     if (
       !supabaseUrl ||
@@ -47,7 +72,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Server configuration is incomplete.",
+
+          error:
+            "Server configuration is incomplete.",
         },
         {
           status: 500,
@@ -55,21 +82,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ============================================
-    // GET ADMIN ACCESS TOKEN
-    // ============================================
+
+    /* =====================================================
+       GET ADMIN ACCESS TOKEN
+       ===================================================== */
 
     const authorization =
-      req.headers.get("authorization");
+      req.headers.get(
+        "authorization"
+      );
+
 
     if (
       !authorization ||
-      !authorization.startsWith("Bearer ")
+      !authorization.startsWith(
+        "Bearer "
+      )
     ) {
       return NextResponse.json(
         {
           success: false,
-          error: "Unauthorized.",
+          error:
+            "Unauthorized.",
         },
         {
           status: 401,
@@ -77,14 +111,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const accessToken =
-      authorization.replace("Bearer ", "").trim();
 
-    if (!accessToken) {
+    const accessToken =
+      authorization
+        .replace(
+          "Bearer ",
+          ""
+        )
+        .trim();
+
+
+    if (
+      !accessToken
+    ) {
       return NextResponse.json(
         {
           success: false,
-          error: "Unauthorized.",
+          error:
+            "Unauthorized.",
         },
         {
           status: 401,
@@ -92,30 +136,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ============================================
-    // VERIFY LOGGED-IN USER
-    // ============================================
 
-    const authClient = createClient(
-      supabaseUrl,
-      anonKey,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-        global: {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
+    /* =====================================================
+       VERIFY LOGGED-IN USER
+       ===================================================== */
+
+    const authClient =
+      createClient(
+        supabaseUrl,
+        anonKey,
+        {
+          auth: {
+            autoRefreshToken:
+              false,
+
+            persistSession:
+              false,
           },
-        },
-      }
-    );
+
+          global: {
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+            },
+          },
+        }
+      );
+
 
     const {
       data: authData,
       error: authError,
-    } = await authClient.auth.getUser(accessToken);
+    } =
+      await authClient.auth.getUser(
+        accessToken
+      );
+
 
     if (
       authError ||
@@ -124,7 +180,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Invalid or expired session.",
+
+          error:
+            "Invalid or expired session.",
         },
         {
           status: 401,
@@ -132,29 +190,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
+
     const loggedInUser =
       authData.user;
+
 
     const admin =
       createAdminClient();
 
-    // ============================================
-    // CHECK CALLER IS AN ADMIN
-    // ============================================
+
+    /* =====================================================
+       CHECK CALLER IS AN ADMIN
+       ===================================================== */
 
     const {
       data: adminProfile,
-      error: adminProfileError,
-    } = await admin
-      .from("profiles")
-      .select(`
-        id,
-        is_admin
-      `)
-      .eq("id", loggedInUser.id)
-      .maybeSingle();
+      error:
+        adminProfileError,
+    } =
+      await admin
+        .from(
+          "profiles"
+        )
+        .select(`
+          id,
+          is_admin
+        `)
+        .eq(
+          "id",
+          loggedInUser.id
+        )
+        .maybeSingle();
 
-    if (adminProfileError) {
+
+    if (
+      adminProfileError
+    ) {
       console.error(
         "Admin profile lookup error:",
         adminProfileError
@@ -163,7 +234,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Unable to verify administrator.",
+
+          error:
+            "Unable to verify administrator.",
         },
         {
           status: 500,
@@ -171,14 +244,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+
     if (
       !adminProfile ||
-      adminProfile.is_admin !== true
+      adminProfile.is_admin !==
+        true
     ) {
       return NextResponse.json(
         {
           success: false,
-          error: "Administrator access required.",
+
+          error:
+            "Administrator access required.",
         },
         {
           status: 403,
@@ -186,24 +263,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ============================================
-    // GET USER TO DELETE
-    // ============================================
 
-    const body =
-      await req.json();
+    /* =====================================================
+       GET USER TO DELETE
+       ===================================================== */
 
-    const id =
-      body?.id;
+    let body: {
+      id?: unknown;
+    };
 
-    if (
-      !id ||
-      typeof id !== "string"
-    ) {
+
+    try {
+      body =
+        await req.json();
+    } catch {
       return NextResponse.json(
         {
           success: false,
-          error: "User ID is required.",
+
+          error:
+            "Invalid request body.",
         },
         {
           status: 400,
@@ -211,16 +290,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ============================================
-    // PREVENT ADMIN DELETING THEMSELVES
-    // ============================================
+
+    const id =
+      body?.id;
+
 
     if (
-      id === loggedInUser.id
+      !id ||
+      typeof id !==
+        "string"
     ) {
       return NextResponse.json(
         {
           success: false,
+
+          error:
+            "User ID is required.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+
+    /* =====================================================
+       PREVENT ADMIN DELETING THEMSELVES
+       ===================================================== */
+
+    if (
+      id ===
+      loggedInUser.id
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+
           error:
             "You cannot delete your own administrator account.",
         },
@@ -230,25 +335,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ============================================
-    // LOAD TARGET PROFILE
-    // ============================================
+
+    /* =====================================================
+       LOAD TARGET PROFILE
+       ===================================================== */
 
     const {
       data: profile,
-      error: profileError,
-    } = await admin
-      .from("profiles")
-      .select(`
-        id,
-        role,
-        is_admin,
-        verification_document_url
-      `)
-      .eq("id", id)
-      .maybeSingle();
+      error:
+        profileError,
+    } =
+      await admin
+        .from(
+          "profiles"
+        )
+        .select(`
+          id,
+          role,
+          is_admin
+        `)
+        .eq(
+          "id",
+          id
+        )
+        .maybeSingle();
 
-    if (profileError) {
+
+    if (
+      profileError
+    ) {
       console.error(
         "Delete user profile lookup error:",
         profileError
@@ -257,7 +372,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Unable to load user profile.",
+
+          error:
+            "Unable to load user profile.",
         },
         {
           status: 500,
@@ -265,11 +382,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!profile) {
+
+    if (
+      !profile
+    ) {
       return NextResponse.json(
         {
           success: false,
-          error: "User profile not found.",
+
+          error:
+            "User profile not found.",
         },
         {
           status: 404,
@@ -277,16 +399,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ============================================
-    // PROTECT OTHER ADMIN ACCOUNTS
-    // ============================================
+
+    /* =====================================================
+       PROTECT OTHER ADMIN ACCOUNTS
+       ===================================================== */
 
     if (
-      profile.is_admin === true
+      profile.is_admin ===
+      true
     ) {
       return NextResponse.json(
         {
           success: false,
+
           error:
             "Administrator accounts cannot be deleted from this page.",
         },
@@ -296,52 +421,34 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ============================================
-    // DELETE PRIVATE VERIFICATION DOCUMENT
-    // ============================================
 
-    if (
-      profile.verification_document_url
-    ) {
-      const {
-        error: storageDeleteError,
-      } = await admin.storage
-        .from("verification-documents")
-        .remove([
-          profile.verification_document_url,
-        ]);
-
-      if (storageDeleteError) {
-        console.error(
-          "Verification document delete error:",
-          storageDeleteError
-        );
-
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              "Unable to delete verification document.",
-          },
-          {
-            status: 500,
-          }
-        );
-      }
-    }
-
-    // ============================================
-    // DELETE PROFILE
-    // ============================================
+    /* =====================================================
+       DELETE PROFILE
+       =====================================================
+       
+       The old ID/passport verification-document cleanup has
+       been removed because freelancer identity documents are
+       no longer collected by the platform.
+       ===================================================== */
 
     const {
-      error: profileDeleteError,
-    } = await admin
-      .from("profiles")
-      .delete()
-      .eq("id", id);
+      error:
+        profileDeleteError,
+    } =
+      await admin
+        .from(
+          "profiles"
+        )
+        .delete()
+        .eq(
+          "id",
+          id
+        );
 
-    if (profileDeleteError) {
+
+    if (
+      profileDeleteError
+    ) {
       console.error(
         "Profile delete error:",
         profileDeleteError
@@ -350,7 +457,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Unable to delete user profile.",
+
+          error:
+            "Unable to delete user profile.",
         },
         {
           status: 500,
@@ -358,15 +467,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ============================================
-    // DELETE AUTH USER
-    // ============================================
+
+    /* =====================================================
+       DELETE AUTH USER
+       ===================================================== */
 
     const {
-      error: authDeleteError,
-    } = await admin.auth.admin.deleteUser(id);
+      error:
+        authDeleteError,
+    } =
+      await admin.auth.admin.deleteUser(
+        id
+      );
 
-    if (authDeleteError) {
+
+    if (
+      authDeleteError
+    ) {
       console.error(
         "Auth user delete error:",
         authDeleteError
@@ -375,6 +492,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
+
           error:
             "Profile was removed, but the login account could not be deleted.",
         },
@@ -384,23 +502,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ============================================
-    // SUCCESS
-    // ============================================
+
+    /* =====================================================
+       SUCCESS
+       ===================================================== */
 
     return NextResponse.json({
       success: true,
-      message: "User deleted successfully.",
+
+      message:
+        "User deleted successfully.",
     });
-  } catch (err) {
+  } catch (
+    error
+  ) {
     console.error(
       "Delete user error:",
-      err
+      error
     );
 
     return NextResponse.json(
       {
         success: false,
+
         error:
           "An unexpected error occurred while deleting the user.",
       },

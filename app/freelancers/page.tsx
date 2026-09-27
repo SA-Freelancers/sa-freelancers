@@ -19,8 +19,6 @@ type Freelancer = {
   completed_projects?: number;
   hourly_rate?: number;
   experience_years?: number;
-  verified?: boolean;
-  verification_status?: string;
   top_rated?: boolean;
   avatar_url?: string;
   avatar_initials?: string;
@@ -146,13 +144,6 @@ export default function FreelancersPage() {
       .join("")
       .slice(0, 2)
       .toUpperCase();
-  };
-
-  const isIdentityVerified = (item: Freelancer) => {
-    return (
-      item.verification_status === "verified" ||
-      item.verified === true
-    );
   };
 
   const closeInvitationModal = () => {
@@ -547,12 +538,6 @@ export default function FreelancersPage() {
                     marginBottom: 12,
                   }}
                 >
-                  {isIdentityVerified(item) && (
-                    <span className="verified-badge">
-                      ✔ Identity Verified
-                    </span>
-                  )}
-
                   {item.top_rated && (
                     <span className="top-rated-badge">
                       ⭐ Top Rated

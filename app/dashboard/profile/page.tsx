@@ -1,9 +1,10 @@
 "use client";
 
 import ProfileCompletionCard from "@/app/components/ProfileCompletionCard";
+import LoadingSkeleton from "@/app/components/LoadingSkeleton";
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/app/lib/supabase";
-import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 
 type Profile = {
   avatar_url?: string | null;
@@ -29,159 +30,259 @@ type Profile = {
   linkedin_url?: string | null;
   website_url?: string | null;
 
-  skills?: string[] | null;
-  languages?: string[] | null;
-  certifications?: string[] | null;
-
-  verified?: boolean | null;
-  verification_status?: string | null;
-  verification_document_url?: string | null;
+  skills?: string[] | string | null;
+  languages?: string[] | string | null;
+  certifications?: string[] | string | null;
 };
 
+const BUILT_IN_AVATARS = [
+  "/avatars/avatar-01.png",
+  "/avatars/avatar-02.png",
+  "/avatars/avatar-03.png",
+  "/avatars/avatar-04.png",
+  "/avatars/avatar-05.png",
+  "/avatars/avatar-06.png",
+  "/avatars/avatar-07.png",
+  "/avatars/avatar-08.png",
+];
+
+function normaliseArray(
+  value: string[] | string | null | undefined
+): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .filter(
+        (item): item is string =>
+          typeof item === "string" &&
+          item.trim().length > 0
+      )
+      .map((item) => item.trim());
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      return [];
+    }
+
+    try {
+      const parsed: unknown = JSON.parse(trimmed);
+
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter(
+            (item): item is string =>
+              typeof item === "string" &&
+              item.trim().length > 0
+          )
+          .map((item) => item.trim());
+      }
+    } catch {
+      // Not JSON.
+    }
+
+    return trimmed
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] =
+    useState<Profile | null>(null);
 
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("");
   const [bio, setBio] = useState("");
   const [category, setCategory] = useState("");
-
   const [headline, setHeadline] = useState("");
   const [location, setLocation] = useState("");
-  const [country, setCountry] = useState("South Africa");
 
-  const [availability, setAvailability] = useState("Available");
-  const [responseTime, setResponseTime] = useState("Within 2 hours");
+  const [country, setCountry] =
+    useState("South Africa");
+
+  const [availability, setAvailability] =
+    useState("Available");
+
+  const [responseTime, setResponseTime] =
+    useState("Within 2 hours");
 
   const [experience, setExperience] = useState("");
   const [hourlyRate, setHourlyRate] = useState("");
-
   const [education, setEducation] = useState("");
   const [linkedin, setLinkedin] = useState("");
   const [website, setWebsite] = useState("");
-
   const [skills, setSkills] = useState("");
   const [languages, setLanguages] = useState("");
-  const [certifications, setCertifications] = useState("");
+  const [certifications, setCertifications] =
+    useState("");
 
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [uploadingVerification, setUploadingVerification] =
+  const [uploadingAvatar, setUploadingAvatar] =
     useState(false);
 
-  const [submittingVerification, setSubmittingVerification] =
+  const [uploadingCV, setUploadingCV] =
+    useState(false);
+
+  const [uploadingPortfolio, setUploadingPortfolio] =
     useState(false);
 
   useEffect(() => {
-    loadProfile();
+    void loadProfile();
   }, []);
 
-  const loadProfile = async () => {
+  async function loadProfile() {
     setLoading(true);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+      if (!user) {
+        return;
+      }
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
 
-    if (error) {
-      console.error("Profile loading error:", error);
-      setMessage("Unable to load your profile.");
-      setLoading(false);
-      return;
-    }
+      if (error) {
+        console.error(
+          "Profile loading error:",
+          error
+        );
 
-    if (data) {
-      setProfile(data);
+        setMessage(
+          "Unable to load your profile."
+        );
 
-      setFullName(data.full_name || "");
-      setRole(data.role || "");
-      setBio(data.bio || "");
-      setCategory(data.category || "");
+        return;
+      }
 
-      setHeadline(data.headline || "");
-      setLocation(data.location || "");
-      setCountry(data.country || "South Africa");
+      if (!data) {
+        return;
+      }
 
-      setAvailability(data.availability || "Available");
-      setResponseTime(data.response_time || "Within 2 hours");
+      const loadedProfile =
+        data as Profile;
+
+      setProfile(loadedProfile);
+
+      setFullName(
+        loadedProfile.full_name || ""
+      );
+
+      setRole(
+        loadedProfile.role || ""
+      );
+
+      setBio(
+        loadedProfile.bio || ""
+      );
+
+      setCategory(
+        loadedProfile.category || ""
+      );
+
+      setHeadline(
+        loadedProfile.headline || ""
+      );
+
+      setLocation(
+        loadedProfile.location || ""
+      );
+
+      setCountry(
+        loadedProfile.country ||
+          "South Africa"
+      );
+
+      setAvailability(
+        loadedProfile.availability ||
+          "Available"
+      );
+
+      setResponseTime(
+        loadedProfile.response_time ||
+          "Within 2 hours"
+      );
 
       setExperience(
-        data.years_experience !== null &&
-          data.years_experience !== undefined
-          ? data.years_experience.toString()
+        loadedProfile.years_experience !== null &&
+          loadedProfile.years_experience !==
+            undefined
+          ? loadedProfile.years_experience.toString()
           : ""
       );
 
       setHourlyRate(
-        data.hourly_rate !== null &&
-          data.hourly_rate !== undefined
-          ? data.hourly_rate.toString()
+        loadedProfile.hourly_rate !== null &&
+          loadedProfile.hourly_rate !== undefined
+          ? loadedProfile.hourly_rate.toString()
           : ""
       );
 
-      setEducation(data.education || "");
-      setLinkedin(data.linkedin_url || "");
-      setWebsite(data.website_url || "");
+      setEducation(
+        loadedProfile.education || ""
+      );
+
+      setLinkedin(
+        loadedProfile.linkedin_url || ""
+      );
+
+      setWebsite(
+        loadedProfile.website_url || ""
+      );
 
       setSkills(
-  Array.isArray(data.skills)
-    ? data.skills.join(", ")
-    : typeof data.skills === "string"
-    ? (() => {
-        try {
-          const parsed = JSON.parse(data.skills);
-
-          return Array.isArray(parsed)
-            ? parsed
-                .filter(
-                  (item): item is string =>
-                    typeof item === "string"
-                )
-                .map((item) => item.trim())
-                .filter(Boolean)
-                .join(", ")
-            : data.skills;
-        } catch {
-          return data.skills;
-        }
-      })()
-    : ""
-);
+        normaliseArray(
+          loadedProfile.skills
+        ).join(", ")
+      );
 
       setLanguages(
-        Array.isArray(data.languages)
-          ? data.languages.join(", ")
-          : ""
+        normaliseArray(
+          loadedProfile.languages
+        ).join(", ")
       );
 
       setCertifications(
-        Array.isArray(data.certifications)
-          ? data.certifications.join(", ")
-          : ""
+        normaliseArray(
+          loadedProfile.certifications
+        ).join(", ")
       );
+    } catch (error) {
+      console.error(
+        "Unexpected profile loading error:",
+        error
+      );
+
+      setMessage(
+        "Unable to load your profile."
+      );
+    } finally {
+      setLoading(false);
     }
+  }
 
-    setLoading(false);
-  };
-
-  const uploadFile = async (
+  async function uploadFile(
     file: File,
     folder: string,
-    column: "avatar_url" | "cv_url" | "portfolio_url"
-  ) => {
+    column:
+      | "avatar_url"
+      | "cv_url"
+      | "portfolio_url"
+  ) {
     setMessage("");
 
     const {
@@ -190,48 +291,72 @@ export default function ProfilePage() {
 
     if (!user) {
       setMessage("Please login first.");
-      return;
+      return false;
     }
 
-    const fileExt = file.name.split(".").pop();
+    const fileExt =
+      file.name
+        .split(".")
+        .pop()
+        ?.toLowerCase() || "file";
 
-    const filePath = `${folder}/${user.id}-${Date.now()}.${fileExt}`;
+    const filePath =
+      `${folder}/${user.id}-${Date.now()}.${fileExt}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("uploads")
-      .upload(filePath, file, {
-        upsert: true,
-      });
+    const { error: uploadError } =
+      await supabase.storage
+        .from("uploads")
+        .upload(
+          filePath,
+          file,
+          {
+            upsert: true,
+          }
+        );
 
     if (uploadError) {
-      setMessage(uploadError.message);
-      return;
+      setMessage(
+        uploadError.message
+      );
+
+      return false;
     }
 
-    const { data: publicUrlData } = supabase.storage
-      .from("uploads")
-      .getPublicUrl(filePath);
+    const { data: publicUrlData } =
+      supabase.storage
+        .from("uploads")
+        .getPublicUrl(filePath);
 
-    const publicUrl = publicUrlData.publicUrl;
+    const publicUrl =
+      publicUrlData.publicUrl;
 
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({
-        [column]: publicUrl,
-      })
-      .eq("id", user.id);
+    const { error: updateError } =
+      await supabase
+        .from("profiles")
+        .update({
+          [column]: publicUrl,
+        })
+        .eq("id", user.id);
 
     if (updateError) {
-      setMessage(updateError.message);
-      return;
+      setMessage(
+        updateError.message
+      );
+
+      return false;
     }
 
-    setMessage("File uploaded successfully.");
     await loadProfile();
-  };
 
-  const handleAvatarUpload = async (file?: File) => {
-    if (!file) return;
+    return true;
+  }
+
+  async function handleAvatarUpload(
+    file?: File
+  ) {
+    if (!file) {
+      return;
+    }
 
     if (
       ![
@@ -241,315 +366,370 @@ export default function ProfilePage() {
       ].includes(file.type)
     ) {
       setMessage(
-        "Profile picture must be PNG, JPG or WEBP."
+        "Profile image must be PNG, JPG or WEBP."
       );
+
       return;
     }
 
-    await uploadFile(
-      file,
-      "avatars",
-      "avatar_url"
-    );
-  };
-
-  const handleCVUpload = async (file?: File) => {
-    if (!file) return;
-
-    if (file.type !== "application/pdf") {
-      setMessage("CV must be a PDF file.");
-      return;
-    }
-
-    await uploadFile(
-      file,
-      "cv",
-      "cv_url"
-    );
-  };
-
-  const handlePortfolioUpload = async (file?: File) => {
-    if (!file) return;
-
-    const allowedTypes = [
-      "application/pdf",
-      "image/png",
-      "image/jpeg",
-      "image/webp",
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      setMessage(
-        "Portfolio must be PDF, PNG, JPG or WEBP."
-      );
-      return;
-    }
-
-    await uploadFile(
-      file,
-      "portfolio",
-      "portfolio_url"
-    );
-  };
-
-  const handleVerificationDocumentUpload = async (
-    file?: File
-  ) => {
-    if (!file) return;
-
-    setMessage("");
-
-    const allowedTypes = [
-      "application/pdf",
-      "image/png",
-      "image/jpeg",
-      "image/webp",
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      setMessage(
-        "Verification document must be PDF, PNG, JPG or WEBP."
-      );
-      return;
-    }
-
-    const maxSize = 8 * 1024 * 1024;
+    const maxSize =
+      5 * 1024 * 1024;
 
     if (file.size > maxSize) {
       setMessage(
-        "Verification document must be smaller than 8 MB."
+        "Profile image must be smaller than 5 MB."
       );
+
       return;
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    setUploadingAvatar(true);
 
-    if (!user) {
-      setMessage("Please login first.");
+    try {
+      const success =
+        await uploadFile(
+          file,
+          "avatars",
+          "avatar_url"
+        );
+
+      if (success) {
+        setMessage(
+          "Profile image updated successfully."
+        );
+      }
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
+  async function selectBuiltInAvatar(
+    avatarUrl: string
+  ) {
+    setMessage("");
+    setUploadingAvatar(true);
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setMessage(
+          "Please login first."
+        );
+
+        return;
+      }
+
+      const { error } =
+        await supabase
+          .from("profiles")
+          .update({
+            avatar_url:
+              avatarUrl,
+          })
+          .eq(
+            "id",
+            user.id
+          );
+
+      if (error) {
+        setMessage(
+          error.message
+        );
+
+        return;
+      }
+
+      setProfile(
+        (current) =>
+          current
+            ? {
+                ...current,
+                avatar_url:
+                  avatarUrl,
+              }
+            : current
+      );
+
+      setMessage(
+        "Avatar selected successfully."
+      );
+    } catch (error) {
+      console.error(
+        "Avatar selection error:",
+        error
+      );
+
+      setMessage(
+        "Unable to select avatar."
+      );
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
+  async function handleCVUpload(
+    file?: File
+  ) {
+    if (!file) {
       return;
     }
 
-    setUploadingVerification(true);
+    if (
+      file.type !==
+      "application/pdf"
+    ) {
+      setMessage(
+        "CV must be a PDF file."
+      );
 
-    const fileExt =
-      file.name.split(".").pop()?.toLowerCase() || "pdf";
-
-    const filePath =
-      `${user.id}/verification-${Date.now()}.${fileExt}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("verification-documents")
-      .upload(filePath, file, {
-        upsert: false,
-      });
-
-    if (uploadError) {
-      setMessage(uploadError.message);
-      setUploadingVerification(false);
       return;
     }
 
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({
-        verification_document_url: filePath,
-        verification_status: "not_submitted",
-      })
-      .eq("id", user.id);
+    setUploadingCV(true);
 
-    if (updateError) {
-      setMessage(updateError.message);
-      setUploadingVerification(false);
+    try {
+      const success =
+        await uploadFile(
+          file,
+          "cv",
+          "cv_url"
+        );
+
+      if (success) {
+        setMessage(
+          "CV uploaded successfully."
+        );
+      }
+    } finally {
+      setUploadingCV(false);
+    }
+  }
+
+  async function handlePortfolioUpload(
+    file?: File
+  ) {
+    if (!file) {
       return;
     }
 
-    setMessage(
-      "Verification document uploaded successfully."
-    );
+    const allowedTypes = [
+      "application/pdf",
+      "image/png",
+      "image/jpeg",
+      "image/webp",
+    ];
 
-    setUploadingVerification(false);
-    await loadProfile();
-  };
+    if (
+      !allowedTypes.includes(
+        file.type
+      )
+    ) {
+      setMessage(
+        "Portfolio must be PDF, PNG, JPG or WEBP."
+      );
 
-  const saveProfile = async () => {
+      return;
+    }
+
+    setUploadingPortfolio(true);
+
+    try {
+      const success =
+        await uploadFile(
+          file,
+          "portfolio",
+          "portfolio_url"
+        );
+
+      if (success) {
+        setMessage(
+          "Portfolio uploaded successfully."
+        );
+      }
+    } finally {
+      setUploadingPortfolio(false);
+    }
+  }
+
+  async function saveProfile() {
     setMessage("");
 
     if (!fullName.trim()) {
-      setMessage("Please enter your full name.");
+      setMessage(
+        "Please enter your full name."
+      );
+
       return;
     }
 
     setSaving(true);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (!user) {
-      setMessage("Please login first.");
+      if (!user) {
+        setMessage(
+          "Please login first."
+        );
+
+        return;
+      }
+
+      const updateData =
+        role === "freelancer"
+          ? {
+              full_name:
+                fullName.trim(),
+
+              bio:
+                bio.trim(),
+
+              category,
+
+              headline:
+                headline.trim(),
+
+              location:
+                location.trim(),
+
+              country:
+                country.trim(),
+
+              availability,
+
+              response_time:
+                responseTime,
+
+              years_experience:
+                experience !== ""
+                  ? Number(
+                      experience
+                    )
+                  : null,
+
+              hourly_rate:
+                hourlyRate !== ""
+                  ? Number(
+                      hourlyRate
+                    )
+                  : null,
+
+              education:
+                education.trim(),
+
+              linkedin_url:
+                linkedin.trim(),
+
+              website_url:
+                website.trim(),
+
+              skills:
+                skills
+                  .split(",")
+                  .map((item) =>
+                    item.trim()
+                  )
+                  .filter(Boolean),
+
+              languages:
+                languages
+                  .split(",")
+                  .map((item) =>
+                    item.trim()
+                  )
+                  .filter(Boolean),
+
+              certifications:
+                certifications
+                  .split(",")
+                  .map((item) =>
+                    item.trim()
+                  )
+                  .filter(Boolean),
+            }
+          : {
+              full_name:
+                fullName.trim(),
+
+              bio:
+                bio.trim(),
+
+              location:
+                location.trim(),
+
+              country:
+                country.trim(),
+
+              website_url:
+                website.trim(),
+            };
+
+      const { error } =
+        await supabase
+          .from("profiles")
+          .update(updateData)
+          .eq(
+            "id",
+            user.id
+          );
+
+      if (error) {
+        setMessage(
+          error.message
+        );
+
+        return;
+      }
+
+      setMessage(
+        "Profile updated successfully!"
+      );
+
+      await loadProfile();
+    } catch (error) {
+      console.error(
+        "Profile saving error:",
+        error
+      );
+
+      setMessage(
+        "Unable to save your profile."
+      );
+    } finally {
       setSaving(false);
-      return;
     }
-
-    const updateData =
-      role === "freelancer"
-        ? {
-            full_name: fullName.trim(),
-            bio: bio.trim(),
-            category,
-            headline: headline.trim(),
-            location: location.trim(),
-            country: country.trim(),
-
-            availability,
-            response_time: responseTime,
-
-            years_experience:
-              experience !== ""
-                ? Number(experience)
-                : null,
-
-            hourly_rate:
-              hourlyRate !== ""
-                ? Number(hourlyRate)
-                : null,
-
-            education: education.trim(),
-
-            linkedin_url: linkedin.trim(),
-
-            website_url: website.trim(),
-
-            skills: skills
-              .split(",")
-              .map((item) => item.trim())
-              .filter(Boolean),
-
-            languages: languages
-              .split(",")
-              .map((item) => item.trim())
-              .filter(Boolean),
-
-            certifications: certifications
-              .split(",")
-              .map((item) => item.trim())
-              .filter(Boolean),
-          }
-        : {
-            full_name: fullName.trim(),
-            bio: bio.trim(),
-            location: location.trim(),
-            country: country.trim(),
-            website_url: website.trim(),
-          };
-
-    const { error } = await supabase
-      .from("profiles")
-      .update(updateData)
-      .eq("id", user.id);
-
-    if (error) {
-      setMessage(error.message);
-      setSaving(false);
-      return;
-    }
-
-    setMessage("Profile updated successfully!");
-    setSaving(false);
-
-    await loadProfile();
-  };
-
-  const submitVerificationRequest = async () => {
-    setMessage("");
-
-    if (submittingVerification) {
-      return;
-    }
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setMessage("Please login first.");
-      return;
-    }
-
-    if (!profile) {
-      setMessage("Profile could not be loaded.");
-      return;
-    }
-
-    if (!profile.verification_document_url) {
-      setMessage(
-        "Please upload your verification document before submitting your request."
-      );
-      return;
-    }
-
-    if (profile.verification_status === "pending") {
-      setMessage(
-        "Your verification request is already under review."
-      );
-      return;
-    }
-
-    if (
-      profile.verification_status === "verified" ||
-      profile.verified
-    ) {
-      setMessage(
-        "Your freelancer profile is already verified."
-      );
-      return;
-    }
-
-    setSubmittingVerification(true);
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        verification_status: "pending",
-      })
-      .eq("id", user.id);
-
-    if (error) {
-      setMessage(error.message);
-      setSubmittingVerification(false);
-      return;
-    }
-
-    setMessage(
-      "Verification request submitted successfully."
-    );
-
-    setSubmittingVerification(false);
-    await loadProfile();
-  };
-
-  if (loading) {
-    return <LoadingSkeleton />;
   }
 
-  const isFreelancer = role === "freelancer";
-  const isClient = role === "client";
+  if (loading) {
+    return (
+      <LoadingSkeleton />
+    );
+  }
 
-  const profileSkills = skills
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
+  const isFreelancer =
+    role === "freelancer";
 
-  const verificationStatus =
-    profile?.verified ||
-    profile?.verification_status === "verified"
-      ? "verified"
-      : profile?.verification_status || "not_submitted";
+  const isClient =
+    role === "client";
+
+  const profileSkills =
+    skills
+      .split(",")
+      .map((item) =>
+        item.trim()
+      )
+      .filter(Boolean);
 
   return (
     <main className="profile-settings-page">
+
+      {/* HERO */}
+
       <section className="profile-settings-hero dark-card">
         <p className="dashboard-badge">
           Profile Settings
@@ -563,302 +743,108 @@ export default function ProfilePage() {
 
         <p>
           {isFreelancer
-            ? "Update your skills, bio, category and documents to attract more clients."
+            ? "Update your professional information, skills, profile image and portfolio to attract more clients."
             : "Update your client information so freelancers understand who they are working with."}
         </p>
       </section>
 
+
+      {/* PROFILE COMPLETION */}
+
       {isFreelancer && (
         <ProfileCompletionCard
-          fullName={fullName}
-          headline={headline}
+          fullName={
+            fullName
+          }
+          headline={
+            headline
+          }
           bio={bio}
-          category={category}
-          avatarUrl={profile?.avatar_url || undefined}
-          cvUrl={profile?.cv_url || undefined}
-          portfolioUrl={profile?.portfolio_url || undefined}
-          skills={profileSkills}
+          category={
+            category
+          }
+          avatarUrl={
+            profile?.avatar_url ||
+            undefined
+          }
+          cvUrl={
+            profile?.cv_url ||
+            undefined
+          }
+          portfolioUrl={
+            profile?.portfolio_url ||
+            undefined
+          }
+          skills={
+            profileSkills
+          }
           hourlyRate={
             hourlyRate !== ""
-              ? Number(hourlyRate)
+              ? Number(
+                  hourlyRate
+                )
               : undefined
           }
           yearsExperience={
             experience !== ""
-              ? Number(experience)
+              ? Number(
+                  experience
+                )
               : undefined
           }
         />
       )}
 
+
+      {/* PRIVACY */}
+
       {isFreelancer && (
         <section
           className="dark-card"
           style={{
-            padding: 24,
+            padding: 20,
             marginBottom: 24,
           }}
         >
-          <div
+          <p className="dashboard-badge">
+            Profile Privacy
+          </p>
+
+          <h2
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-              gap: 20,
-              flexWrap: "wrap",
+              marginTop: 8,
+              marginBottom: 8,
             }}
           >
-            <div>
-              <p className="dashboard-badge">
-                Freelancer Verification
-              </p>
+            Choose how you present yourself
+          </h2>
 
-              <h2
-                style={{
-                  marginTop: 8,
-                  marginBottom: 8,
-                }}
-              >
-                Verify your freelancer profile
-              </h2>
-
-              <p
-                style={{
-                  margin: 0,
-                  maxWidth: 700,
-                  opacity: 0.8,
-                  lineHeight: 1.6,
-                }}
-              >
-                Upload a valid identity document and submit your
-                account for review by Freelance Hub SA.
-              </p>
-            </div>
-
-            <div
-              style={{
-                padding: "9px 14px",
-                borderRadius: 999,
-                fontWeight: 800,
-                background:
-                  verificationStatus === "verified"
-                    ? "rgba(34,197,94,.12)"
-                    : verificationStatus === "pending"
-                    ? "rgba(245,158,11,.12)"
-                    : verificationStatus === "rejected"
-                    ? "rgba(239,68,68,.12)"
-                    : "rgba(148,163,184,.12)",
-                color:
-                  verificationStatus === "verified"
-                    ? "#22c55e"
-                    : verificationStatus === "pending"
-                    ? "#f59e0b"
-                    : verificationStatus === "rejected"
-                    ? "#ef4444"
-                    : "inherit",
-              }}
-            >
-              {verificationStatus === "verified"
-                ? "✓ Verified"
-                : verificationStatus === "pending"
-                ? "Pending Verification"
-                : verificationStatus === "rejected"
-                ? "Verification Rejected"
-                : "Not Verified"}
-            </div>
-          </div>
-
-          {verificationStatus !== "verified" && (
-            <div
-              style={{
-                marginTop: 20,
-                padding: 18,
-                borderRadius: 14,
-                background: "rgba(148,163,184,.06)",
-                border: "1px solid rgba(148,163,184,.14)",
-              }}
-            >
-              <h3 style={{ marginTop: 0 }}>
-                Identity Document
-              </h3>
-
-              <p
-                style={{
-                  opacity: 0.8,
-                  lineHeight: 1.6,
-                }}
-              >
-                Upload a clear copy of your South African ID,
-                passport or another accepted identity document.
-                This document is stored privately and is intended
-                only for verification review.
-              </p>
-
-              <input
-                type="file"
-                accept="application/pdf,image/png,image/jpeg,image/webp"
-                className="form-input"
-                disabled={uploadingVerification}
-                onChange={(e) =>
-                  handleVerificationDocumentUpload(
-                    e.target.files?.[0]
-                  )
-                }
-              />
-
-              <p
-                style={{
-                  marginTop: 8,
-                  fontSize: 13,
-                  opacity: 0.7,
-                }}
-              >
-                PDF, PNG, JPG or WEBP. Maximum file size: 8 MB.
-              </p>
-
-              {profile?.verification_document_url && (
-                <p
-                  style={{
-                    marginTop: 12,
-                    color: "#22c55e",
-                    fontWeight: 700,
-                  }}
-                >
-                  ✓ Verification document uploaded
-                </p>
-              )}
-
-              {uploadingVerification && (
-                <p style={{ marginTop: 12 }}>
-                  Uploading verification document...
-                </p>
-              )}
-            </div>
-          )}
-
-          <div
+          <p
             style={{
-              marginTop: 20,
-              padding: 18,
-              borderRadius: 14,
-              background: "rgba(148,163,184,.06)",
-              border: "1px solid rgba(148,163,184,.14)",
+              margin: 0,
+              opacity: 0.8,
+              lineHeight: 1.6,
+              maxWidth: 760,
             }}
           >
-            {verificationStatus === "verified" ? (
-              <>
-                <strong
-                  style={{
-                    color: "#22c55e",
-                  }}
-                >
-                  ✓ Your freelancer profile is verified.
-                </strong>
-
-                <p
-                  style={{
-                    margin: "8px 0 0",
-                    opacity: 0.8,
-                  }}
-                >
-                  Clients can identify your account as a verified
-                  freelancer on Freelance Hub SA.
-                </p>
-              </>
-            ) : verificationStatus === "pending" ? (
-              <>
-                <strong
-                  style={{
-                    color: "#f59e0b",
-                  }}
-                >
-                  Verification under review
-                </strong>
-
-                <p
-                  style={{
-                    margin: "8px 0 0",
-                    opacity: 0.8,
-                  }}
-                >
-                  Your verification request has been submitted and
-                  is waiting for admin review.
-                </p>
-              </>
-            ) : verificationStatus === "rejected" ? (
-              <>
-                <strong
-                  style={{
-                    color: "#ef4444",
-                  }}
-                >
-                  Verification requires attention
-                </strong>
-
-                <p
-                  style={{
-                    margin: "8px 0 16px",
-                    opacity: 0.8,
-                  }}
-                >
-                  Your previous verification request was not
-                  approved. Upload an updated document if necessary
-                  and submit your request again.
-                </p>
-
-                <button
-                  type="button"
-                  onClick={submitVerificationRequest}
-                  disabled={
-                    submittingVerification ||
-                    !profile?.verification_document_url
-                  }
-                  className="primary-action-btn"
-                >
-                  {submittingVerification
-                    ? "Submitting..."
-                    : "Submit Again"}
-                </button>
-              </>
-            ) : (
-              <>
-                <strong>
-                  Verification has not been submitted yet.
-                </strong>
-
-                <p
-                  style={{
-                    margin: "8px 0 16px",
-                    opacity: 0.8,
-                    lineHeight: 1.6,
-                  }}
-                >
-                  Upload your identity document first, then submit
-                  your freelancer account for verification.
-                </p>
-
-                <button
-                  type="button"
-                  onClick={submitVerificationRequest}
-                  disabled={
-                    submittingVerification ||
-                    !profile?.verification_document_url
-                  }
-                  className="primary-action-btn"
-                >
-                  {submittingVerification
-                    ? "Submitting..."
-                    : "Submit Verification Request"}
-                </button>
-              </>
-            )}
-          </div>
+            You do not need to upload an ID or
+            passport to build your freelancer
+            profile. You may upload your own
+            picture or choose one of the
+            Freelance Hub SA avatars.
+          </p>
         </section>
       )}
 
+
       <section className="profile-settings-layout">
+
+        {/* EDIT PROFILE */}
+
         <div className="dark-card profile-settings-card">
-          <h2>Edit Profile</h2>
+          <h2>
+            Edit Profile
+          </h2>
 
           <label className="form-label">
             Full Name
@@ -867,8 +853,10 @@ export default function ProfilePage() {
           <input
             placeholder="Full name"
             value={fullName}
-            onChange={(e) =>
-              setFullName(e.target.value)
+            onChange={(event) =>
+              setFullName(
+                event.target.value
+              )
             }
             className="form-input"
           />
@@ -886,11 +874,16 @@ export default function ProfilePage() {
                 : "Tell freelancers about your business or the type of projects you post..."
             }
             value={bio}
-            onChange={(e) =>
-              setBio(e.target.value)
+            onChange={(event) =>
+              setBio(
+                event.target.value
+              )
             }
             className="form-input profile-textarea"
           />
+
+
+          {/* FREELANCER FIELDS */}
 
           {isFreelancer && (
             <>
@@ -900,8 +893,10 @@ export default function ProfilePage() {
 
               <select
                 value={category}
-                onChange={(e) =>
-                  setCategory(e.target.value)
+                onChange={(event) =>
+                  setCategory(
+                    event.target.value
+                  )
                 }
                 className="form-input"
               >
@@ -961,8 +956,10 @@ export default function ProfilePage() {
               <input
                 placeholder="Example: Mechanical Engineering Draughtsman"
                 value={headline}
-                onChange={(e) =>
-                  setHeadline(e.target.value)
+                onChange={(event) =>
+                  setHeadline(
+                    event.target.value
+                  )
                 }
                 className="form-input"
               />
@@ -974,8 +971,10 @@ export default function ProfilePage() {
               <input
                 placeholder="Example: Johannesburg / Remote"
                 value={location}
-                onChange={(e) =>
-                  setLocation(e.target.value)
+                onChange={(event) =>
+                  setLocation(
+                    event.target.value
+                  )
                 }
                 className="form-input"
               />
@@ -989,8 +988,10 @@ export default function ProfilePage() {
                 min="0"
                 placeholder="Example: 6"
                 value={experience}
-                onChange={(e) =>
-                  setExperience(e.target.value)
+                onChange={(event) =>
+                  setExperience(
+                    event.target.value
+                  )
                 }
                 className="form-input"
               />
@@ -1004,8 +1005,10 @@ export default function ProfilePage() {
                 min="0"
                 placeholder="Example: 350"
                 value={hourlyRate}
-                onChange={(e) =>
-                  setHourlyRate(e.target.value)
+                onChange={(event) =>
+                  setHourlyRate(
+                    event.target.value
+                  )
                 }
                 className="form-input"
               />
@@ -1018,8 +1021,10 @@ export default function ProfilePage() {
                 type="text"
                 placeholder="Example: SolidWorks, Inventor, KeyCreator"
                 value={skills}
-                onChange={(e) =>
-                  setSkills(e.target.value)
+                onChange={(event) =>
+                  setSkills(
+                    event.target.value
+                  )
                 }
                 className="form-input"
               />
@@ -1041,8 +1046,10 @@ export default function ProfilePage() {
               <textarea
                 placeholder="Example: National Diploma in Mechanical Engineering"
                 value={education}
-                onChange={(e) =>
-                  setEducation(e.target.value)
+                onChange={(event) =>
+                  setEducation(
+                    event.target.value
+                  )
                 }
                 className="form-input profile-textarea"
               />
@@ -1055,8 +1062,10 @@ export default function ProfilePage() {
                 type="text"
                 placeholder="Example: English, isiZulu, Sesotho"
                 value={languages}
-                onChange={(e) =>
-                  setLanguages(e.target.value)
+                onChange={(event) =>
+                  setLanguages(
+                    event.target.value
+                  )
                 }
                 className="form-input"
               />
@@ -1069,8 +1078,10 @@ export default function ProfilePage() {
                 type="text"
                 placeholder="Example: SolidWorks CSWA, Autodesk Inventor"
                 value={certifications}
-                onChange={(e) =>
-                  setCertifications(e.target.value)
+                onChange={(event) =>
+                  setCertifications(
+                    event.target.value
+                  )
                 }
                 className="form-input"
               />
@@ -1083,8 +1094,10 @@ export default function ProfilePage() {
                 type="url"
                 placeholder="https://linkedin.com/in/..."
                 value={linkedin}
-                onChange={(e) =>
-                  setLinkedin(e.target.value)
+                onChange={(event) =>
+                  setLinkedin(
+                    event.target.value
+                  )
                 }
                 className="form-input"
               />
@@ -1097,13 +1110,18 @@ export default function ProfilePage() {
                 type="url"
                 placeholder="https://yourwebsite.co.za"
                 value={website}
-                onChange={(e) =>
-                  setWebsite(e.target.value)
+                onChange={(event) =>
+                  setWebsite(
+                    event.target.value
+                  )
                 }
                 className="form-input"
               />
             </>
           )}
+
+
+          {/* CLIENT FIELDS */}
 
           {isClient && (
             <>
@@ -1114,8 +1132,10 @@ export default function ProfilePage() {
               <input
                 placeholder="Example: Johannesburg"
                 value={location}
-                onChange={(e) =>
-                  setLocation(e.target.value)
+                onChange={(event) =>
+                  setLocation(
+                    event.target.value
+                  )
                 }
                 className="form-input"
               />
@@ -1126,8 +1146,10 @@ export default function ProfilePage() {
 
               <input
                 value={country}
-                onChange={(e) =>
-                  setCountry(e.target.value)
+                onChange={(event) =>
+                  setCountry(
+                    event.target.value
+                  )
                 }
                 className="form-input"
               />
@@ -1140,18 +1162,25 @@ export default function ProfilePage() {
                 type="url"
                 placeholder="https://company.co.za"
                 value={website}
-                onChange={(e) =>
-                  setWebsite(e.target.value)
+                onChange={(event) =>
+                  setWebsite(
+                    event.target.value
+                  )
                 }
                 className="form-input"
               />
             </>
           )}
 
+
           <button
             type="button"
-            onClick={saveProfile}
-            disabled={saving}
+            onClick={
+              saveProfile
+            }
+            disabled={
+              saving
+            }
             className="primary-action-btn"
           >
             {saving
@@ -1159,32 +1188,369 @@ export default function ProfilePage() {
               : "Save Profile"}
           </button>
 
+
           {message && (
             <p className="upload-message">
               {message}
             </p>
           )}
 
+
+          {/* PROFILE IMAGE AND DOCUMENTS */}
+
           {isFreelancer && (
             <>
               <div className="profile-divider" />
 
-              <h2>Upload Documents</h2>
+              <h2>
+                Profile Image & Documents
+              </h2>
+
+
+              {/* PROFILE IMAGE */}
 
               <label className="form-label">
-                Profile Picture
+                Profile Image
               </label>
 
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                className="form-input"
-                onChange={(e) =>
-                  handleAvatarUpload(
-                    e.target.files?.[0]
-                  )
-                }
-              />
+              <p
+                style={{
+                  marginTop: 0,
+                  marginBottom: 18,
+                  fontSize: 14,
+                  opacity: 0.75,
+                  lineHeight: 1.6,
+                }}
+              >
+                Choose how you want to appear on
+                Freelance Hub SA. Upload your own
+                picture or choose a professional
+                avatar.
+              </p>
+
+
+              {/* CURRENT PROFILE IMAGE */}
+
+              {profile?.avatar_url && (
+                <div
+                  style={{
+                    marginBottom: 22,
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      marginBottom: 10,
+                    }}
+                  >
+                    Current Profile Image
+                  </p>
+
+                  <img
+                    src={
+                      profile.avatar_url
+                    }
+                    alt="Current profile"
+                    style={{
+                      width: 96,
+                      height: 96,
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      border:
+                        "3px solid rgba(34, 197, 94, 0.65)",
+                    }}
+                  />
+                </div>
+              )}
+
+
+              {/* UPLOAD OWN PICTURE */}
+
+              <div
+                style={{
+                  padding: 18,
+                  border:
+                    "1px solid rgba(148, 163, 184, 0.18)",
+                  borderRadius: 16,
+                  marginBottom: 18,
+                }}
+              >
+                <p
+                  style={{
+                    margin: 0,
+                    fontWeight: 800,
+                  }}
+                >
+                  Option 1 — Upload My Picture
+                </p>
+
+                <p
+                  style={{
+                    fontSize: 14,
+                    opacity: 0.7,
+                    marginTop: 6,
+                    marginBottom: 12,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Upload your own photograph or
+                  custom avatar. PNG, JPG and WEBP
+                  images are accepted.
+                </p>
+
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="form-input"
+                  disabled={
+                    uploadingAvatar
+                  }
+                  onChange={(event) =>
+                    void handleAvatarUpload(
+                      event.target.files?.[0]
+                    )
+                  }
+                />
+              </div>
+
+
+              {/* OR */}
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  margin: "20px 0",
+                }}
+              >
+                <div
+                  style={{
+                    height: 1,
+                    flex: 1,
+                    background:
+                      "rgba(148, 163, 184, 0.2)",
+                  }}
+                />
+
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 800,
+                    opacity: 0.65,
+                  }}
+                >
+                  OR
+                </span>
+
+                <div
+                  style={{
+                    height: 1,
+                    flex: 1,
+                    background:
+                      "rgba(148, 163, 184, 0.2)",
+                  }}
+                />
+              </div>
+
+
+              {/* BUILT-IN AVATARS */}
+
+              <div
+                style={{
+                  padding: 18,
+                  border:
+                    "1px solid rgba(148, 163, 184, 0.18)",
+                  borderRadius: 16,
+                  marginBottom: 22,
+                }}
+              >
+                <p
+                  style={{
+                    margin: 0,
+                    fontWeight: 800,
+                  }}
+                >
+                  Option 2 — Choose an Avatar
+                </p>
+
+                <p
+                  style={{
+                    fontSize: 14,
+                    opacity: 0.7,
+                    marginTop: 6,
+                    marginBottom: 18,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Prefer not to use your personal
+                  picture? Select one of the
+                  Freelance Hub SA avatars below.
+                </p>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fit, minmax(90px, 1fr))",
+                    gap: 14,
+                  }}
+                >
+                  {BUILT_IN_AVATARS.map(
+                    (
+                      avatarUrl,
+                      index
+                    ) => {
+                      const selected =
+                        profile?.avatar_url ===
+                        avatarUrl;
+
+                      return (
+                        <button
+                          key={
+                            avatarUrl
+                          }
+                          type="button"
+                          disabled={
+                            uploadingAvatar
+                          }
+                          onClick={() =>
+                            void selectBuiltInAvatar(
+                              avatarUrl
+                            )
+                          }
+                          title={`Choose Avatar ${
+                            index + 1
+                          }`}
+                          aria-label={`Choose Avatar ${
+                            index + 1
+                          }`}
+                          style={{
+                            border:
+                              selected
+                                ? "3px solid #22c55e"
+                                : "2px solid rgba(148, 163, 184, 0.2)",
+
+                            background:
+                              selected
+                                ? "rgba(34, 197, 94, 0.08)"
+                                : "transparent",
+
+                            borderRadius: 16,
+                            padding: 7,
+
+                            cursor:
+                              uploadingAvatar
+                                ? "not-allowed"
+                                : "pointer",
+
+                            position:
+                              "relative",
+
+                            opacity:
+                              uploadingAvatar
+                                ? 0.7
+                                : 1,
+
+                            transition:
+                              "transform 0.15s ease, border-color 0.15s ease",
+                          }}
+                        >
+                          <img
+                            src={
+                              avatarUrl
+                            }
+                            alt={`Professional avatar ${
+                              index + 1
+                            }`}
+                            style={{
+                              display:
+                                "block",
+                              width:
+                                "100%",
+                              aspectRatio:
+                                "1 / 1",
+                              objectFit:
+                                "cover",
+                              borderRadius:
+                                12,
+                            }}
+                          />
+
+                          {selected && (
+                            <span
+                              style={{
+                                position:
+                                  "absolute",
+
+                                top: 4,
+                                right: 4,
+
+                                width: 25,
+                                height: 25,
+
+                                display:
+                                  "grid",
+
+                                placeItems:
+                                  "center",
+
+                                borderRadius:
+                                  "50%",
+
+                                background:
+                                  "#22c55e",
+
+                                color:
+                                  "#020617",
+
+                                fontWeight:
+                                  900,
+
+                                fontSize:
+                                  14,
+                              }}
+                            >
+                              ✓
+                            </span>
+                          )}
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
+
+                <p
+                  style={{
+                    marginTop: 16,
+                    marginBottom: 0,
+                    fontSize: 13,
+                    opacity: 0.65,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  You can change your avatar or
+                  replace it with your own picture
+                  at any time.
+                </p>
+              </div>
+
+
+              {uploadingAvatar && (
+                <p
+                  style={{
+                    marginTop: 8,
+                    marginBottom: 18,
+                    opacity: 0.75,
+                  }}
+                >
+                  Updating profile image...
+                </p>
+              )}
+
+
+              {/* CV */}
 
               <label className="form-label">
                 CV PDF
@@ -1194,12 +1560,29 @@ export default function ProfilePage() {
                 type="file"
                 accept="application/pdf"
                 className="form-input"
-                onChange={(e) =>
-                  handleCVUpload(
-                    e.target.files?.[0]
+                disabled={
+                  uploadingCV
+                }
+                onChange={(event) =>
+                  void handleCVUpload(
+                    event.target.files?.[0]
                   )
                 }
               />
+
+              {uploadingCV && (
+                <p
+                  style={{
+                    marginTop: 8,
+                    opacity: 0.75,
+                  }}
+                >
+                  Uploading CV...
+                </p>
+              )}
+
+
+              {/* PORTFOLIO */}
 
               <label className="form-label">
                 Portfolio PDF or Image
@@ -1209,15 +1592,32 @@ export default function ProfilePage() {
                 type="file"
                 accept="application/pdf,image/png,image/jpeg,image/webp"
                 className="form-input"
-                onChange={(e) =>
-                  handlePortfolioUpload(
-                    e.target.files?.[0]
+                disabled={
+                  uploadingPortfolio
+                }
+                onChange={(event) =>
+                  void handlePortfolioUpload(
+                    event.target.files?.[0]
                   )
                 }
               />
+
+              {uploadingPortfolio && (
+                <p
+                  style={{
+                    marginTop: 8,
+                    opacity: 0.75,
+                  }}
+                >
+                  Uploading portfolio...
+                </p>
+              )}
             </>
           )}
         </div>
+
+
+        {/* PROFILE PREVIEW */}
 
         <div className="dark-card profile-preview-card">
           <h2>
@@ -1226,9 +1626,12 @@ export default function ProfilePage() {
               : "Client Preview"}
           </h2>
 
-          {profile?.avatar_url && isFreelancer ? (
+          {profile?.avatar_url &&
+          isFreelancer ? (
             <img
-              src={profile.avatar_url}
+              src={
+                profile.avatar_url
+              }
               alt="Profile"
               className="profile-preview-avatar"
             />
@@ -1239,11 +1642,14 @@ export default function ProfilePage() {
           )}
 
           <h3>
-            {fullName || "Your Name"}
+            {fullName ||
+              "Your Name"}
           </h3>
 
           <p>
-            <strong>Account Type:</strong>{" "}
+            <strong>
+              Account Type:
+            </strong>{" "}
             {isClient
               ? "Client"
               : isFreelancer
@@ -1254,29 +1660,40 @@ export default function ProfilePage() {
           {isFreelancer && (
             <>
               <p>
-                <strong>Category:</strong>{" "}
-                {category || "Not selected"}
+                <strong>
+                  Category:
+                </strong>{" "}
+                {category ||
+                  "Not selected"}
               </p>
 
               {headline && (
                 <p>
-                  <strong>Headline:</strong>{" "}
+                  <strong>
+                    Headline:
+                  </strong>{" "}
                   {headline}
                 </p>
               )}
 
               {location && (
                 <p>
-                  <strong>Location:</strong>{" "}
+                  <strong>
+                    Location:
+                  </strong>{" "}
                   {location}
                 </p>
               )}
 
               {experience !== "" && (
                 <p>
-                  <strong>Experience:</strong>{" "}
+                  <strong>
+                    Experience:
+                  </strong>{" "}
                   {experience}{" "}
-                  {Number(experience) === 1
+                  {Number(
+                    experience
+                  ) === 1
                     ? "year"
                     : "years"}
                 </p>
@@ -1284,38 +1701,35 @@ export default function ProfilePage() {
 
               {hourlyRate !== "" && (
                 <p>
-                  <strong>Hourly Rate:</strong>{" "}
+                  <strong>
+                    Hourly Rate:
+                  </strong>{" "}
                   R
-                  {Number(hourlyRate).toLocaleString(
+                  {Number(
+                    hourlyRate
+                  ).toLocaleString(
                     "en-ZA"
                   )}
                   /hour
-                </p>
-              )}
-
-              {verificationStatus === "verified" && (
-                <p
-                  style={{
-                    color: "#22c55e",
-                    fontWeight: 800,
-                  }}
-                >
-                  ✓ Verified Freelancer
                 </p>
               )}
             </>
           )}
 
           <p className="profile-preview-bio">
-            {bio || "Your bio will appear here."}
+            {bio ||
+              "Your bio will appear here."}
           </p>
 
           {isFreelancer &&
-            profileSkills.length > 0 && (
+            profileSkills.length >
+              0 && (
               <>
                 <div className="profile-divider" />
 
-                <h3>Skills</h3>
+                <h3>
+                  Skills
+                </h3>
 
                 <div
                   style={{
@@ -1324,22 +1738,33 @@ export default function ProfilePage() {
                     gap: 8,
                   }}
                 >
-                  {profileSkills.map((skill) => (
-                    <span
-                      key={skill}
-                      style={{
-                        padding: "7px 10px",
-                        borderRadius: 999,
-                        background:
-                          "rgba(34,197,94,.10)",
-                        border:
-                          "1px solid rgba(34,197,94,.20)",
-                        fontSize: 14,
-                      }}
-                    >
-                      {skill}
-                    </span>
-                  ))}
+                  {profileSkills.map(
+                    (skill) => (
+                      <span
+                        key={
+                          skill
+                        }
+                        style={{
+                          padding:
+                            "7px 10px",
+
+                          borderRadius:
+                            999,
+
+                          background:
+                            "rgba(34,197,94,.10)",
+
+                          border:
+                            "1px solid rgba(34,197,94,.20)",
+
+                          fontSize:
+                            14,
+                        }}
+                      >
+                        {skill}
+                      </span>
+                    )
+                  )}
                 </div>
               </>
             )}
@@ -1348,12 +1773,16 @@ export default function ProfilePage() {
             <>
               <div className="profile-divider" />
 
-              <h3>Documents</h3>
+              <h3>
+                Documents
+              </h3>
 
               <div className="profile-documents">
                 {profile?.cv_url && (
                   <a
-                    href={profile.cv_url}
+                    href={
+                      profile.cv_url
+                    }
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -1363,7 +1792,9 @@ export default function ProfilePage() {
 
                 {profile?.portfolio_url && (
                   <a
-                    href={profile.portfolio_url}
+                    href={
+                      profile.portfolio_url
+                    }
                     target="_blank"
                     rel="noreferrer"
                   >

@@ -12,7 +12,6 @@ type Profile = {
   role?: string | null;
   category?: string | null;
 
-  verified?: boolean | null;
   top_rated?: boolean | null;
 
   suspended?: boolean | null;
@@ -91,6 +90,7 @@ export default function HireFreelancerPage() {
         /*
          * Guest users cannot access the hiring form.
          */
+
         if (!user) {
           router.replace("/login");
           return;
@@ -115,7 +115,7 @@ export default function HireFreelancerPage() {
             id,
             role,
             suspended
-          `
+            `
           )
           .eq("id", user.id)
           .maybeSingle();
@@ -153,6 +153,7 @@ export default function HireFreelancerPage() {
         /*
          * Suspended accounts cannot hire.
          */
+
         if (isSuspended) {
           setAccessMessage(
             "Your account is suspended and cannot hire freelancers."
@@ -164,6 +165,7 @@ export default function HireFreelancerPage() {
         /*
          * Only client accounts can access this page.
          */
+
         if (role !== "client") {
           setAccessMessage(
             "Only client accounts can hire freelancers."
@@ -192,6 +194,9 @@ export default function HireFreelancerPage() {
          * STEP 4
          * Load selected freelancer.
          * =====================================================
+         *
+         * Identity / ID / passport verification is no longer
+         * part of the hiring requirement.
          */
 
         const {
@@ -205,10 +210,9 @@ export default function HireFreelancerPage() {
             full_name,
             role,
             category,
-            verified,
             top_rated,
             suspended
-          `
+            `
           )
           .eq("id", freelancerId)
           .eq("role", "freelancer")
@@ -233,6 +237,7 @@ export default function HireFreelancerPage() {
          * Suspended freelancers cannot receive
          * new hiring requests.
          */
+
         if (
           freelancerProfile.suspended === true
         ) {
@@ -262,6 +267,12 @@ export default function HireFreelancerPage() {
 
     void loadPage();
   }, [freelancerId, router]);
+
+  /*
+   * =========================================================
+   * CREATE CONTRACT
+   * =========================================================
+   */
 
   const createContract = async () => {
     setMessage("");
@@ -362,14 +373,14 @@ export default function HireFreelancerPage() {
           `
           role,
           suspended
-        `
+          `
         )
         .eq("id", user.id)
         .maybeSingle();
 
       if (clientError) {
         console.error(
-          "Client profile verification error:",
+          "Client profile check error:",
           clientError
         );
 
@@ -413,6 +424,14 @@ export default function HireFreelancerPage() {
        * SECURITY CHECK 4
        * Re-check freelancer before creating contract.
        * =====================================================
+       *
+       * We check:
+       * - profile exists
+       * - account is a freelancer
+       * - account is not suspended
+       *
+       * ID/passport verification is NOT required.
+       * =====================================================
        */
 
       const {
@@ -425,19 +444,19 @@ export default function HireFreelancerPage() {
           id,
           role,
           suspended
-        `
+          `
         )
         .eq("id", freelancerId)
         .maybeSingle();
 
       if (freelancerError) {
         console.error(
-          "Freelancer verification error:",
+          "Freelancer account check error:",
           freelancerError
         );
 
         setMessage(
-          "We could not verify this freelancer."
+          "We could not check this freelancer account."
         );
 
         return;
@@ -486,7 +505,8 @@ export default function HireFreelancerPage() {
       } = await supabase
         .from("contracts")
         .insert({
-          client_id: user.id,
+          client_id:
+            user.id,
 
           freelancer_id:
             freelancerId,
@@ -566,6 +586,7 @@ export default function HireFreelancerPage() {
        * If project creation fails,
        * remove the newly created contract.
        */
+
       if (projectError) {
         console.error(
           "Project creation error:",
@@ -592,6 +613,7 @@ export default function HireFreelancerPage() {
       /*
        * Confirm project was returned.
        */
+
       if (!projectData?.id) {
         if (contractData?.id) {
           await supabase
@@ -744,10 +766,16 @@ export default function HireFreelancerPage() {
 
           <div
             style={{
-              display: "flex",
+              display:
+                "flex",
+
               gap: 12,
-              flexWrap: "wrap",
-              marginTop: 20,
+
+              flexWrap:
+                "wrap",
+
+              marginTop:
+                20,
             }}
           >
             <button
@@ -812,7 +840,8 @@ export default function HireFreelancerPage() {
               )
             }
             style={{
-              marginTop: 20,
+              marginTop:
+                20,
             }}
           >
             Browse Freelancers
@@ -902,9 +931,9 @@ export default function HireFreelancerPage() {
           type="text"
           placeholder="Example: Build a business website"
           value={title}
-          onChange={(e) =>
+          onChange={(event) =>
             setTitle(
-              e.target.value
+              event.target.value
             )
           }
           className="form-input"
@@ -917,9 +946,9 @@ export default function HireFreelancerPage() {
         <textarea
           placeholder="Describe the project, timeline, deliverables and expectations..."
           value={description}
-          onChange={(e) =>
+          onChange={(event) =>
             setDescription(
-              e.target.value
+              event.target.value
             )
           }
           className="form-input proposal-textarea"
@@ -934,9 +963,9 @@ export default function HireFreelancerPage() {
           min="1"
           placeholder="Example: 2500"
           value={budget}
-          onChange={(e) =>
+          onChange={(event) =>
             setBudget(
-              e.target.value
+              event.target.value
             )
           }
           className="form-input"
@@ -947,7 +976,9 @@ export default function HireFreelancerPage() {
           onClick={
             createContract
           }
-          disabled={sending}
+          disabled={
+            sending
+          }
           className="primary-action-btn"
         >
           {sending

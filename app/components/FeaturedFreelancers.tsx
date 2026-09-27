@@ -31,22 +31,12 @@ type Freelancer = {
   bio?: string | null;
   avatar_url?: string | null;
 
-  verified?: boolean | null;
-
-  verification_status?:
-    | "not_submitted"
-    | "pending"
-    | "verified"
-    | "rejected"
-    | null;
-
   top_rated?: boolean | null;
   email_verified?: boolean | null;
 
   city?: string | null;
   province?: string | null;
   country?: string | null;
-
   location?: string | null;
 
   years_experience?: number | null;
@@ -189,8 +179,7 @@ function normaliseSkills(
 
 
 function getLocation(
-  freelancer:
-    Freelancer
+  freelancer: Freelancer
 ) {
   const parts = [
     freelancer.city,
@@ -284,13 +273,17 @@ export default function FeaturedFreelancers() {
   /* =========================================================
      DAILY FEATURED FREELANCERS
 
+     Eligibility:
      - Real freelancer accounts
      - Not suspended
      - Not demo accounts
-     - 100% complete profiles only
+     - Strong public profile
+     - Profile image may be:
+         1. Uploaded personal picture
+         2. Built-in Freelance Hub SA avatar
      - Portfolio project counts as portfolio
-     - Same six freelancers during one day
-     - New selection the following day
+     - Same six freelancers during one SA calendar day
+     - New deterministic selection the following day
      ========================================================= */
 
   useEffect(() => {
@@ -428,51 +421,58 @@ export default function FeaturedFreelancers() {
 
 
           /* ===============================================
-             REQUIRE 100% PROFILE COMPLETION
+             FEATURED PROFILE ELIGIBILITY
 
              IMPORTANT:
-             We use exactly the same completeness
-             calculator used elsewhere on the platform.
+             avatar_url can contain either:
+
+             - Supabase uploaded image URL
+             - /avatars/avatar-XX.png
+
+             Both count as a valid profile image.
+             No identity-document verification is required.
              =============================================== */
 
           const eligibleFreelancers =
-  allFreelancers.filter(
-    (freelancer) => {
-      const result =
-        calculateProfileCompleteness({
-          ...(freelancer as ProfileCompletenessProfile),
+            allFreelancers.filter(
+              (freelancer) => {
+                const result =
+                  calculateProfileCompleteness({
+                    ...(freelancer as ProfileCompletenessProfile),
 
-          portfolio_project_exists:
-            freelancersWithProjects.has(
-              freelancer.id
-            ),
-        });
+                    portfolio_project_exists:
+                      freelancersWithProjects.has(
+                        freelancer.id
+                      ),
+                  });
 
-      /*
-       * Homepage eligibility is intentionally
-       * different from 100% profile completion.
-       *
-       * CV, education and certifications are
-       * encouraged and still count toward the
-       * user's full profile-completion score,
-       * but they are not required for a strong
-       * public freelancer profile.
-       */
 
-      return (
-        result.checks.fullName &&
-        result.checks.photo &&
-        result.checks.headline &&
-        result.checks.bio &&
-        result.checks.category &&
-        result.checks.location &&
-        result.checks.experience &&
-        result.checks.hourlyRate &&
-        result.checks.skills &&
-        result.checks.portfolio
-      );
-    }
-  );
+                /*
+                 * CV, education and certifications
+                 * continue to count toward the full
+                 * profile-completion score.
+                 *
+                 * They are not required for homepage
+                 * Featured Freelancer eligibility.
+                 *
+                 * Identity verification is also NOT
+                 * required.
+                 */
+
+                return (
+                  result.checks.fullName &&
+                  result.checks.photo &&
+                  result.checks.headline &&
+                  result.checks.bio &&
+                  result.checks.category &&
+                  result.checks.location &&
+                  result.checks.experience &&
+                  result.checks.hourlyRate &&
+                  result.checks.skills &&
+                  result.checks.portfolio
+                );
+              }
+            );
 
 
           /* ===============================================
@@ -503,14 +503,12 @@ export default function FeaturedFreelancers() {
             );
 
 
-          /*
-           * Example:
-           *
-           * 2026-09-26
-           *
-           * Everyone sees the same deterministic
-           * ordering for this date.
-           */
+          /* ===============================================
+             DAILY ROTATION
+
+             Everyone sees the same deterministic
+             selection for the current SA date.
+             =============================================== */
 
           const dailyFreelancers =
             [
@@ -670,15 +668,6 @@ export default function FeaturedFreelancers() {
               );
 
 
-            const isVerified =
-              freelancer
-                .verification_status ===
-                "verified" ||
-              freelancer
-                .verified ===
-                true;
-
-
             const location =
               getLocation(
                 freelancer
@@ -697,7 +686,7 @@ export default function FeaturedFreelancers() {
 
                 <div className="featured-freelancer-top">
 
-                  {/* AVATAR */}
+                  {/* PROFILE IMAGE */}
 
                   <div className="featured-freelancer-avatar-wrap">
                     {freelancer.avatar_url ? (
@@ -717,16 +706,6 @@ export default function FeaturedFreelancers() {
                           freelancer.full_name
                         )}
                       </div>
-                    )}
-
-
-                    {isVerified && (
-                      <span
-                        className="featured-freelancer-verified-icon"
-                        title="Identity Verified"
-                      >
-                        ✓
-                      </span>
                     )}
                   </div>
 
@@ -864,12 +843,6 @@ export default function FeaturedFreelancers() {
                 {/* BADGES */}
 
                 <div className="featured-freelancer-badges">
-                  {isVerified && (
-                    <span className="featured-badge verified">
-                      ✓ Identity Verified
-                    </span>
-                  )}
-
 
                   {freelancer.email_verified && (
                     <span className="featured-badge email">
@@ -883,6 +856,7 @@ export default function FeaturedFreelancers() {
                       ★ Top Rated
                     </span>
                   )}
+
                 </div>
 
 

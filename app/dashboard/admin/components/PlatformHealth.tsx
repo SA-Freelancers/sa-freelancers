@@ -6,7 +6,6 @@ type PlatformOverviewProps = {
   applications: number;
   openReports: number;
   pendingPayouts: number;
-  pendingVerifications: number;
 };
 
 type OverviewItem = {
@@ -23,7 +22,6 @@ export default function PlatformHealth({
   applications,
   openReports,
   pendingPayouts,
-  pendingVerifications,
 }: PlatformOverviewProps) {
   const items: OverviewItem[] = [
     {
@@ -66,18 +64,6 @@ export default function PlatformHealth({
       attention:
         pendingPayouts > 0,
     },
-    {
-      name: "Pending Verifications",
-      value: pendingVerifications,
-      note:
-        pendingVerifications > 0
-          ? "Needs review"
-          : "Nothing waiting",
-      icon: "🛡️",
-      attention:
-        pendingVerifications >
-        0,
-    },
   ];
 
   return (
@@ -117,7 +103,9 @@ export default function PlatformHealth({
                   gap: 10,
                 }}
               >
-                <span>
+                <span
+                  aria-hidden="true"
+                >
                   {item.icon}
                 </span>
 

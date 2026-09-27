@@ -16,6 +16,7 @@ import PlatformHealth from "./components/PlatformHealth";
 import RecentUsers from "./components/RecentUsers";
 import RecentJobs from "./components/RecentJobs";
 import DashboardQuickActions from "./components/DashboardQuickActions";
+
 import DashboardActivity, {
   type DashboardActivityItem,
 } from "./components/DashboardActivity";
@@ -24,20 +25,23 @@ import type {
   UserProfile,
 } from "./users/types";
 
-// ==================================================
-// TYPES
-// ==================================================
+
+/* =========================================================
+   TYPES
+   ========================================================= */
 
 type MonthlyGrowth = {
   label: string;
   count: number;
 };
 
+
 type RecentJob = {
   id: string;
   title: string | null;
   created_at: string | null;
 };
+
 
 type ProfileActivityRow = {
   id: string;
@@ -47,6 +51,7 @@ type ProfileActivityRow = {
   is_demo: boolean | null;
 };
 
+
 type JobActivityRow = {
   id: string;
   title: string | null;
@@ -54,11 +59,13 @@ type JobActivityRow = {
   is_demo: boolean | null;
 };
 
+
 type ApplicationActivityRow = {
   id: string;
   created_at: string | null;
   is_demo: boolean | null;
 };
+
 
 type ReportActivityRow = {
   id: string;
@@ -67,19 +74,30 @@ type ReportActivityRow = {
   created_at: string | null;
 };
 
+
 type PayoutActivityRow = {
   id: string;
-  gross_amount: number | string | null;
-  freelancer_amount: number | string | null;
+
+  gross_amount:
+    | number
+    | string
+    | null;
+
+  freelancer_amount:
+    | number
+    | string
+    | null;
+
   status: string | null;
   created_at: string | null;
   payout_requested_at: string | null;
   paid_out_at: string | null;
 };
 
-// ==================================================
-// HELPERS
-// ==================================================
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
 
 function buildMonthlyGrowth(
   profiles: ProfileActivityRow[]
@@ -94,8 +112,12 @@ function buildMonthlyGrowth(
     count: number;
   }[] = [];
 
-  // Build the last 12 calendar months,
-  // including the current month.
+
+  /*
+   * Build the last 12 calendar months,
+   * including the current month.
+   */
+
   for (
     let offset = 11;
     offset >= 0;
@@ -108,6 +130,7 @@ function buildMonthlyGrowth(
           offset,
         1
       );
+
 
     months.push({
       year:
@@ -129,6 +152,7 @@ function buildMonthlyGrowth(
     });
   }
 
+
   for (
     const profile
     of profiles
@@ -139,10 +163,12 @@ function buildMonthlyGrowth(
       continue;
     }
 
+
     const created =
       new Date(
         profile.created_at
       );
+
 
     if (
       Number.isNaN(
@@ -151,6 +177,7 @@ function buildMonthlyGrowth(
     ) {
       continue;
     }
+
 
     const matchingMonth =
       months.find(
@@ -161,6 +188,7 @@ function buildMonthlyGrowth(
             created.getMonth()
       );
 
+
     if (
       matchingMonth
     ) {
@@ -168,6 +196,7 @@ function buildMonthlyGrowth(
         1;
     }
   }
+
 
   return months.map(
     (month) => ({
@@ -180,6 +209,7 @@ function buildMonthlyGrowth(
   );
 }
 
+
 function formatMoney(
   value:
     | number
@@ -190,6 +220,7 @@ function formatMoney(
   const amount =
     Number(value || 0);
 
+
   if (
     !Number.isFinite(
       amount
@@ -198,28 +229,34 @@ function formatMoney(
     return "ZAR 0";
   }
 
+
   return new Intl.NumberFormat(
     "en-ZA",
     {
       style: "currency",
       currency: "ZAR",
+
       minimumFractionDigits:
         2,
+
       maximumFractionDigits:
         2,
     }
   ).format(amount);
 }
 
-// ==================================================
-// ADMIN DASHBOARD
-// ==================================================
+
+/* =========================================================
+   ADMIN DASHBOARD
+   ========================================================= */
 
 export default function AdminDashboard() {
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
+
 
   const [
     recentUsers,
@@ -229,6 +266,7 @@ export default function AdminDashboard() {
       UserProfile[]
     >([]);
 
+
   const [
     recentJobs,
     setRecentJobs,
@@ -236,6 +274,7 @@ export default function AdminDashboard() {
     useState<
       RecentJob[]
     >([]);
+
 
   const [
     monthlyGrowth,
@@ -245,6 +284,7 @@ export default function AdminDashboard() {
       MonthlyGrowth[]
     >([]);
 
+
   const [
     activities,
     setActivities,
@@ -253,48 +293,52 @@ export default function AdminDashboard() {
       DashboardActivityItem[]
     >([]);
 
+
   const [
     openReports,
     setOpenReports,
-  ] = useState(0);
+  ] =
+    useState(0);
+
 
   const [
     pendingPayouts,
     setPendingPayouts,
-  ] = useState(0);
+  ] =
+    useState(0);
 
-  const [
-    pendingVerifications,
-    setPendingVerifications,
-  ] = useState(0);
 
   const [
     stats,
     setStats,
-  ] = useState({
-    totalUsers: 0,
-    freelancers: 0,
-    clients: 0,
-    jobs: 0,
-    applications: 0,
-    revenue: 0,
-  });
+  ] =
+    useState({
+      totalUsers: 0,
+      freelancers: 0,
+      clients: 0,
+      jobs: 0,
+      applications: 0,
+      revenue: 0,
+    });
+
 
   useEffect(() => {
     void loadDashboard();
   }, []);
 
-  // ==================================================
-  // LOAD DASHBOARD
-  // ==================================================
+
+  /* =========================================================
+     LOAD DASHBOARD
+     ========================================================= */
 
   async function loadDashboard() {
     setLoading(true);
 
+
     try {
-      // ==================================================
-      // MAIN COUNTS
-      // ==================================================
+      /* =====================================================
+         MAIN COUNTS
+         ===================================================== */
 
       const [
         totalUsers,
@@ -305,25 +349,10 @@ export default function AdminDashboard() {
         payoutFees,
         reportsCount,
         payoutsCount,
-        verificationCount,
       ] =
         await Promise.all([
-          supabase
-            .from(
-              "profiles"
-            )
-            .select(
-              "id",
-              {
-                count:
-                  "exact",
-                head:
-                  true,
-              }
-            )
-            .or(
-              "is_demo.is.null,is_demo.eq.false"
-            ),
+
+          /* TOTAL USERS */
 
           supabase
             .from(
@@ -334,6 +363,28 @@ export default function AdminDashboard() {
               {
                 count:
                   "exact",
+
+                head:
+                  true,
+              }
+            )
+            .or(
+              "is_demo.is.null,is_demo.eq.false"
+            ),
+
+
+          /* FREELANCERS */
+
+          supabase
+            .from(
+              "profiles"
+            )
+            .select(
+              "id",
+              {
+                count:
+                  "exact",
+
                 head:
                   true,
               }
@@ -346,6 +397,9 @@ export default function AdminDashboard() {
               "is_demo.is.null,is_demo.eq.false"
             ),
 
+
+          /* CLIENTS */
+
           supabase
             .from(
               "profiles"
@@ -355,6 +409,7 @@ export default function AdminDashboard() {
               {
                 count:
                   "exact",
+
                 head:
                   true,
               }
@@ -367,6 +422,9 @@ export default function AdminDashboard() {
               "is_demo.is.null,is_demo.eq.false"
             ),
 
+
+          /* JOBS */
+
           supabase
             .from(
               "jobs"
@@ -376,6 +434,7 @@ export default function AdminDashboard() {
               {
                 count:
                   "exact",
+
                 head:
                   true,
               }
@@ -383,6 +442,9 @@ export default function AdminDashboard() {
             .or(
               "is_demo.is.null,is_demo.eq.false"
             ),
+
+
+          /* APPLICATIONS */
 
           supabase
             .from(
@@ -393,6 +455,7 @@ export default function AdminDashboard() {
               {
                 count:
                   "exact",
+
                 head:
                   true,
               }
@@ -401,6 +464,9 @@ export default function AdminDashboard() {
               "is_demo.is.null,is_demo.eq.false"
             ),
 
+
+          /* PLATFORM FEES */
+
           supabase
             .from(
               "freelancer_payouts"
@@ -408,6 +474,9 @@ export default function AdminDashboard() {
             .select(
               "platform_fee"
             ),
+
+
+          /* OPEN REPORTS */
 
           supabase
             .from(
@@ -418,6 +487,7 @@ export default function AdminDashboard() {
               {
                 count:
                   "exact",
+
                 head:
                   true,
               }
@@ -426,6 +496,9 @@ export default function AdminDashboard() {
               "status",
               "resolved"
             ),
+
+
+          /* PENDING PAYOUTS */
 
           supabase
             .from(
@@ -436,6 +509,7 @@ export default function AdminDashboard() {
               {
                 count:
                   "exact",
+
                 head:
                   true,
               }
@@ -449,36 +523,12 @@ export default function AdminDashboard() {
               "is",
               null
             ),
-
-          supabase
-            .from(
-              "profiles"
-            )
-            .select(
-              "id",
-              {
-                count:
-                  "exact",
-                head:
-                  true,
-              }
-            )
-            .eq(
-              "role",
-              "freelancer"
-            )
-            .eq(
-              "verification_status",
-              "pending"
-            )
-            .or(
-              "is_demo.is.null,is_demo.eq.false"
-            ),
         ]);
 
-      // ==================================================
-      // REVENUE
-      // ==================================================
+
+      /* =====================================================
+         REVENUE
+         ===================================================== */
 
       const actualRevenue =
         (
@@ -496,6 +546,11 @@ export default function AdminDashboard() {
             ),
           0
         );
+
+
+      /* =====================================================
+         UPDATE DASHBOARD COUNTS
+         ===================================================== */
 
       setStats({
         totalUsers:
@@ -522,28 +577,27 @@ export default function AdminDashboard() {
           actualRevenue,
       });
 
+
       setOpenReports(
         reportsCount.count ??
           0
       );
+
 
       setPendingPayouts(
         payoutsCount.count ??
           0
       );
 
-      setPendingVerifications(
-        verificationCount.count ??
-          0
-      );
 
-      // ==================================================
-      // RECENT USERS
-      // ==================================================
+      /* =====================================================
+         RECENT USERS
+         ===================================================== */
 
       const {
         data:
           latestUsers,
+
         error:
           usersError,
       } =
@@ -564,6 +618,7 @@ export default function AdminDashboard() {
           )
           .limit(5);
 
+
       if (
         usersError
       ) {
@@ -580,13 +635,15 @@ export default function AdminDashboard() {
         );
       }
 
-      // ==================================================
-      // RECENT JOBS
-      // ==================================================
+
+      /* =====================================================
+         RECENT JOBS
+         ===================================================== */
 
       const {
         data:
           latestJobs,
+
         error:
           jobsError,
       } =
@@ -611,6 +668,7 @@ export default function AdminDashboard() {
           )
           .limit(5);
 
+
       if (
         jobsError
       ) {
@@ -627,16 +685,19 @@ export default function AdminDashboard() {
         );
       }
 
-      // ==================================================
-      // USER GROWTH
-      // ==================================================
+
+      /* =====================================================
+         USER GROWTH
+         ===================================================== */
 
       const startDate =
         new Date();
 
+
       startDate.setDate(
         1
       );
+
 
       startDate.setHours(
         0,
@@ -645,14 +706,17 @@ export default function AdminDashboard() {
         0
       );
 
+
       startDate.setMonth(
         startDate.getMonth() -
           11
       );
 
+
       const {
         data:
           growthProfiles,
+
         error:
           growthError,
       } =
@@ -682,6 +746,7 @@ export default function AdminDashboard() {
             }
           );
 
+
       if (
         growthError
       ) {
@@ -689,6 +754,7 @@ export default function AdminDashboard() {
           "User growth loading error:",
           growthError
         );
+
 
         setMonthlyGrowth(
           buildMonthlyGrowth(
@@ -706,9 +772,10 @@ export default function AdminDashboard() {
         );
       }
 
-      // ==================================================
-      // ACTIVITY QUERIES
-      // ==================================================
+
+      /* =====================================================
+         ACTIVITY QUERIES
+         ===================================================== */
 
       const [
         activityProfiles,
@@ -718,6 +785,9 @@ export default function AdminDashboard() {
         activityPayouts,
       ] =
         await Promise.all([
+
+          /* USER ACTIVITY */
+
           supabase
             .from(
               "profiles"
@@ -741,6 +811,9 @@ export default function AdminDashboard() {
             )
             .limit(5),
 
+
+          /* JOB ACTIVITY */
+
           supabase
             .from(
               "jobs"
@@ -763,6 +836,9 @@ export default function AdminDashboard() {
             )
             .limit(5),
 
+
+          /* APPLICATION ACTIVITY */
+
           supabase
             .from(
               "applications"
@@ -784,6 +860,9 @@ export default function AdminDashboard() {
             )
             .limit(5),
 
+
+          /* REPORT ACTIVITY */
+
           supabase
             .from(
               "reports"
@@ -802,6 +881,9 @@ export default function AdminDashboard() {
               }
             )
             .limit(5),
+
+
+          /* PAYOUT ACTIVITY */
 
           supabase
             .from(
@@ -826,15 +908,19 @@ export default function AdminDashboard() {
             .limit(5),
         ]);
 
-      // ==================================================
-      // BUILD REAL ACTIVITY FEED
-      // ==================================================
+
+      /* =====================================================
+         BUILD REAL ACTIVITY FEED
+         ===================================================== */
 
       const activityItems:
         DashboardActivityItem[] =
         [];
 
-      // USER REGISTRATIONS
+
+      /* =====================================================
+         USER REGISTRATIONS
+         ===================================================== */
 
       if (
         !activityProfiles.error
@@ -850,6 +936,7 @@ export default function AdminDashboard() {
               return;
             }
 
+
             const roleLabel =
               profile.role ===
               "freelancer"
@@ -858,6 +945,7 @@ export default function AdminDashboard() {
                     "client"
                 ? "Client"
                 : "User";
+
 
             activityItems.push({
               id:
@@ -884,7 +972,10 @@ export default function AdminDashboard() {
         );
       }
 
-      // JOBS
+
+      /* =====================================================
+         JOBS
+         ===================================================== */
 
       if (
         !activityJobs.error
@@ -899,6 +990,7 @@ export default function AdminDashboard() {
             ) {
               return;
             }
+
 
             activityItems.push({
               id:
@@ -925,7 +1017,10 @@ export default function AdminDashboard() {
         );
       }
 
-      // APPLICATIONS
+
+      /* =====================================================
+         APPLICATIONS
+         ===================================================== */
 
       if (
         !activityApplications.error
@@ -942,6 +1037,7 @@ export default function AdminDashboard() {
             ) {
               return;
             }
+
 
             activityItems.push({
               id:
@@ -965,7 +1061,10 @@ export default function AdminDashboard() {
         );
       }
 
-      // REPORTS
+
+      /* =====================================================
+         REPORTS
+         ===================================================== */
 
       if (
         !activityReports.error
@@ -980,6 +1079,7 @@ export default function AdminDashboard() {
             ) {
               return;
             }
+
 
             activityItems.push({
               id:
@@ -1005,7 +1105,10 @@ export default function AdminDashboard() {
         );
       }
 
-      // PAYOUTS
+
+      /* =====================================================
+         PAYOUTS
+         ===================================================== */
 
       if (
         !activityPayouts.error
@@ -1015,10 +1118,10 @@ export default function AdminDashboard() {
             PayoutActivityRow[]
         )?.forEach(
           (payout) => {
+
             /*
-             * Paid-out event takes
-             * priority because it is
-             * the most advanced state.
+             * Paid-out event takes priority because
+             * it is the most advanced state.
              */
 
             if (
@@ -1043,6 +1146,7 @@ export default function AdminDashboard() {
               return;
             }
 
+
             if (
               payout.payout_requested_at
             ) {
@@ -1064,6 +1168,7 @@ export default function AdminDashboard() {
 
               return;
             }
+
 
             if (
               payout.created_at
@@ -1093,9 +1198,10 @@ export default function AdminDashboard() {
         );
       }
 
-      // ==================================================
-      // SORT ACTIVITY BY REAL TIMESTAMP
-      // ==================================================
+
+      /* =====================================================
+         SORT ACTIVITY BY REAL TIMESTAMP
+         ===================================================== */
 
       const sortedActivity =
         activityItems
@@ -1121,6 +1227,7 @@ export default function AdminDashboard() {
             8
           );
 
+
       setActivities(
         sortedActivity
       );
@@ -1134,11 +1241,14 @@ export default function AdminDashboard() {
     }
   }
 
-  // ==================================================
-  // LOADING
-  // ==================================================
 
-  if (loading) {
+  /* =========================================================
+     LOADING
+     ========================================================= */
+
+  if (
+    loading
+  ) {
     return (
       <main className="contracts-page">
         <h1>
@@ -1148,40 +1258,54 @@ export default function AdminDashboard() {
     );
   }
 
-  // ==================================================
-  // DASHBOARD
-  // ==================================================
+
+  /* =========================================================
+     DASHBOARD
+     ========================================================= */
 
   return (
     <main className="contracts-page">
+
       <DashboardHeader />
+
+
+      {/* =====================================================
+          MAIN STATISTICS
+          ===================================================== */}
 
       <DashboardStats
         totalUsers={
           stats.totalUsers
         }
+
         freelancers={
           stats.freelancers
         }
+
         clients={
           stats.clients
         }
+
         jobs={
           stats.jobs
         }
+
         applications={
           stats.applications
         }
+
         revenue={
           stats.revenue
         }
       />
 
-      {/* ============================================
-          REAL ANALYTICS + PLATFORM OVERVIEW
-      ============================================ */}
+
+      {/* =====================================================
+          ANALYTICS + PLATFORM OVERVIEW
+          ===================================================== */}
 
       <div className="admin-dashboard-main-grid">
+
         <AnalyticsChart
           monthlyGrowth={
             monthlyGrowth
@@ -1192,27 +1316,30 @@ export default function AdminDashboard() {
           totalUsers={
             stats.totalUsers
           }
+
           jobs={
             stats.jobs
           }
+
           applications={
             stats.applications
           }
+
           openReports={
             openReports
           }
+
           pendingPayouts={
             pendingPayouts
           }
-          pendingVerifications={
-            pendingVerifications
-          }
         />
+
       </div>
 
-      {/* ============================================
+
+      {/* =====================================================
           RECENT USERS
-      ============================================ */}
+          ===================================================== */}
 
       <RecentUsers
         users={
@@ -1220,9 +1347,10 @@ export default function AdminDashboard() {
         }
       />
 
-      {/* ============================================
+
+      {/* =====================================================
           RECENT JOBS
-      ============================================ */}
+          ===================================================== */}
 
       <RecentJobs
         jobs={
@@ -1230,9 +1358,10 @@ export default function AdminDashboard() {
         }
       />
 
-      {/* ============================================
+
+      {/* =====================================================
           REAL ACTIVITY
-      ============================================ */}
+          ===================================================== */}
 
       <DashboardActivity
         activities={
@@ -1240,11 +1369,13 @@ export default function AdminDashboard() {
         }
       />
 
-      {/* ============================================
+
+      {/* =====================================================
           QUICK ACTIONS
-      ============================================ */}
+          ===================================================== */}
 
       <DashboardQuickActions />
+
     </main>
   );
 }

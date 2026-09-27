@@ -2,7 +2,6 @@
 
 type Props = {
   total: number;
-  verified: number;
   available: number;
   suspended: number;
   topRated: number;
@@ -31,16 +30,32 @@ function Card({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          gap: 12,
         }}
       >
-        <span>{title}</span>
+        <span
+          style={{
+            fontWeight: 600,
+          }}
+        >
+          {title}
+        </span>
 
-        <span style={{ fontSize: 28 }}>{icon}</span>
+        <span
+          aria-hidden="true"
+          style={{
+            fontSize: 28,
+            lineHeight: 1,
+          }}
+        >
+          {icon}
+        </span>
       </div>
 
       <h2
         style={{
           marginTop: 18,
+          marginBottom: 0,
           fontSize: 34,
         }}
       >
@@ -50,50 +65,50 @@ function Card({
   );
 }
 
-export default function FreelancerStats(props: Props) {
+export default function FreelancerStats({
+  total,
+  available,
+  suspended,
+  topRated,
+  demo,
+}: Props) {
   return (
     <div
       style={{
         display: "grid",
         gridTemplateColumns:
-          "repeat(auto-fit,minmax(180px,1fr))",
+          "repeat(auto-fit, minmax(180px, 1fr))",
         gap: 18,
         marginTop: 24,
       }}
     >
       <Card
         title="Freelancers"
-        value={props.total}
-        icon="🧑‍💻"
+        value={total}
+        icon="👥"
       />
 
       <Card
-        title="Verified"
-        value={props.verified}
-        icon="✔"
-      />
-
-      <Card
-        title="Available"
-        value={props.available}
+        title="Active"
+        value={available}
         icon="🟢"
       />
 
       <Card
         title="Top Rated"
-        value={props.topRated}
+        value={topRated}
         icon="⭐"
       />
 
       <Card
         title="Suspended"
-        value={props.suspended}
+        value={suspended}
         icon="⛔"
       />
 
       <Card
         title="Demo"
-        value={props.demo}
+        value={demo}
         icon="🎯"
       />
     </div>
