@@ -1,18 +1,39 @@
-import { NextRequest, NextResponse } from "next/server";
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
+
 import crypto from "crypto";
-import { createClient } from "@supabase/supabase-js";
+
+import {
+  createClient,
+} from "@supabase/supabase-js";
+
+export const runtime = "nodejs";
+
+/*
+ * =========================================================
+ * ENVIRONMENT
+ * =========================================================
+ */
 
 const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 
 const serviceRoleKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 const payfastPassphrase =
   process.env.PAYFAST_PASSPHRASE || "";
 
 const isSandbox =
   process.env.PAYFAST_SANDBOX === "true";
+
+/*
+ * =========================================================
+ * SUPABASE SERVER CLIENT
+ * =========================================================
+ */
 
 const supabase = createClient(
   supabaseUrl,
@@ -26,12 +47,24 @@ const supabase = createClient(
 );
 
 /*
- * --------------------------------------------------
- * PAYFAST PHP-STYLE URL ENCODING
- * --------------------------------------------------
+ * =========================================================
+ * TYPES
+ * =========================================================
  */
 
-function payfastEncode(value: string) {
+type PaymentType =
+  | "milestone"
+  | "direct_hire";
+
+/*
+ * =========================================================
+ * PAYFAST PHP-STYLE URL ENCODING
+ * =========================================================
+ */
+
+function payfastEncode(
+  value: string
+) {
   return encodeURIComponent(value)
     .replace(/%20/g, "+")
     .replace(/!/g, "%21")
@@ -43,20 +76,20 @@ function payfastEncode(value: string) {
 }
 
 /*
- * --------------------------------------------------
+ * =========================================================
  * BUILD PAYFAST ITN PARAMETER STRING
- * --------------------------------------------------
+ * =========================================================
  *
  * IMPORTANT:
  *
- * For an incoming ITN we preserve:
+ * Preserve:
  *
- * 1. PayFast's original field order.
- * 2. Empty posted fields.
- * 3. Every field before "signature".
+ * 1. PayFast field order
+ * 2. Empty fields
+ * 3. Every field before signature
  *
- * The signature itself is NOT included.
- * --------------------------------------------------
+ * Signature itself is excluded.
+ * =========================================================
  */
 
 function buildPayfastParamString(
@@ -64,13 +97,18 @@ function buildPayfastParamString(
 ) {
   const parts: string[] = [];
 
-  for (const [key, value] of params.entries()) {
+  for (
+    const [key, value]
+    of params.entries()
+  ) {
     if (key === "signature") {
       break;
     }
 
     parts.push(
-      `${key}=${payfastEncode(value)}`
+      `${key}=${payfastEncode(
+        value
+      )}`
     );
   }
 
@@ -78,9 +116,9 @@ function buildPayfastParamString(
 }
 
 /*
- * --------------------------------------------------
+ * =========================================================
  * GENERATE ITN SIGNATURE
- * --------------------------------------------------
+ * =========================================================
  */
 
 function generateItnSignature(
@@ -104,9 +142,9 @@ function generateItnSignature(
 }
 
 /*
- * --------------------------------------------------
+ * =========================================================
  * PAYFAST ITN
- * --------------------------------------------------
+ * =========================================================
  */
 
 export async function POST(
@@ -114,16 +152,40 @@ export async function POST(
 ) {
   try {
     /*
-     * --------------------------------------------------
+     * =====================================================
+     * SERVER CONFIGURATION
+     * =====================================================
+     */
+
+    if (
+      !supabaseUrl ||
+      !serviceRoleKey
+    ) {
+      console.error(
+        "PayFast ITN server configuration is incomplete."
+      );
+
+      return new NextResponse(
+        "Server configuration error",
+        {
+          status: 500,
+        }
+      );
+    }
+
+    /*
+     * =====================================================
      * READ ORIGINAL PAYFAST POST BODY
-     * --------------------------------------------------
+     * =====================================================
      */
 
     const rawBody =
       await request.text();
 
     const params =
-      new URLSearchParams(rawBody);
+      new URLSearchParams(
+        rawBody
+      );
 
     const data:
       Record<string, string> = {};
@@ -133,6 +195,62 @@ export async function POST(
         data[key] = value;
       }
     );
+
+    /*
+     * =====================================================
+     * IDENTIFIERS
+     * =====================================================
+     *
+     * custom_str1 = project ID
+     * custom_str2 = milestone ID
+     * custom_str3 = contract ID
+     * custom_str4 = payment type
+     * =====================================================
+     */
+
+    const receivedSignature =
+      data.signature || "";
+
+    const paymentStatus =
+      data.payment_status || "";
+
+    const projectId =
+      data.custom_str1 || "";
+
+    const milestoneId =
+      data.custom_str2 || "";
+
+    const contractId =
+      data.custom_str3 || "";
+
+    const rawPaymentType =
+      String(
+        data.custom_str4 || ""
+      )
+        .trim()
+        .toLowerCase();
+
+    /*
+     * Backward compatibility:
+     *
+     * Old PayFast transactions did not contain
+     * custom_str4.
+     *
+     * If a milestone ID exists, treat the ITN
+     * as a milestone payment.
+     */
+
+    const paymentType:
+      PaymentType =
+      rawPaymentType ===
+      "direct_hire"
+        ? "direct_hire"
+        : "milestone";
+
+    const grossAmount =
+      Number(
+        data.amount_gross || 0
+      );
 
     console.log(
       "PayFast ITN received:",
@@ -144,7 +262,7 @@ export async function POST(
           data.pf_payment_id,
 
         payment_status:
-          data.payment_status,
+          paymentStatus,
 
         amount_gross:
           data.amount_gross,
@@ -152,47 +270,27 @@ export async function POST(
         merchant_id:
           data.merchant_id,
 
-        custom_str1:
-          data.custom_str1,
+        projectId,
 
-        custom_str2:
-          data.custom_str2,
+        milestoneId:
+          milestoneId || null,
 
-        custom_str3:
-          data.custom_str3,
+        contractId:
+          contractId || null,
+
+        paymentType,
       }
     );
 
     /*
-     * --------------------------------------------------
+     * =====================================================
      * REQUIRED VALUES
-     * --------------------------------------------------
+     * =====================================================
      */
-
-    const receivedSignature =
-      data.signature;
-
-    const paymentStatus =
-      data.payment_status;
-
-    const projectId =
-      data.custom_str1;
-
-    const milestoneId =
-      data.custom_str2;
-
-    const contractId =
-      data.custom_str3;
-
-    const grossAmount =
-      Number(
-        data.amount_gross || 0
-      );
 
     if (
       !receivedSignature ||
-      !projectId ||
-      !milestoneId
+      !projectId
     ) {
       console.error(
         "PayFast ITN missing required values."
@@ -206,16 +304,63 @@ export async function POST(
       );
     }
 
+    if (
+      paymentType ===
+        "milestone" &&
+      !milestoneId
+    ) {
+      console.error(
+        "Milestone payment ITN is missing milestone ID."
+      );
+
+      return new NextResponse(
+        "Milestone ID missing",
+        {
+          status: 400,
+        }
+      );
+    }
+
+    if (
+      paymentType ===
+        "direct_hire" &&
+      !contractId
+    ) {
+      console.error(
+        "Direct-hire ITN is missing contract ID."
+      );
+
+      return new NextResponse(
+        "Contract ID missing",
+        {
+          status: 400,
+        }
+      );
+    }
+
+    if (
+      !Number.isFinite(
+        grossAmount
+      ) ||
+      grossAmount <= 0
+    ) {
+      console.error(
+        "Invalid PayFast gross amount:",
+        data.amount_gross
+      );
+
+      return new NextResponse(
+        "Invalid payment amount",
+        {
+          status: 400,
+        }
+      );
+    }
+
     /*
-     * --------------------------------------------------
+     * =====================================================
      * BUILD ORIGINAL PAYFAST PARAMETER STRING
-     * --------------------------------------------------
-     *
-     * Unlike the payment checkout signature,
-     * incoming ITNs may contain empty fields.
-     *
-     * Those fields must remain in this string.
-     * --------------------------------------------------
+     * =====================================================
      */
 
     const pfParamString =
@@ -224,9 +369,9 @@ export async function POST(
       );
 
     /*
-     * --------------------------------------------------
+     * =====================================================
      * VERIFY PAYFAST SIGNATURE
-     * --------------------------------------------------
+     * =====================================================
      */
 
     const calculatedSignature =
@@ -243,9 +388,6 @@ export async function POST(
       console.error(
         "Invalid PayFast signature.",
         {
-          receivedSignature,
-          calculatedSignature,
-
           hasPassphrase:
             Boolean(
               payfastPassphrase
@@ -266,63 +408,219 @@ export async function POST(
     );
 
     /*
-     * --------------------------------------------------
-     * LOAD MILESTONE
-     * --------------------------------------------------
+     * =====================================================
+     * LOAD PAYMENT SOURCE
+     * =====================================================
+     *
+     * expectedAmount comes ONLY from Supabase.
+     * =====================================================
      */
 
-    const {
-      data: milestone,
-      error: milestoneError,
-    } = await supabase
-      .from("milestones")
-      .select(
-        `
-        id,
-        project_id,
-        contract_id,
-        title,
-        amount,
-        status
-        `
-      )
-      .eq(
-        "id",
-        milestoneId
-      )
-      .eq(
-        "project_id",
-        projectId
-      )
-      .maybeSingle();
+    let expectedAmount = 0;
+
+    let paymentTitle =
+      "Freelance Project";
+
+    let activityContractId:
+      string | null =
+      contractId || null;
+
+    let milestoneStatus = "";
+
+    /*
+     * =====================================================
+     * MILESTONE PAYMENT SOURCE
+     * =====================================================
+     */
 
     if (
-      milestoneError ||
-      !milestone
+      paymentType ===
+      "milestone"
+    ) {
+      const {
+        data: milestone,
+        error: milestoneError,
+      } = await supabase
+        .from("milestones")
+        .select(`
+          id,
+          project_id,
+          contract_id,
+          title,
+          amount,
+          status
+        `)
+        .eq(
+          "id",
+          milestoneId
+        )
+        .eq(
+          "project_id",
+          projectId
+        )
+        .maybeSingle();
+
+      if (
+        milestoneError ||
+        !milestone
+      ) {
+        console.error(
+          "ITN milestone lookup failed:",
+          milestoneError
+        );
+
+        return new NextResponse(
+          "Milestone not found",
+          {
+            status: 404,
+          }
+        );
+      }
+
+      expectedAmount =
+        Number(
+          milestone.amount || 0
+        );
+
+      paymentTitle =
+        milestone.title ||
+        "Untitled Milestone";
+
+      milestoneStatus =
+        String(
+          milestone.status || ""
+        ).toLowerCase();
+
+      activityContractId =
+        milestone.contract_id ||
+        contractId ||
+        null;
+    }
+
+    /*
+     * =====================================================
+     * DIRECT-HIRE PAYMENT SOURCE
+     * =====================================================
+     */
+
+    else {
+      const {
+        data: contract,
+        error: contractError,
+      } = await supabase
+        .from("contracts")
+        .select(`
+          id,
+          project_id,
+          client_id,
+          freelancer_id,
+          project_title,
+          budget,
+          status
+        `)
+        .eq(
+          "id",
+          contractId
+        )
+        .eq(
+          "project_id",
+          projectId
+        )
+        .maybeSingle();
+
+      if (
+        contractError ||
+        !contract
+      ) {
+        console.error(
+          "ITN direct-hire contract lookup failed:",
+          contractError
+        );
+
+        return new NextResponse(
+          "Direct-hire contract not found",
+          {
+            status: 404,
+          }
+        );
+      }
+
+      /*
+       * Contract must still represent an
+       * accepted direct hire.
+       */
+
+      const contractStatus =
+        String(
+          contract.status || ""
+        ).toLowerCase();
+
+      if (
+        contractStatus !==
+        "accepted"
+      ) {
+        console.error(
+          "Direct-hire contract is not accepted:",
+          {
+            contractId,
+            contractStatus,
+          }
+        );
+
+        return new NextResponse(
+          "Contract is not accepted",
+          {
+            status: 400,
+          }
+        );
+      }
+
+      expectedAmount =
+        Number(
+          contract.budget || 0
+        );
+
+      paymentTitle =
+        contract.project_title ||
+        "Direct Hire Project";
+
+      activityContractId =
+        contract.id;
+    }
+
+    /*
+     * =====================================================
+     * VERIFY EXPECTED AMOUNT
+     * =====================================================
+     */
+
+    if (
+      !Number.isFinite(
+        expectedAmount
+      ) ||
+      expectedAmount <= 0
     ) {
       console.error(
-        "ITN milestone lookup failed:",
-        milestoneError
+        "Database payment amount is invalid:",
+        {
+          paymentType,
+          expectedAmount,
+        }
       );
 
       return new NextResponse(
-        "Milestone not found",
+        "Invalid database payment amount",
         {
-          status: 404,
+          status: 400,
         }
       );
     }
 
     /*
-     * --------------------------------------------------
-     * VERIFY AMOUNT
-     * --------------------------------------------------
+     * =====================================================
+     * VERIFY PAYFAST AMOUNT
+     * =====================================================
      */
-
-    const expectedAmount =
-      Number(
-        milestone.amount || 0
-      );
 
     if (
       Math.abs(
@@ -333,6 +631,7 @@ export async function POST(
       console.error(
         "PayFast amount mismatch.",
         {
+          paymentType,
           expectedAmount,
           grossAmount,
         }
@@ -347,13 +646,9 @@ export async function POST(
     }
 
     /*
-     * --------------------------------------------------
+     * =====================================================
      * SERVER CONFIRMATION WITH PAYFAST
-     * --------------------------------------------------
-     *
-     * Send the PayFast parameter string,
-     * excluding the signature field.
-     * --------------------------------------------------
+     * =====================================================
      */
 
     const validationUrl =
@@ -378,7 +673,8 @@ export async function POST(
       );
 
     const validationText =
-      await validationResponse.text();
+      await validationResponse
+        .text();
 
     if (
       validationText.trim() !==
@@ -402,9 +698,9 @@ export async function POST(
     );
 
     /*
-     * --------------------------------------------------
+     * =====================================================
      * CHECK PAYMENT STATUS
-     * --------------------------------------------------
+     * =====================================================
      */
 
     if (
@@ -425,9 +721,9 @@ export async function POST(
     }
 
     /*
-     * --------------------------------------------------
+     * =====================================================
      * LOAD PROJECT
-     * --------------------------------------------------
+     * =====================================================
      */
 
     const {
@@ -435,15 +731,14 @@ export async function POST(
       error: projectError,
     } = await supabase
       .from("projects")
-      .select(
-        `
+      .select(`
         id,
         client_id,
         freelancer_id,
         status,
-        payment_status
-        `
-      )
+        payment_status,
+        paid_at
+      `)
       .eq(
         "id",
         projectId
@@ -468,9 +763,9 @@ export async function POST(
     }
 
     /*
-     * --------------------------------------------------
+     * =====================================================
      * PROJECT PARTICIPANTS
-     * --------------------------------------------------
+     * =====================================================
      */
 
     if (
@@ -499,20 +794,87 @@ export async function POST(
     }
 
     /*
-     * --------------------------------------------------
+     * =====================================================
+     * DIRECT-HIRE RELATIONSHIP CHECK
+     * =====================================================
+     *
+     * Re-read the contract participants and make
+     * sure they match the project participants.
+     * =====================================================
+     */
+
+    if (
+      paymentType ===
+      "direct_hire"
+    ) {
+      const {
+        data: directHireContract,
+        error:
+          directHireContractError,
+      } = await supabase
+        .from("contracts")
+        .select(`
+          id,
+          client_id,
+          freelancer_id
+        `)
+        .eq(
+          "id",
+          contractId
+        )
+        .eq(
+          "project_id",
+          projectId
+        )
+        .maybeSingle();
+
+      if (
+        directHireContractError ||
+        !directHireContract
+      ) {
+        console.error(
+          "Direct-hire relationship lookup failed:",
+          directHireContractError
+        );
+
+        return new NextResponse(
+          "Contract relationship could not be verified",
+          {
+            status: 400,
+          }
+        );
+      }
+
+      if (
+        directHireContract.client_id !==
+          project.client_id ||
+        directHireContract.freelancer_id !==
+          project.freelancer_id
+      ) {
+        console.error(
+          "Direct-hire contract/project participant mismatch.",
+          {
+            contractId,
+            projectId,
+          }
+        );
+
+        return new NextResponse(
+          "Contract/project mismatch",
+          {
+            status: 400,
+          }
+        );
+      }
+    }
+
+    /*
+     * =====================================================
      * PAYOUT CALCULATION
-     * --------------------------------------------------
+     * =====================================================
      *
-     * Current development platform fee:
-     *
-     * 10%
-     *
-     * Example:
-     *
-     * Client pays R10
-     * Platform fee R1
-     * Freelancer balance R9
-     * --------------------------------------------------
+     * Current platform fee = 10%
+     * =====================================================
      */
 
     const platformFeePercent =
@@ -540,73 +902,209 @@ export async function POST(
     const paidAt =
       new Date().toISOString();
 
-    const activityContractId =
-      milestone.contract_id ||
-      contractId ||
-      null;
-
     /*
-     * --------------------------------------------------
+     * =====================================================
      * CREATE FREELANCER PAYOUT
-     * --------------------------------------------------
+     * =====================================================
      *
-     * The unique milestone_id index prevents
-     * duplicate payout records.
-     * --------------------------------------------------
+     * MILESTONE:
+     *
+     * milestone_id = milestone UUID
+     * payment_type = milestone
+     *
+     * DIRECT HIRE:
+     *
+     * milestone_id = NULL
+     * payment_type = direct_hire
+     *
+     * Database partial unique indexes provide
+     * duplicate protection.
+     * =====================================================
      */
 
-    const {
-      error: payoutError,
-    } = await supabase
-      .from(
-        "freelancer_payouts"
-      )
-      .upsert(
-        {
-          milestone_id:
-            milestoneId,
+    let payoutError:
+      { message?: string } |
+      null =
+      null;
 
-          project_id:
-            projectId,
+    if (
+      paymentType ===
+      "milestone"
+    ) {
+      const {
+        error,
+      } = await supabase
+        .from(
+          "freelancer_payouts"
+        )
+        .upsert(
+          {
+            milestone_id:
+              milestoneId,
 
-          contract_id:
-            activityContractId,
+            project_id:
+              projectId,
 
-          freelancer_id:
-            project.freelancer_id,
+            contract_id:
+              activityContractId,
 
-          client_id:
-            project.client_id,
+            freelancer_id:
+              project.freelancer_id,
 
-          gross_amount:
-            grossAmount,
+            client_id:
+              project.client_id,
 
-          platform_fee:
-            platformFee,
+            gross_amount:
+              grossAmount,
 
-          freelancer_amount:
-            freelancerAmount,
+            platform_fee:
+              platformFee,
 
-          platform_fee_percent:
-            platformFeePercent,
+            freelancer_amount:
+              freelancerAmount,
 
-          status:
-            "held",
+            platform_fee_percent:
+              platformFeePercent,
 
-          payment_received_at:
-            paidAt,
+            payment_type:
+              "milestone",
 
-          updated_at:
-            paidAt,
-        },
-        {
-          onConflict:
-            "milestone_id",
+            status:
+              "held",
 
-          ignoreDuplicates:
-            true,
+            payment_received_at:
+              paidAt,
+
+            updated_at:
+              paidAt,
+          },
+          {
+            onConflict:
+              "milestone_id",
+
+            ignoreDuplicates:
+              true,
+          }
+        );
+
+      payoutError =
+        error;
+    } else {
+      /*
+       * Partial unique indexes cannot reliably be
+       * targeted through PostgREST's onConflict
+       * parameter in the same way as a normal
+       * UNIQUE constraint.
+       *
+       * Therefore:
+       *
+       * 1. Check for existing direct-hire payout.
+       * 2. Insert only when none exists.
+       * 3. Database partial unique index remains
+       *    the final concurrency protection.
+       */
+
+      const {
+        data: existingPayout,
+        error:
+          existingPayoutError,
+      } = await supabase
+        .from(
+          "freelancer_payouts"
+        )
+        .select("id")
+        .eq(
+          "project_id",
+          projectId
+        )
+        .eq(
+          "payment_type",
+          "direct_hire"
+        )
+        .maybeSingle();
+
+      if (
+        existingPayoutError
+      ) {
+        console.error(
+          "Direct-hire payout lookup failed:",
+          existingPayoutError
+        );
+
+        return new NextResponse(
+          "Payout lookup failed",
+          {
+            status: 500,
+          }
+        );
+      }
+
+      if (!existingPayout) {
+        const {
+          error,
+        } = await supabase
+          .from(
+            "freelancer_payouts"
+          )
+          .insert({
+            milestone_id:
+              null,
+
+            project_id:
+              projectId,
+
+            contract_id:
+              activityContractId,
+
+            freelancer_id:
+              project.freelancer_id,
+
+            client_id:
+              project.client_id,
+
+            gross_amount:
+              grossAmount,
+
+            platform_fee:
+              platformFee,
+
+            freelancer_amount:
+              freelancerAmount,
+
+            platform_fee_percent:
+              platformFeePercent,
+
+            payment_type:
+              "direct_hire",
+
+            status:
+              "held",
+
+            payment_received_at:
+              paidAt,
+
+            updated_at:
+              paidAt,
+          });
+
+        /*
+         * PostgreSQL code 23505 means another
+         * concurrent ITN already created the
+         * same direct-hire payout.
+         *
+         * That is safe and should be treated
+         * as an idempotent retry.
+         */
+
+        if (
+          error &&
+          error.code !== "23505"
+        ) {
+          payoutError =
+            error;
         }
-      );
+      }
+    }
 
     if (payoutError) {
       console.error(
@@ -625,37 +1123,179 @@ export async function POST(
     console.log(
       "Freelancer payout record confirmed.",
       {
-        milestoneId,
+        paymentType,
+        projectId,
+
+        milestoneId:
+          milestoneId || null,
+
+        contractId:
+          activityContractId,
+
         grossAmount,
         platformFee,
         freelancerAmount,
+
         status:
           "held",
       }
     );
 
     /*
-     * --------------------------------------------------
-     * IDEMPOTENCY
-     * --------------------------------------------------
-     *
-     * The payout check happens before this.
-     *
-     * Therefore a PayFast retry can repair a
-     * missing payout record without sending
-     * duplicate notifications or reprocessing
-     * the milestone.
-     * --------------------------------------------------
+     * =====================================================
+     * MILESTONE PROCESSING
+     * =====================================================
      */
 
     if (
-      milestone.status ===
-        "paid" ||
-      milestone.status ===
-        "completed"
+      paymentType ===
+      "milestone"
     ) {
+      /*
+       * Existing milestone already processed.
+       */
+
+      if (
+        milestoneStatus ===
+          "paid" ||
+        milestoneStatus ===
+          "completed"
+      ) {
+        console.log(
+          "Milestone already processed."
+        );
+
+        return new NextResponse(
+          "OK",
+          {
+            status: 200,
+          }
+        );
+      }
+
+      /*
+       * -----------------------------------------------
+       * MARK MILESTONE PAID
+       * -----------------------------------------------
+       */
+
+      const {
+        error:
+          milestoneUpdateError,
+      } = await supabase
+        .from("milestones")
+        .update({
+          status:
+            "paid",
+        })
+        .eq(
+          "id",
+          milestoneId
+        );
+
+      if (
+        milestoneUpdateError
+      ) {
+        console.error(
+          "Milestone ITN update error:",
+          milestoneUpdateError
+        );
+
+        return new NextResponse(
+          "Milestone update failed",
+          {
+            status: 500,
+          }
+        );
+      }
+    }
+
+    /*
+     * =====================================================
+     * PROJECT IDEMPOTENCY
+     * =====================================================
+     */
+
+    const projectAlreadyPaid =
+      String(
+        project.payment_status ||
+          ""
+      ).toLowerCase() ===
+        "paid" ||
+      Boolean(
+        project.paid_at
+      );
+
+    /*
+     * =====================================================
+     * UPDATE PROJECT
+     * =====================================================
+     *
+     * Only PayFast COMPLETE ITN reaches here.
+     *
+     * pending -> active
+     * unpaid  -> paid
+     * paid_at -> timestamp
+     * =====================================================
+     */
+
+    if (!projectAlreadyPaid) {
+      const {
+        error:
+          projectUpdateError,
+      } = await supabase
+        .from("projects")
+        .update({
+          payment_status:
+            "paid",
+
+          paid_at:
+            paidAt,
+
+          status:
+            project.status ===
+            "pending"
+              ? "active"
+              : project.status,
+        })
+        .eq(
+          "id",
+          projectId
+        );
+
+      if (
+        projectUpdateError
+      ) {
+        console.error(
+          "Project ITN update error:",
+          projectUpdateError
+        );
+
+        return new NextResponse(
+          "Project update failed",
+          {
+            status: 500,
+          }
+        );
+      }
+    }
+
+    /*
+     * =====================================================
+     * DON'T DUPLICATE ACTIVITY / NOTIFICATION
+     * =====================================================
+     *
+     * PayFast can retry an ITN.
+     *
+     * The payout record can be safely checked/created
+     * again, but we do not want repeated activity
+     * messages and notifications.
+     * =====================================================
+     */
+
+    if (projectAlreadyPaid) {
       console.log(
-        "Milestone already processed."
+        "Project payment was already processed."
       );
 
       return new NextResponse(
@@ -667,95 +1307,20 @@ export async function POST(
     }
 
     /*
-     * --------------------------------------------------
-     * MARK MILESTONE PAID
-     * --------------------------------------------------
-     */
-
-    const {
-      error:
-        milestoneUpdateError,
-    } = await supabase
-      .from("milestones")
-      .update({
-        status:
-          "paid",
-      })
-      .eq(
-        "id",
-        milestoneId
-      );
-
-    if (
-      milestoneUpdateError
-    ) {
-      console.error(
-        "Milestone ITN update error:",
-        milestoneUpdateError
-      );
-
-      return new NextResponse(
-        "Milestone update failed",
-        {
-          status: 500,
-        }
-      );
-    }
-
-    /*
-     * --------------------------------------------------
-     * UPDATE PROJECT
-     * --------------------------------------------------
-     */
-
-    const {
-      error:
-        projectUpdateError,
-    } = await supabase
-      .from("projects")
-      .update({
-        payment_status:
-          "paid",
-
-        paid_at:
-          paidAt,
-
-        status:
-          project.status ===
-          "pending"
-            ? "active"
-            : project.status,
-      })
-      .eq(
-        "id",
-        projectId
-      );
-
-    if (
-      projectUpdateError
-    ) {
-      console.error(
-        "Project ITN update error:",
-        projectUpdateError
-      );
-
-      return new NextResponse(
-        "Project update failed",
-        {
-          status: 500,
-        }
-      );
-    }
-
-    /*
-     * --------------------------------------------------
+     * =====================================================
      * CONTRACT ACTIVITY
-     * --------------------------------------------------
+     * =====================================================
      */
 
     if (
       activityContractId
     ) {
+      const action =
+        paymentType ===
+        "milestone"
+          ? `Payment received for milestone "${paymentTitle}"`
+          : `Project funding received for "${paymentTitle}"`;
+
       const {
         error:
           activityError,
@@ -767,8 +1332,7 @@ export async function POST(
           contract_id:
             activityContractId,
 
-          action:
-            `Payment received for milestone "${milestone.title || "Untitled"}"`,
+          action,
         });
 
       if (
@@ -782,10 +1346,31 @@ export async function POST(
     }
 
     /*
-     * --------------------------------------------------
+     * =====================================================
      * NOTIFY FREELANCER
-     * --------------------------------------------------
+     * =====================================================
      */
+
+    const notificationTitle =
+      paymentType ===
+      "milestone"
+        ? "Payment Received"
+        : "Project Funded";
+
+    const notificationBody =
+      paymentType ===
+      "milestone"
+        ? `Payment received for milestone "${paymentTitle}".`
+        : `The client has funded "${paymentTitle}". You can now begin work.`;
+
+    const notificationLink =
+      paymentType ===
+        "milestone" &&
+      activityContractId
+        ? `/dashboard/contracts/${activityContractId}/milestones`
+        : activityContractId
+          ? `/dashboard/contracts/${activityContractId}`
+          : "/dashboard/projects";
 
     const {
       error:
@@ -797,15 +1382,13 @@ export async function POST(
           project.freelancer_id,
 
         title:
-          "Payment Received",
+          notificationTitle,
 
         body:
-          `Payment received for milestone "${milestone.title || "Untitled Milestone"}".`,
+          notificationBody,
 
         link:
-          activityContractId
-            ? `/dashboard/contracts/${activityContractId}/milestones`
-            : "/dashboard/projects",
+          notificationLink,
 
         is_read:
           false,
@@ -821,19 +1404,28 @@ export async function POST(
     }
 
     /*
-     * --------------------------------------------------
+     * =====================================================
      * SUCCESS
-     * --------------------------------------------------
+     * =====================================================
      */
 
     console.log(
       "PayFast ITN processed successfully.",
       {
+        paymentType,
+
         projectId,
-        milestoneId,
+
+        milestoneId:
+          milestoneId || null,
+
+        contractId:
+          activityContractId,
+
         grossAmount,
         platformFee,
         freelancerAmount,
+
         payoutStatus:
           "held",
       }

@@ -1,259 +1,444 @@
 "use client";
 
-"use client";
-
 import { useEffect, useState } from "react";
+import Link from "next/link";
+
 import { supabase } from "@/app/lib/supabase";
 import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 import EmptyState from "@/app/components/EmptyState";
 
+type FreelancerProfile = {
+  id: string;
+  full_name?: string | null;
+  role?: string | null;
+  category?: string | null;
+};
+
 type Contract = {
   id: string;
-  client_id?: string;
-  freelancer_id?: string;
-  job_id?: string | null;
-  application_id?: string | null;
-  project_title?: string;
-  project_description?: string;
-  budget?: number;
-  status?: string;
-  created_at?: string;
+  client_id?: string | null;
+  freelancer_id?: string | null;
 
-  profiles?: {
-    id?: string;
-    full_name?: string | null;
-    role?: string | null;
-    category?: string | null;
-  } | null;
+  /*
+   * Permanent link between the contract
+   * and its corresponding project.
+   */
+  project_id?: string | null;
+application_id?: string | null;
+
+  project_title?: string | null;
+  project_description?: string | null;
+
+  budget?: number | null;
+
+  status?: string | null;
+  created_at?: string | null;
+
+  profiles?: FreelancerProfile | null;
 };
 
 type Project = {
   id: string;
+
   job_id?: string | null;
   application_id?: string | null;
-  client_id?: string;
-  freelancer_id?: string;
-  status?: string;
-  payment_status?: string;
+
+  client_id?: string | null;
+  freelancer_id?: string | null;
+
+  status?: string | null;
+
+  payment_status?: string | null;
   paid_at?: string | null;
 };
 
 export default function ClientContractsPage() {
-  const [contracts, setContracts] = useState<Contract[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [allowed, setAllowed] = useState(false);
+  const [contracts, setContracts] =
+    useState<Contract[]>([]);
+
+  const [projects, setProjects] =
+    useState<Project[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [allowed, setAllowed] =
+    useState(false);
+
+  const [errorMessage, setErrorMessage] =
+    useState("");
+
+  /*
+   * =========================================================
+   * LOAD PAGE
+   * =========================================================
+   */
 
   useEffect(() => {
-    loadContracts();
+    void loadContracts();
   }, []);
 
+  /*
+   * =========================================================
+   * LOAD CLIENT CONTRACTS
+   * =========================================================
+   */
+
   const loadContracts = async () => {
-  setLoading(true);
+    setLoading(true);
+    setErrorMessage("");
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    try {
+      /*
+       * =====================================================
+       * STEP 1
+       * AUTHENTICATED USER
+       * =====================================================
+       */
 
-  if (!user) {
-    setLoading(false);
-    return;
-  }
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+      if (userError) {
+        console.error(
+          "Client contracts authentication error:",
+          userError
+        );
 
-  if (profile?.role !== "client") {
-    setAllowed(false);
-    setLoading(false);
-    return;
-  }
+        setAllowed(false);
 
-  setAllowed(true);
+        setErrorMessage(
+          "We could not verify your account."
+        );
 
-  /*
-   * Load contracts directly.
-   *
-   * IMPORTANT:
-   * We intentionally do NOT use:
-   *
-   * profiles (...)
-   *
-   * here because the profiles relationship can cause
-   * Supabase relationship/RLS errors.
-   */
-  const {
-    data: contractData,
-    error: contractError,
-  } = await supabase
-    .from("contracts")
-    .select("*")
-    .eq("client_id", user.id)
-    .order("created_at", {
-      ascending: false,
-    });
-
-  if (contractError) {
-    console.error(
-      "Client contracts loading error:",
-      contractError
-    );
-
-    setContracts([]);
-    setLoading(false);
-    return;
-  }
-
-  /*
-   * Load projects belonging to this client.
-   */
-  const {
-    data: projectData,
-    error: projectError,
-  } = await supabase
-    .from("projects")
-    .select("*")
-    .eq("client_id", user.id)
-    .order("created_at", {
-      ascending: false,
-    });
-
-  if (projectError) {
-    console.error(
-      "Client projects loading error:",
-      projectError
-    );
-  }
-
-  /*
-   * Load freelancer profiles separately.
-   */
-  const freelancerIds = Array.from(
-    new Set(
-      ((contractData as Contract[]) || [])
-        .map(
-          (contract) =>
-            contract.freelancer_id
-        )
-        .filter(Boolean)
-    )
-  );
-
-  let freelancerProfiles: {
-    id: string;
-    full_name?: string | null;
-    role?: string | null;
-    category?: string | null;
-  }[] = [];
-
-  if (freelancerIds.length > 0) {
-    const {
-      data: freelancerData,
-      error: freelancerError,
-    } = await supabase
-      .from("profiles")
-      .select(
-        "id, full_name, role, category"
-      )
-      .in("id", freelancerIds);
-
-    if (freelancerError) {
-      console.error(
-        "Freelancer profiles loading error:",
-        freelancerError
-      );
-    } else {
-      freelancerProfiles =
-        freelancerData || [];
-    }
-  }
-
-  /*
-   * Attach freelancer profile information
-   * to each contract locally.
-   */
-  const contractsWithProfiles =
-    ((contractData as Contract[]) || []).map(
-      (contract) => {
-        const freelancerProfile =
-          freelancerProfiles.find(
-            (profile) =>
-              profile.id ===
-              contract.freelancer_id
-          );
-
-        return {
-          ...contract,
-          profiles:
-            freelancerProfile || null,
-        };
+        return;
       }
-    );
 
-  setContracts(contractsWithProfiles);
+      if (!user) {
+        setAllowed(false);
 
-  setProjects(
-    (projectData as Project[]) || []
-  );
+        setErrorMessage(
+          "Please log in to view your contracts."
+        );
 
-  setLoading(false);
-};
+        return;
+      }
+
+      /*
+       * =====================================================
+       * STEP 2
+       * VERIFY CLIENT ROLE
+       * =====================================================
+       */
+
+      const {
+        data: profile,
+        error: profileError,
+      } = await supabase
+        .from("profiles")
+        .select(`
+          id,
+          role,
+          suspended
+        `)
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error(
+          "Client profile loading error:",
+          profileError
+        );
+
+        setAllowed(false);
+
+        setErrorMessage(
+          "We could not verify your client account."
+        );
+
+        return;
+      }
+
+      if (!profile) {
+        setAllowed(false);
+
+        setErrorMessage(
+          "Your profile could not be found."
+        );
+
+        return;
+      }
+
+      if (profile.suspended === true) {
+        setAllowed(false);
+
+        setErrorMessage(
+          "Your account is currently suspended."
+        );
+
+        return;
+      }
+
+      if (profile.role !== "client") {
+        setAllowed(false);
+
+        setErrorMessage(
+          "Only clients can access Sent Contracts."
+        );
+
+        return;
+      }
+
+      setAllowed(true);
+
+      /*
+       * =====================================================
+       * STEP 3
+       * LOAD CONTRACTS
+       * =====================================================
+       *
+       * We load contracts directly rather than using
+       * a nested profiles relationship.
+       * =====================================================
+       */
+
+      const {
+  data: contractData,
+  error: contractError,
+} = await supabase
+  .from("contracts")
+  .select(`
+    id,
+    client_id,
+    freelancer_id,
+    project_id,
+    application_id,
+    project_title,
+    project_description,
+    budget,
+    status,
+    created_at
+  `)
+        .eq("client_id", user.id)
+        .order("created_at", {
+          ascending: false,
+        });
+
+      if (contractError) {
+        console.error(
+          "Client contracts loading error:",
+          contractError
+        );
+
+        setContracts([]);
+
+        setErrorMessage(
+          `Unable to load contracts: ${contractError.message}`
+        );
+
+        return;
+      }
+
+      const loadedContracts =
+        (contractData as Contract[]) || [];
+
+      /*
+       * =====================================================
+       * STEP 4
+       * LOAD PROJECTS
+       * =====================================================
+       *
+       * We still load the client's projects once.
+       *
+       * The important difference is that a contract now
+       * identifies its project using project_id.
+       * =====================================================
+       */
+
+      const {
+        data: projectData,
+        error: projectError,
+      } = await supabase
+        .from("projects")
+        .select(`
+          id,
+          job_id,
+          application_id,
+          client_id,
+          freelancer_id,
+          status,
+          payment_status,
+          paid_at
+        `)
+        .eq("client_id", user.id)
+        .order("created_at", {
+          ascending: false,
+        });
+
+      if (projectError) {
+        console.error(
+          "Client projects loading error:",
+          projectError
+        );
+
+        setProjects([]);
+      } else {
+        setProjects(
+          (projectData as Project[]) || []
+        );
+      }
+
+      /*
+       * =====================================================
+       * STEP 5
+       * LOAD FREELANCER PROFILES
+       * =====================================================
+       */
+
+      const freelancerIds = Array.from(
+        new Set(
+          loadedContracts
+            .map(
+              (contract) =>
+                contract.freelancer_id
+            )
+            .filter(
+              (id): id is string =>
+                typeof id === "string" &&
+                id.length > 0
+            )
+        )
+      );
+
+      let freelancerProfiles:
+        FreelancerProfile[] = [];
+
+      if (freelancerIds.length > 0) {
+        const {
+          data: freelancerData,
+          error: freelancerError,
+        } = await supabase
+          .from("profiles")
+          .select(`
+            id,
+            full_name,
+            role,
+            category
+          `)
+          .in("id", freelancerIds);
+
+        if (freelancerError) {
+          console.error(
+            "Freelancer profiles loading error:",
+            freelancerError
+          );
+        } else {
+          freelancerProfiles =
+            (freelancerData as FreelancerProfile[]) ||
+            [];
+        }
+      }
+
+      /*
+       * =====================================================
+       * STEP 6
+       * ATTACH FREELANCER PROFILE LOCALLY
+       * =====================================================
+       */
+
+      const contractsWithProfiles =
+        loadedContracts.map(
+          (contract) => {
+            const freelancerProfile =
+              freelancerProfiles.find(
+                (freelancer) =>
+                  freelancer.id ===
+                  contract.freelancer_id
+              );
+
+            return {
+              ...contract,
+
+              profiles:
+                freelancerProfile || null,
+            };
+          }
+        );
+
+      setContracts(
+        contractsWithProfiles
+      );
+    } catch (error) {
+      console.error(
+        "Client contracts page error:",
+        error
+      );
+
+      setErrorMessage(
+        "Something went wrong while loading your contracts."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /*
-   * Find the project associated with a contract.
+   * =========================================================
+   * FIND PROJECT FOR CONTRACT
+   * =========================================================
    *
-   * Direct-hire contracts may not have job_id or
-   * application_id, so freelancer_id is also used.
+   * PRIMARY METHOD:
+   *
+   * contract.project_id === project.id
+   *
+   * We no longer use freelancer_id as a direct-hire
+   * fallback because the same client may hire the same
+   * freelancer more than once.
+   * =========================================================
    */
+
   const getProjectForContract = (
     contract: Contract
   ): Project | undefined => {
-    return projects.find((project) => {
-      /*
-       * Best match: application ID.
-       */
-      if (
-        contract.application_id &&
-        project.application_id &&
-        contract.application_id ===
-          project.application_id
-      ) {
-        return true;
-      }
+    if (!contract.project_id) {
+      return undefined;
+    }
 
-      /*
-       * Second match: job ID.
-       */
-      if (
-        contract.job_id &&
-        project.job_id &&
-        contract.job_id === project.job_id
-      ) {
-        return true;
-      }
-
-      /*
-       * Direct-hire fallback.
-       *
-       * Direct hires have no job/application,
-       * so match the client + freelancer.
-       */
-      if (
-        !contract.job_id &&
-        !contract.application_id &&
-        contract.freelancer_id &&
-        project.freelancer_id ===
-          contract.freelancer_id
-      ) {
-        return true;
-      }
-
-      return false;
-    });
+    return projects.find(
+      (project) =>
+        project.id === contract.project_id
+    );
   };
+
+  /*
+   * =========================================================
+   * PAYMENT STATE
+   * =========================================================
+   */
+
+  const shouldShowFundButton = (
+    contract: Contract,
+    project?: Project
+  ) => {
+    if (!project) {
+      return false;
+    }
+
+    return (
+      contract.status === "accepted" &&
+      project.status === "pending" &&
+      project.payment_status === "unpaid" &&
+      !project.paid_at
+    );
+  };
+
+  /*
+   * =========================================================
+   * LOADING
+   * =========================================================
+   */
 
   if (loading) {
     return (
@@ -263,6 +448,12 @@ export default function ClientContractsPage() {
     );
   }
 
+  /*
+   * =========================================================
+   * ACCESS RESTRICTED
+   * =========================================================
+   */
+
   if (!allowed) {
     return (
       <main className="dashboard-page">
@@ -271,16 +462,24 @@ export default function ClientContractsPage() {
             Client Area
           </p>
 
-          <h1>Access Restricted</h1>
+          <h1>
+            Access Restricted
+          </h1>
 
           <p>
-            Only clients can access Sent
-            Contracts.
+            {errorMessage ||
+              "Only clients can access Sent Contracts."}
           </p>
         </section>
       </main>
     );
   }
+
+  /*
+   * =========================================================
+   * CONTRACT GROUPS
+   * =========================================================
+   */
 
   const pendingContracts =
     contracts.filter(
@@ -306,6 +505,12 @@ export default function ClientContractsPage() {
         contract.status === "rejected"
     );
 
+  /*
+   * =========================================================
+   * CONTRACT CARD RENDERER
+   * =========================================================
+   */
+
   const renderContracts = (
     items: Contract[],
     emptyEmoji: string,
@@ -327,7 +532,20 @@ export default function ClientContractsPage() {
       <div className="contracts-grid">
         {items.map((contract) => {
           const project =
-            getProjectForContract(contract);
+            getProjectForContract(
+              contract
+            );
+
+          const showFundButton =
+            shouldShowFundButton(
+              contract,
+              project
+            );
+
+          const isPaid =
+            project?.payment_status ===
+              "paid" ||
+            !!project?.paid_at;
 
           return (
             <div
@@ -342,7 +560,8 @@ export default function ClientContractsPage() {
 
                 <span
                   className={`contract-status ${
-                    contract.status
+                    contract.status ||
+                    "pending"
                   }`}
                 >
                   {contract.status ||
@@ -360,20 +579,34 @@ export default function ClientContractsPage() {
               </p>
 
               <p>
-                <strong>Role:</strong>{" "}
+                <strong>
+                  Role:
+                </strong>{" "}
                 {contract.profiles
                   ?.role || "N/A"}
               </p>
 
               <p>
-                <strong>Category:</strong>{" "}
+                <strong>
+                  Category:
+                </strong>{" "}
                 {contract.profiles
                   ?.category || "N/A"}
               </p>
 
               <p className="contract-budget">
                 Budget: ZAR{" "}
-                {contract.budget || 0}
+                {Number(
+                  contract.budget || 0
+                ).toLocaleString(
+                  "en-ZA",
+                  {
+                    minimumFractionDigits:
+                      0,
+                    maximumFractionDigits:
+                      2,
+                  }
+                )}
               </p>
 
               <p className="contract-description">
@@ -392,7 +625,7 @@ export default function ClientContractsPage() {
                 </small>
               )}
 
-              {project && (
+              {project ? (
                 <div
                   className="dark-card"
                   style={{
@@ -423,30 +656,133 @@ export default function ClientContractsPage() {
                     {project.paid_at
                       ? new Date(
                           project.paid_at
-                        ).toLocaleDateString(
+                        ).toLocaleString(
                           "en-ZA"
                         )
                       : "Not paid"}
+                  </p>
+
+                  {showFundButton && (
+                    <div
+                      style={{
+                        marginTop: 15,
+                        padding: 15,
+                        borderRadius: 12,
+                        background:
+                          "rgba(245, 158, 11, 0.12)",
+                      }}
+                    >
+                      <strong>
+                        Payment Required
+                      </strong>
+
+                      <p
+                        style={{
+                          marginTop: 6,
+                          marginBottom: 0,
+                          opacity: 0.8,
+                        }}
+                      >
+                        The freelancer has
+                        accepted this contract.
+                        Fund the project before
+                        work begins.
+                      </p>
+                    </div>
+                  )}
+
+                  {isPaid &&
+                    project.status ===
+                      "active" && (
+                      <div
+                        style={{
+                          marginTop: 15,
+                          padding: 15,
+                          borderRadius: 12,
+                          background:
+                            "rgba(34, 197, 94, 0.12)",
+                        }}
+                      >
+                        <strong>
+                          Project Funded
+                        </strong>
+
+                        <p
+                          style={{
+                            marginTop: 6,
+                            marginBottom: 0,
+                            opacity: 0.8,
+                          }}
+                        >
+                          Payment has been
+                          confirmed and the
+                          project is active.
+                        </p>
+                      </div>
+                    )}
+                </div>
+              ) : (
+                <div
+                  className="dark-card"
+                  style={{
+                    marginTop: 15,
+                    padding: 15,
+                  }}
+                >
+                  <p
+                    style={{
+                      margin: 0,
+                      opacity: 0.7,
+                    }}
+                  >
+                    Project information is
+                    unavailable for this
+                    contract.
                   </p>
                 </div>
               )}
 
               <div className="contract-actions">
-                <a
+                <Link
                   href={`/dashboard/contracts/${contract.id}`}
                   className="primary-action-link"
                 >
                   View Details
-                </a>
+                </Link>
+
+                {showFundButton &&
+                  project && (
+                    <Link
+                      href={`/dashboard/payment/${project.id}`}
+                      className="primary-action-link"
+                      style={{
+                        background:
+                          "#16a34a",
+                      }}
+                    >
+                      Fund Project — ZAR{" "}
+                      {Number(
+                        contract.budget || 0
+                      ).toLocaleString(
+                        "en-ZA",
+                        {
+                          minimumFractionDigits:
+                            0,
+                          maximumFractionDigits:
+                            2,
+                        }
+                      )}
+                    </Link>
+                  )}
 
                 {showReviewLink &&
                   contract.application_id && (
-                    <a
+                    <Link
                       href={`/dashboard/review/${contract.application_id}`}
                       className="primary-action-link"
                     >
                       Leave Review
-                    </a>
+                    </Link>
                   )}
               </div>
             </div>
@@ -456,6 +792,12 @@ export default function ClientContractsPage() {
     );
   };
 
+  /*
+   * =========================================================
+   * PAGE
+   * =========================================================
+   */
+
   return (
     <main className="dashboard-page">
       <section className="contracts-header dark-card">
@@ -463,16 +805,33 @@ export default function ClientContractsPage() {
           Client
         </p>
 
-        <h1>Hiring Requests Sent</h1>
+        <h1>
+          Hiring Requests Sent
+        </h1>
 
         <p>
-          Track contracts you sent to
-          freelancers.
+          Track your contracts, payments and
+          active projects.
         </p>
+
+        {errorMessage && (
+          <p
+            style={{
+              marginTop: 15,
+              color: "#f59e0b",
+            }}
+          >
+            {errorMessage}
+          </p>
+        )}
       </section>
 
       <section>
-        <h2 style={{ marginBottom: 18 }}>
+        <h2
+          style={{
+            marginBottom: 18,
+          }}
+        >
           Pending Contracts
         </h2>
 
@@ -485,9 +844,15 @@ export default function ClientContractsPage() {
       </section>
 
       <section
-        style={{ marginTop: 40 }}
+        style={{
+          marginTop: 40,
+        }}
       >
-        <h2 style={{ marginBottom: 18 }}>
+        <h2
+          style={{
+            marginBottom: 18,
+          }}
+        >
           Accepted Contracts
         </h2>
 
@@ -500,9 +865,15 @@ export default function ClientContractsPage() {
       </section>
 
       <section
-        style={{ marginTop: 40 }}
+        style={{
+          marginTop: 40,
+        }}
       >
-        <h2 style={{ marginBottom: 18 }}>
+        <h2
+          style={{
+            marginBottom: 18,
+          }}
+        >
           Completed Contracts
         </h2>
 
@@ -516,9 +887,15 @@ export default function ClientContractsPage() {
       </section>
 
       <section
-        style={{ marginTop: 40 }}
+        style={{
+          marginTop: 40,
+        }}
       >
-        <h2 style={{ marginBottom: 18 }}>
+        <h2
+          style={{
+            marginBottom: 18,
+          }}
+        >
           Rejected Contracts
         </h2>
 

@@ -11,9 +11,7 @@ type Profile = {
   full_name?: string | null;
   role?: string | null;
   category?: string | null;
-
   top_rated?: boolean | null;
-
   suspended?: boolean | null;
   is_admin?: boolean | null;
 };
@@ -57,6 +55,12 @@ export default function HireFreelancerPage() {
   const [accessMessage, setAccessMessage] =
     useState("");
 
+  /*
+   * =========================================================
+   * LOAD PAGE
+   * =========================================================
+   */
+
   useEffect(() => {
     if (!freelancerId) {
       setLoading(false);
@@ -71,7 +75,7 @@ export default function HireFreelancerPage() {
         /*
          * =====================================================
          * STEP 1
-         * Check logged-in user.
+         * CHECK LOGGED-IN USER
          * =====================================================
          */
 
@@ -87,10 +91,6 @@ export default function HireFreelancerPage() {
           );
         }
 
-        /*
-         * Guest users cannot access the hiring form.
-         */
-
         if (!user) {
           router.replace("/login");
           return;
@@ -101,7 +101,7 @@ export default function HireFreelancerPage() {
         /*
          * =====================================================
          * STEP 2
-         * Load logged-in user's profile.
+         * LOAD CLIENT PROFILE
          * =====================================================
          */
 
@@ -110,13 +110,11 @@ export default function HireFreelancerPage() {
           error: viewerError,
         } = await supabase
           .from("profiles")
-          .select(
-            `
+          .select(`
             id,
             role,
             suspended
-            `
-          )
+          `)
           .eq("id", user.id)
           .maybeSingle();
 
@@ -150,10 +148,6 @@ export default function HireFreelancerPage() {
         setViewerRole(role);
         setViewerSuspended(isSuspended);
 
-        /*
-         * Suspended accounts cannot hire.
-         */
-
         if (isSuspended) {
           setAccessMessage(
             "Your account is suspended and cannot hire freelancers."
@@ -161,10 +155,6 @@ export default function HireFreelancerPage() {
 
           return;
         }
-
-        /*
-         * Only client accounts can access this page.
-         */
 
         if (role !== "client") {
           setAccessMessage(
@@ -177,7 +167,7 @@ export default function HireFreelancerPage() {
         /*
          * =====================================================
          * STEP 3
-         * Prevent hiring yourself.
+         * PREVENT SELF-HIRING
          * =====================================================
          */
 
@@ -192,11 +182,8 @@ export default function HireFreelancerPage() {
         /*
          * =====================================================
          * STEP 4
-         * Load selected freelancer.
+         * LOAD FREELANCER
          * =====================================================
-         *
-         * Identity / ID / passport verification is no longer
-         * part of the hiring requirement.
          */
 
         const {
@@ -204,16 +191,14 @@ export default function HireFreelancerPage() {
           error: freelancerError,
         } = await supabase
           .from("profiles")
-          .select(
-            `
+          .select(`
             id,
             full_name,
             role,
             category,
             top_rated,
             suspended
-            `
-          )
+          `)
           .eq("id", freelancerId)
           .eq("role", "freelancer")
           .maybeSingle();
@@ -232,11 +217,6 @@ export default function HireFreelancerPage() {
           setProfile(null);
           return;
         }
-
-        /*
-         * Suspended freelancers cannot receive
-         * new hiring requests.
-         */
 
         if (
           freelancerProfile.suspended === true
@@ -270,7 +250,7 @@ export default function HireFreelancerPage() {
 
   /*
    * =========================================================
-   * CREATE CONTRACT
+   * CREATE HIRING REQUEST
    * =========================================================
    */
 
@@ -300,6 +280,7 @@ export default function HireFreelancerPage() {
 
     if (
       Number.isNaN(numericBudget) ||
+      !Number.isFinite(numericBudget) ||
       numericBudget <= 0
     ) {
       setMessage(
@@ -315,7 +296,7 @@ export default function HireFreelancerPage() {
       /*
        * =====================================================
        * SECURITY CHECK 1
-       * Re-check authenticated user before creating anything.
+       * RE-CHECK AUTHENTICATED USER
        * =====================================================
        */
 
@@ -343,13 +324,11 @@ export default function HireFreelancerPage() {
       /*
        * =====================================================
        * SECURITY CHECK 2
-       * Prevent self-hiring.
+       * PREVENT SELF-HIRING
        * =====================================================
        */
 
-      if (
-        user.id === freelancerId
-      ) {
+      if (user.id === freelancerId) {
         setMessage(
           "You cannot hire your own freelancer profile."
         );
@@ -360,7 +339,7 @@ export default function HireFreelancerPage() {
       /*
        * =====================================================
        * SECURITY CHECK 3
-       * Re-check client permissions.
+       * VERIFY CLIENT
        * =====================================================
        */
 
@@ -369,12 +348,10 @@ export default function HireFreelancerPage() {
         error: clientError,
       } = await supabase
         .from("profiles")
-        .select(
-          `
+        .select(`
           role,
           suspended
-          `
-        )
+        `)
         .eq("id", user.id)
         .maybeSingle();
 
@@ -422,15 +399,7 @@ export default function HireFreelancerPage() {
       /*
        * =====================================================
        * SECURITY CHECK 4
-       * Re-check freelancer before creating contract.
-       * =====================================================
-       *
-       * We check:
-       * - profile exists
-       * - account is a freelancer
-       * - account is not suspended
-       *
-       * ID/passport verification is NOT required.
+       * VERIFY FREELANCER
        * =====================================================
        */
 
@@ -439,13 +408,11 @@ export default function HireFreelancerPage() {
         error: freelancerError,
       } = await supabase
         .from("profiles")
-        .select(
-          `
+        .select(`
           id,
           role,
           suspended
-          `
-        )
+        `)
         .eq("id", freelancerId)
         .maybeSingle();
 
@@ -495,60 +462,10 @@ export default function HireFreelancerPage() {
       /*
        * =====================================================
        * STEP 1
-       * Create contract.
-       * =====================================================
-       */
-
-      const {
-        data: contractData,
-        error: contractError,
-      } = await supabase
-        .from("contracts")
-        .insert({
-          client_id:
-            user.id,
-
-          freelancer_id:
-            freelancerId,
-
-          project_title:
-            title.trim(),
-
-          project_description:
-            description.trim(),
-
-          budget:
-            numericBudget,
-
-          status:
-            "pending",
-        })
-        .select()
-        .single();
-
-      if (contractError) {
-        console.error(
-          "Contract creation error:",
-          contractError
-        );
-
-        setMessage(
-          contractError.message
-        );
-
-        return;
-      }
-
-      /*
-       * =====================================================
-       * STEP 2
-       * Create corresponding project.
+       * CREATE PROJECT FIRST
        *
-       * Direct hiring is not connected to an existing job
-       * application, therefore:
-       *
-       * job_id = NULL
-       * application_id = NULL
+       * This gives us the permanent project ID that will
+       * be stored directly on the contract.
        * =====================================================
        */
 
@@ -558,11 +475,8 @@ export default function HireFreelancerPage() {
       } = await supabase
         .from("projects")
         .insert({
-          job_id:
-            null,
-
-          application_id:
-            null,
+          job_id: null,
+          application_id: null,
 
           client_id:
             user.id,
@@ -579,13 +493,8 @@ export default function HireFreelancerPage() {
           paid_at:
             null,
         })
-        .select()
+        .select("id")
         .single();
-
-      /*
-       * If project creation fails,
-       * remove the newly created contract.
-       */
 
       if (projectError) {
         console.error(
@@ -593,38 +502,14 @@ export default function HireFreelancerPage() {
           projectError
         );
 
-        if (contractData?.id) {
-          await supabase
-            .from("contracts")
-            .delete()
-            .eq(
-              "id",
-              contractData.id
-            );
-        }
-
         setMessage(
-          `Hiring request could not be completed: ${projectError.message}`
+          `Hiring request could not be created: ${projectError.message}`
         );
 
         return;
       }
 
-      /*
-       * Confirm project was returned.
-       */
-
       if (!projectData?.id) {
-        if (contractData?.id) {
-          await supabase
-            .from("contracts")
-            .delete()
-            .eq(
-              "id",
-              contractData.id
-            );
-        }
-
         setMessage(
           "Project could not be created."
         );
@@ -634,44 +519,143 @@ export default function HireFreelancerPage() {
 
       /*
        * =====================================================
-       * STEP 3
-       * Record contract activity.
+       * STEP 2
+       * CREATE CONTRACT
+       *
+       * IMPORTANT:
+       * Store project_id directly.
        * =====================================================
        */
 
-      if (contractData?.id) {
+      const {
+        data: contractData,
+        error: contractError,
+      } = await supabase
+        .from("contracts")
+        .insert({
+          client_id:
+            user.id,
+
+          freelancer_id:
+            freelancerId,
+
+          project_id:
+            projectData.id,
+
+          project_title:
+            title.trim(),
+
+          project_description:
+            description.trim(),
+
+          budget:
+            numericBudget,
+
+          status:
+            "pending",
+        })
+        .select()
+        .single();
+
+      /*
+       * If contract creation fails, remove the
+       * project that was just created.
+       */
+
+      if (contractError) {
+        console.error(
+          "Contract creation error:",
+          contractError
+        );
+
         const {
-          error: activityError,
+          error: cleanupError,
         } = await supabase
-          .from(
-            "contract_activity"
-          )
-          .insert({
-            contract_id:
-              contractData.id,
+          .from("projects")
+          .delete()
+          .eq("id", projectData.id)
+          .eq("client_id", user.id)
+          .eq("status", "pending")
+          .eq("payment_status", "unpaid");
 
-            action:
-              "Hiring request created",
-          });
-
-        if (activityError) {
+        if (cleanupError) {
           console.error(
-            "Contract activity error:",
-            activityError
+            "Project cleanup error:",
+            cleanupError
           );
         }
+
+        setMessage(
+          `Hiring request could not be completed: ${contractError.message}`
+        );
+
+        return;
+      }
+
+      if (!contractData?.id) {
+        /*
+         * Defensive cleanup.
+         */
+
+        const {
+          error: cleanupError,
+        } = await supabase
+          .from("projects")
+          .delete()
+          .eq("id", projectData.id)
+          .eq("client_id", user.id)
+          .eq("status", "pending")
+          .eq("payment_status", "unpaid");
+
+        if (cleanupError) {
+          console.error(
+            "Project cleanup error:",
+            cleanupError
+          );
+        }
+
+        setMessage(
+          "Contract could not be created."
+        );
+
+        return;
+      }
+
+      /*
+       * =====================================================
+       * STEP 3
+       * RECORD CONTRACT ACTIVITY
+       * =====================================================
+       */
+
+      const {
+        error: activityError,
+      } = await supabase
+        .from("contract_activity")
+        .insert({
+          contract_id:
+            contractData.id,
+
+          action:
+            "Hiring request created",
+        });
+
+      if (activityError) {
+        console.error(
+          "Contract activity error:",
+          activityError
+        );
       }
 
       /*
        * =====================================================
        * STEP 4
-       * Notify freelancer.
+       * NOTIFY FREELANCER
        * =====================================================
        */
 
       const {
-        error:
-          notificationError,
+        error: notificationError,
       } = await supabase
         .from("notifications")
         .insert({
@@ -701,7 +685,7 @@ export default function HireFreelancerPage() {
       /*
        * =====================================================
        * STEP 5
-       * Success.
+       * SUCCESS
        * =====================================================
        */
 
@@ -766,16 +750,10 @@ export default function HireFreelancerPage() {
 
           <div
             style={{
-              display:
-                "flex",
-
+              display: "flex",
               gap: 12,
-
-              flexWrap:
-                "wrap",
-
-              marginTop:
-                20,
+              flexWrap: "wrap",
+              marginTop: 20,
             }}
           >
             <button
@@ -826,9 +804,9 @@ export default function HireFreelancerPage() {
           </h1>
 
           <p>
-            This freelancer profile
-            could not be loaded or is
-            no longer available.
+            This freelancer profile could not
+            be loaded or is no longer
+            available.
           </p>
 
           <button
@@ -840,8 +818,7 @@ export default function HireFreelancerPage() {
               )
             }
             style={{
-              marginTop:
-                20,
+              marginTop: 20,
             }}
           >
             Browse Freelancers
@@ -878,8 +855,8 @@ export default function HireFreelancerPage() {
           </h1>
 
           <p>
-            You are not permitted to
-            create this hiring request.
+            You are not permitted to create
+            this hiring request.
           </p>
         </section>
       </main>
@@ -906,9 +883,8 @@ export default function HireFreelancerPage() {
         </h1>
 
         <p className="hire-description">
-          Create a project contract and
-          send a professional hiring
-          request.
+          Create a project contract and send
+          a professional hiring request.
         </p>
 
         <div className="hire-profile-summary">
@@ -961,6 +937,7 @@ export default function HireFreelancerPage() {
         <input
           type="number"
           min="1"
+          step="0.01"
           placeholder="Example: 2500"
           value={budget}
           onChange={(event) =>
@@ -973,12 +950,8 @@ export default function HireFreelancerPage() {
 
         <button
           type="button"
-          onClick={
-            createContract
-          }
-          disabled={
-            sending
-          }
+          onClick={createContract}
+          disabled={sending}
           className="primary-action-btn"
         >
           {sending

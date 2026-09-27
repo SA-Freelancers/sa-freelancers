@@ -1,62 +1,107 @@
-import { NextRequest, NextResponse } from "next/server";
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
+
 import crypto from "crypto";
-import { createClient } from "@supabase/supabase-js";
+
+import {
+  createClient,
+} from "@supabase/supabase-js";
 
 /*
- * --------------------------------------------------
+ * =========================================================
  * SERVER ENVIRONMENT VARIABLES
- * --------------------------------------------------
+ * =========================================================
  */
 
 const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  process.env
+    .NEXT_PUBLIC_SUPABASE_URL || "";
 
 const serviceRoleKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  process.env
+    .SUPABASE_SERVICE_ROLE_KEY || "";
 
 const merchantId =
-  process.env.PAYFAST_MERCHANT_ID || "";
+  process.env
+    .PAYFAST_MERCHANT_ID || "";
 
 const merchantKey =
-  process.env.PAYFAST_MERCHANT_KEY || "";
+  process.env
+    .PAYFAST_MERCHANT_KEY || "";
 
 const passphrase =
-  process.env.PAYFAST_PASSPHRASE || "";
+  process.env
+    .PAYFAST_PASSPHRASE || "";
 
 const sandbox =
-  process.env.PAYFAST_SANDBOX === "true";
+  process.env
+    .PAYFAST_SANDBOX === "true";
 
 /*
- * --------------------------------------------------
+ * =========================================================
  * SUPABASE SERVER CLIENT
- * --------------------------------------------------
+ * =========================================================
  */
 
-const supabase = createClient(
-  supabaseUrl,
-  serviceRoleKey,
-  {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  }
-);
+const supabase =
+  createClient(
+    supabaseUrl,
+    serviceRoleKey,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    }
+  );
 
 /*
- * --------------------------------------------------
+ * =========================================================
+ * TYPES
+ * =========================================================
+ */
+
+type PaymentType =
+  | "milestone"
+  | "direct_hire";
+
+type PaymentDetails = {
+  paymentType: PaymentType;
+
+  amount: number;
+
+  paymentReference: string;
+
+  itemName: string;
+
+  itemDescription: string;
+
+  milestoneId: string;
+
+  contractId: string;
+};
+
+/*
+ * =========================================================
  * PAYFAST ENCODING
- * --------------------------------------------------
+ * =========================================================
  *
  * PayFast signature generation follows
- * PHP-style urlencode behaviour:
+ * PHP-style urlencode behaviour.
  *
  * spaces -> +
  * ! ' ( ) * ~ -> percent encoded
+ * =========================================================
  */
 
-function payfastEncode(value: string) {
-  return encodeURIComponent(value.trim())
+function payfastEncode(
+  value: string
+) {
+  return encodeURIComponent(
+    value.trim()
+  )
     .replace(/%20/g, "+")
     .replace(/!/g, "%21")
     .replace(/'/g, "%27")
@@ -67,15 +112,17 @@ function payfastEncode(value: string) {
 }
 
 /*
- * --------------------------------------------------
+ * =========================================================
  * PAYFAST SIGNATURE
- * --------------------------------------------------
+ * =========================================================
  *
  * IMPORTANT:
- * Do not alphabetically sort the fields.
  *
- * The insertion order of paymentData is used
- * when building the signature.
+ * Do not alphabetically sort fields.
+ *
+ * The insertion order of paymentData
+ * is used when generating the signature.
+ * =========================================================
  */
 
 function generateSignature(
@@ -84,10 +131,15 @@ function generateSignature(
 ) {
   const parts: string[] = [];
 
-  for (const [key, value] of Object.entries(data)) {
+  for (
+    const [key, value]
+    of Object.entries(data)
+  ) {
     if (value !== "") {
       parts.push(
-        `${key}=${payfastEncode(value)}`
+        `${key}=${payfastEncode(
+          value
+        )}`
       );
     }
   }
@@ -109,9 +161,9 @@ function generateSignature(
 }
 
 /*
- * --------------------------------------------------
+ * =========================================================
  * POST /api/payfast/create
- * --------------------------------------------------
+ * =========================================================
  */
 
 export async function POST(
@@ -119,9 +171,9 @@ export async function POST(
 ) {
   try {
     /*
-     * --------------------------------------------------
+     * =====================================================
      * SERVER CONFIGURATION
-     * --------------------------------------------------
+     * =====================================================
      */
 
     if (
@@ -155,9 +207,9 @@ export async function POST(
     }
 
     /*
-     * --------------------------------------------------
+     * =====================================================
      * READ REQUEST
-     * --------------------------------------------------
+     * =====================================================
      */
 
     const body =
@@ -173,14 +225,48 @@ export async function POST(
         body.milestoneId || ""
       ).trim();
 
+    const requestedPaymentType =
+      String(
+        body.paymentType || ""
+      )
+        .trim()
+        .toLowerCase();
+
+    /*
+     * Keep backward compatibility.
+     *
+     * Old milestone pages that do not send
+     * paymentType will still work.
+     */
+
+    const paymentType:
+      PaymentType =
+      requestedPaymentType ===
+      "direct_hire"
+        ? "direct_hire"
+        : "milestone";
+
+    if (!projectId) {
+      return NextResponse.json(
+        {
+          error:
+            "Project ID is required.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
     if (
-      !projectId ||
+      paymentType ===
+        "milestone" &&
       !milestoneId
     ) {
       return NextResponse.json(
         {
           error:
-            "Project ID and milestone ID are required.",
+            "Milestone ID is required for milestone payments.",
         },
         {
           status: 400,
@@ -189,9 +275,9 @@ export async function POST(
     }
 
     /*
-     * --------------------------------------------------
+     * =====================================================
      * VERIFY CURRENT USER
-     * --------------------------------------------------
+     * =====================================================
      */
 
     const authorization =
@@ -245,9 +331,9 @@ export async function POST(
       userData.user;
 
     /*
-     * --------------------------------------------------
+     * =====================================================
      * LOAD PROJECT
-     * --------------------------------------------------
+     * =====================================================
      */
 
     const {
@@ -255,16 +341,18 @@ export async function POST(
       error: projectError,
     } = await supabase
       .from("projects")
-      .select(
-        `
+      .select(`
         id,
         client_id,
         freelancer_id,
         status,
-        payment_status
-        `
+        payment_status,
+        paid_at
+      `)
+      .eq(
+        "id",
+        projectId
       )
-      .eq("id", projectId)
       .maybeSingle();
 
     if (
@@ -288,10 +376,11 @@ export async function POST(
     }
 
     /*
-     * --------------------------------------------------
-     * SECURITY:
+     * =====================================================
+     * SECURITY
+     *
      * ONLY PROJECT CLIENT CAN PAY
-     * --------------------------------------------------
+     * =====================================================
      */
 
     if (
@@ -310,145 +399,454 @@ export async function POST(
     }
 
     /*
-     * --------------------------------------------------
-     * LOAD MILESTONE
-     * --------------------------------------------------
+     * =====================================================
+     * PREPARE PAYMENT DETAILS
+     * =====================================================
      */
 
-    const {
-      data: milestone,
-      error: milestoneError,
-    } = await supabase
-      .from("milestones")
-      .select(
-        `
-        id,
-        project_id,
-        contract_id,
-        title,
-        description,
+    let paymentDetails:
+      PaymentDetails;
+
+    /*
+     * =====================================================
+     * MILESTONE PAYMENT
+     * =====================================================
+     */
+
+    if (
+      paymentType ===
+      "milestone"
+    ) {
+      const {
+        data: milestone,
+        error: milestoneError,
+      } = await supabase
+        .from("milestones")
+        .select(`
+          id,
+          project_id,
+          contract_id,
+          title,
+          description,
+          amount,
+          status
+        `)
+        .eq(
+          "id",
+          milestoneId
+        )
+        .maybeSingle();
+
+      if (
+        milestoneError ||
+        !milestone
+      ) {
+        console.error(
+          "PayFast create milestone error:",
+          milestoneError
+        );
+
+        return NextResponse.json(
+          {
+            error:
+              "Milestone could not be found.",
+          },
+          {
+            status: 404,
+          }
+        );
+      }
+
+      /*
+       * -----------------------------------------------
+       * VERIFY PROJECT LINK
+       * -----------------------------------------------
+       */
+
+      if (
+        milestone.project_id !==
+        projectId
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "This milestone does not belong to the selected project.",
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+      /*
+       * -----------------------------------------------
+       * VERIFY MILESTONE STATUS
+       * -----------------------------------------------
+       */
+
+      const milestoneStatus =
+        String(
+          milestone.status || ""
+        ).toLowerCase();
+
+      if (
+        milestoneStatus ===
+          "paid" ||
+        milestoneStatus ===
+          "completed"
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "This milestone has already been paid.",
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+      if (
+        milestoneStatus !==
+        "approved"
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Only approved milestones can be paid.",
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+      /*
+       * -----------------------------------------------
+       * AMOUNT
+       *
+       * IMPORTANT:
+       * Amount comes from Supabase.
+       * -----------------------------------------------
+       */
+
+      const amount =
+        Number(
+          milestone.amount
+        );
+
+      if (
+        !Number.isFinite(
+          amount
+        ) ||
+        amount <= 0
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "The milestone has an invalid payment amount.",
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+      paymentDetails = {
+        paymentType:
+          "milestone",
+
         amount,
-        status
-        `
-      )
-      .eq("id", milestoneId)
-      .maybeSingle();
 
-    if (
-      milestoneError ||
-      !milestone
-    ) {
-      console.error(
-        "PayFast create milestone error:",
-        milestoneError
-      );
+        paymentReference:
+          milestone.id,
 
-      return NextResponse.json(
-        {
-          error:
-            "Milestone could not be found.",
-        },
-        {
-          status: 404,
-        }
-      );
+        itemName:
+          String(
+            milestone.title ||
+              "Freelance Project Milestone"
+          ).substring(
+            0,
+            100
+          ),
+
+        itemDescription:
+          String(
+            milestone.description ||
+              `Payment for ${
+                milestone.title ||
+                "project milestone"
+              }`
+          ).substring(
+            0,
+            255
+          ),
+
+        milestoneId:
+          milestone.id,
+
+        contractId:
+          milestone.contract_id ||
+          "",
+      };
     }
 
     /*
-     * --------------------------------------------------
-     * VERIFY PROJECT LINK
-     * --------------------------------------------------
+     * =====================================================
+     * DIRECT-HIRE PAYMENT
+     * =====================================================
      */
 
-    if (
-      milestone.project_id !==
-      projectId
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "This milestone does not belong to the selected project.",
-        },
-        {
-          status: 400,
-        }
-      );
+    else {
+      /*
+       * -----------------------------------------------
+       * LOAD CONTRACT
+       * -----------------------------------------------
+       */
+
+      const {
+        data: contract,
+        error: contractError,
+      } = await supabase
+        .from("contracts")
+        .select(`
+          id,
+          project_id,
+          client_id,
+          freelancer_id,
+          project_title,
+          project_description,
+          budget,
+          status
+        `)
+        .eq(
+          "project_id",
+          projectId
+        )
+        .eq(
+          "client_id",
+          user.id
+        )
+        .maybeSingle();
+
+      if (
+        contractError ||
+        !contract
+      ) {
+        console.error(
+          "PayFast direct-hire contract error:",
+          contractError
+        );
+
+        return NextResponse.json(
+          {
+            error:
+              "The direct-hire contract could not be found.",
+          },
+          {
+            status: 404,
+          }
+        );
+      }
+
+      /*
+       * -----------------------------------------------
+       * VERIFY RELATIONSHIPS
+       * -----------------------------------------------
+       */
+
+      if (
+        contract.client_id !==
+        project.client_id ||
+        contract.freelancer_id !==
+        project.freelancer_id
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "The contract does not match this project.",
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+      /*
+       * -----------------------------------------------
+       * CONTRACT MUST BE ACCEPTED
+       * -----------------------------------------------
+       */
+
+      const contractStatus =
+        String(
+          contract.status || ""
+        ).toLowerCase();
+
+      if (
+        contractStatus !==
+        "accepted"
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "The freelancer must accept the contract before payment can be made.",
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+      /*
+       * -----------------------------------------------
+       * PROJECT MUST STILL BE WAITING FOR PAYMENT
+       * -----------------------------------------------
+       */
+
+      const projectStatus =
+        String(
+          project.status || ""
+        ).toLowerCase();
+
+      const projectPaymentStatus =
+        String(
+          project.payment_status ||
+            "unpaid"
+        ).toLowerCase();
+
+      if (
+        projectPaymentStatus ===
+          "paid" ||
+        project.paid_at
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "This project has already been funded.",
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+      if (
+        projectStatus !==
+        "pending"
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "This project is not awaiting payment.",
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+      if (
+        projectPaymentStatus !==
+        "unpaid"
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "This project is not awaiting payment.",
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+      /*
+       * -----------------------------------------------
+       * DIRECT-HIRE AMOUNT
+       *
+       * IMPORTANT:
+       *
+       * Budget comes from the server-side
+       * contract record.
+       *
+       * Never trust a browser-supplied amount.
+       * -----------------------------------------------
+       */
+
+      const amount =
+        Number(
+          contract.budget
+        );
+
+      if (
+        !Number.isFinite(
+          amount
+        ) ||
+        amount <= 0
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "The contract has an invalid payment amount.",
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+      paymentDetails = {
+        paymentType:
+          "direct_hire",
+
+        amount,
+
+        /*
+         * Contract ID is the unique PayFast
+         * payment reference for direct hire.
+         */
+
+        paymentReference:
+          contract.id,
+
+        itemName:
+          String(
+            contract.project_title ||
+              "Freelance Hub SA Direct Hire"
+          ).substring(
+            0,
+            100
+          ),
+
+        itemDescription:
+          String(
+            contract.project_description ||
+              `Direct hire payment for ${
+                contract.project_title ||
+                "freelance project"
+              }`
+          ).substring(
+            0,
+            255
+          ),
+
+        /*
+         * No milestone exists for this
+         * payment type.
+         */
+
+        milestoneId: "",
+
+        contractId:
+          contract.id,
+      };
     }
 
     /*
-     * --------------------------------------------------
-     * VERIFY MILESTONE STATUS
-     * --------------------------------------------------
-     */
-
-    const milestoneStatus =
-      String(
-        milestone.status || ""
-      ).toLowerCase();
-
-    if (
-      milestoneStatus === "paid" ||
-      milestoneStatus === "completed"
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "This milestone has already been paid.",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
-
-    if (
-      milestoneStatus !==
-      "approved"
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "Only approved milestones can be paid.",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
-
-    /*
-     * --------------------------------------------------
-     * VERIFY AMOUNT
-     *
-     * Amount comes from Supabase,
-     * not from the browser.
-     * --------------------------------------------------
-     */
-
-    const amount =
-      Number(
-        milestone.amount
-      );
-
-    if (
-      !Number.isFinite(amount) ||
-      amount <= 0
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "The milestone has an invalid payment amount.",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
-
-    /*
-     * --------------------------------------------------
-     * SITE URL
-     * --------------------------------------------------
+     * =====================================================
+     * SITE URLS
+     * =====================================================
      */
 
     const siteUrl =
@@ -456,16 +854,35 @@ export async function POST(
         process.env
           .NEXT_PUBLIC_SITE_URL ||
         request.nextUrl.origin
-      ).replace(/\/$/, "");
+      ).replace(
+        /\/$/,
+        ""
+      );
+
+    /*
+     * Include paymentType so the success page
+     * knows which workflow returned from PayFast.
+     */
 
     const returnUrl =
-      `${siteUrl}/dashboard/payment-success` +
-      `?projectId=${encodeURIComponent(
-        projectId
-      )}` +
-      `&milestoneId=${encodeURIComponent(
-        milestoneId
-      )}`;
+      paymentDetails.paymentType ===
+      "milestone"
+        ? `${siteUrl}/dashboard/payment-success` +
+          `?projectId=${encodeURIComponent(
+            projectId
+          )}` +
+          `&milestoneId=${encodeURIComponent(
+            paymentDetails.milestoneId
+          )}` +
+          `&paymentType=milestone`
+        : `${siteUrl}/dashboard/payment-success` +
+          `?projectId=${encodeURIComponent(
+            projectId
+          )}` +
+          `&contractId=${encodeURIComponent(
+            paymentDetails.contractId
+          )}` +
+          `&paymentType=direct_hire`;
 
     const cancelUrl =
       `${siteUrl}/dashboard/client-contracts`;
@@ -474,12 +891,14 @@ export async function POST(
       `${siteUrl}/api/payfast/notify`;
 
     /*
-     * --------------------------------------------------
+     * =====================================================
      * PAYFAST PAYMENT DATA
      *
-     * DO NOT CHANGE THE ORDER
-     * without also reviewing signature generation.
-     * --------------------------------------------------
+     * IMPORTANT:
+     *
+     * DO NOT CHANGE FIELD ORDER without reviewing
+     * signature generation.
+     * =====================================================
      */
 
     const paymentData:
@@ -522,54 +941,57 @@ export async function POST(
          */
 
         m_payment_id:
-          milestoneId,
+          paymentDetails
+            .paymentReference,
 
         amount:
-          amount.toFixed(2),
+          paymentDetails.amount
+            .toFixed(2),
 
         item_name:
-          String(
-            milestone.title ||
-              "Freelance Project Milestone"
-          ).substring(
-            0,
-            100
-          ),
+          paymentDetails.itemName,
 
         item_description:
-          String(
-            milestone.description ||
-              `Payment for ${
-                milestone.title ||
-                "project milestone"
-              }`
-          ).substring(
-            0,
-            255
-          ),
+          paymentDetails
+            .itemDescription,
 
         /*
-         * Custom values returned
-         * through PayFast.
+         * =================================================
+         * CUSTOM PAYFAST VALUES
+         * =================================================
+         *
+         * custom_str1 = project ID
+         * custom_str2 = milestone ID
+         * custom_str3 = contract ID
+         * custom_str4 = payment type
+         *
+         * This gives the ITN endpoint enough
+         * information to distinguish workflows.
+         * =================================================
          */
 
         custom_str1:
           projectId,
 
         custom_str2:
-          milestoneId,
+          paymentDetails
+            .milestoneId,
 
         custom_str3:
-          milestone.contract_id ||
-          "",
+          paymentDetails
+            .contractId,
+
+        custom_str4:
+          paymentDetails
+            .paymentType,
       };
 
     /*
-     * --------------------------------------------------
+     * =====================================================
      * SAFE DIAGNOSTICS
      *
-     * DO NOT log merchantKey itself.
-     * --------------------------------------------------
+     * NEVER log merchantKey or passphrase.
+     * =====================================================
      */
 
     console.log(
@@ -577,11 +999,31 @@ export async function POST(
       {
         sandbox,
 
+        paymentType:
+          paymentDetails
+            .paymentType,
+
+        projectId,
+
+        milestoneId:
+          paymentDetails
+            .milestoneId ||
+          null,
+
+        contractId:
+          paymentDetails
+            .contractId ||
+          null,
+
         merchantIdLength:
-          merchantId.trim().length,
+          merchantId
+            .trim()
+            .length,
 
         merchantKeyLength:
-          merchantKey.trim().length,
+          merchantKey
+            .trim()
+            .length,
 
         amount:
           paymentData.amount,
@@ -603,9 +1045,9 @@ export async function POST(
     );
 
     /*
-     * --------------------------------------------------
+     * =====================================================
      * CREATE SIGNATURE
-     * --------------------------------------------------
+     * =====================================================
      */
 
     const signature =
@@ -619,9 +1061,9 @@ export async function POST(
       signature;
 
     /*
-     * --------------------------------------------------
+     * =====================================================
      * PAYFAST ENDPOINT
-     * --------------------------------------------------
+     * =====================================================
      */
 
     const payfastUrl =
@@ -630,14 +1072,20 @@ export async function POST(
         : "https://www.payfast.co.za/eng/process";
 
     /*
-     * --------------------------------------------------
+     * =====================================================
      * RETURN PAYMENT DATA
-     * --------------------------------------------------
+     * =====================================================
      */
 
     return NextResponse.json({
       success: true,
+
+      paymentType:
+        paymentDetails
+          .paymentType,
+
       payfastUrl,
+
       fields:
         paymentData,
     });

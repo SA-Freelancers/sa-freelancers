@@ -9,12 +9,16 @@ import {
 import { supabase } from "@/app/lib/supabase";
 import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 
+type PaymentMode =
+  | "milestone"
+  | "direct_hire";
+
 type Project = {
   id: string;
-  client_id?: string;
-  freelancer_id?: string;
-  status?: string;
-  payment_status?: string;
+  client_id?: string | null;
+  freelancer_id?: string | null;
+  status?: string | null;
+  payment_status?: string | null;
   paid_at?: string | null;
 };
 
@@ -22,11 +26,23 @@ type Milestone = {
   id: string;
   project_id?: string | null;
   contract_id?: string | null;
-  title?: string;
-  description?: string;
-  amount?: number;
-  status?: string;
-  created_at?: string;
+  title?: string | null;
+  description?: string | null;
+  amount?: number | null;
+  status?: string | null;
+  created_at?: string | null;
+};
+
+type DirectHireContract = {
+  id: string;
+  project_id?: string | null;
+  client_id?: string | null;
+  freelancer_id?: string | null;
+  project_title?: string | null;
+  project_description?: string | null;
+  budget?: number | null;
+  status?: string | null;
+  created_at?: string | null;
 };
 
 type PayFastCreateResponse = {
@@ -41,16 +57,39 @@ export default function PaymentPage() {
   const searchParams = useSearchParams();
 
   const projectId =
-    params.projectId as string;
+    typeof params.projectId === "string"
+      ? params.projectId
+      : "";
 
   const milestoneId =
     searchParams.get("milestoneId") ?? "";
+
+  /*
+   * =====================================================
+   * PAYMENT MODE
+   * =====================================================
+   *
+   * milestoneId present:
+   *   Existing milestone payment
+   *
+   * milestoneId absent:
+   *   Direct-hire project funding
+   * =====================================================
+   */
+
+  const paymentMode: PaymentMode =
+    milestoneId
+      ? "milestone"
+      : "direct_hire";
 
   const [project, setProject] =
     useState<Project | null>(null);
 
   const [milestone, setMilestone] =
     useState<Milestone | null>(null);
+
+  const [directHireContract, setDirectHireContract] =
+    useState<DirectHireContract | null>(null);
 
   const [loading, setLoading] =
     useState(true);
@@ -61,10 +100,22 @@ export default function PaymentPage() {
   const [message, setMessage] =
     useState("");
 
+  /*
+   * =====================================================
+   * LOAD PAYMENT INFORMATION
+   * =====================================================
+   */
+
   useEffect(() => {
     if (projectId) {
-      loadPaymentDetails();
+      void loadPaymentDetails();
+    } else {
+      setLoading(false);
+      setMessage(
+        "Project information is unavailable."
+      );
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, milestoneId]);
 
   const loadPaymentDetails =
@@ -73,26 +124,24 @@ export default function PaymentPage() {
       setMessage("");
       setProject(null);
       setMilestone(null);
+      setDirectHireContract(null);
 
       try {
-        // ---------------------------------------------
-        // CURRENT USER
-        // ---------------------------------------------
+        /*
+         * ===============================================
+         * CURRENT USER
+         * ===============================================
+         */
 
         const {
           data: { user },
           error: userError,
-        } =
-          await supabase.auth.getUser();
+        } = await supabase.auth.getUser();
 
         if (userError) {
           console.error(
-            "User loading error:",
-            JSON.stringify(
-              userError,
-              null,
-              2
-            )
+            "Payment user loading error:",
+            userError
           );
 
           setMessage(
@@ -110,36 +159,32 @@ export default function PaymentPage() {
           return;
         }
 
-        // ---------------------------------------------
-        // LOAD PROJECT
-        // ---------------------------------------------
+        /*
+         * ===============================================
+         * LOAD PROJECT
+         * ===============================================
+         */
 
         const {
           data: projectData,
           error: projectError,
         } = await supabase
           .from("projects")
-          .select(
-            `
+          .select(`
             id,
             client_id,
             freelancer_id,
             status,
             payment_status,
             paid_at
-            `
-          )
+          `)
           .eq("id", projectId)
           .maybeSingle();
 
         if (projectError) {
           console.error(
-            "Project loading error:",
-            JSON.stringify(
-              projectError,
-              null,
-              2
-            )
+            "Payment project loading error:",
+            projectError
           );
 
           setMessage(
@@ -158,10 +203,14 @@ export default function PaymentPage() {
           return;
         }
 
-        // ---------------------------------------------
-        // SECURITY
-        // ONLY PROJECT CLIENT CAN PAY
-        // ---------------------------------------------
+        /*
+         * ===============================================
+         * SECURITY
+         *
+         * Only the project client can reach the
+         * payment flow.
+         * ===============================================
+         */
 
         if (
           projectData.client_id !==
@@ -174,100 +223,174 @@ export default function PaymentPage() {
           return;
         }
 
-        setProject(
-          projectData as Project
-        );
+        const loadedProject =
+          projectData as Project;
 
-        // ---------------------------------------------
-        // MILESTONE ID REQUIRED
-        // ---------------------------------------------
+        setProject(loadedProject);
 
-        if (!milestoneId) {
-          setMessage(
-            "No milestone was selected for payment."
-          );
-
-          return;
-        }
-
-        // ---------------------------------------------
-        // LOAD MILESTONE
-        // ---------------------------------------------
-
-        const {
-          data: milestoneData,
-          error: milestoneError,
-        } = await supabase
-          .from("milestones")
-          .select(
-            `
-            id,
-            project_id,
-            contract_id,
-            title,
-            description,
-            amount,
-            status,
-            created_at
-            `
-          )
-          .eq("id", milestoneId)
-          .maybeSingle();
-
-        if (milestoneError) {
-          console.error(
-            "Milestone loading error:",
-            JSON.stringify(
-              milestoneError,
-              null,
-              2
-            )
-          );
-
-          setMessage(
-            milestoneError.message ||
-              "The selected milestone could not be loaded."
-          );
-
-          return;
-        }
-
-        if (!milestoneData) {
-          setMessage(
-            "The selected milestone could not be found."
-          );
-
-          return;
-        }
-
-        // ---------------------------------------------
-        // VERIFY MILESTONE BELONGS TO PROJECT
-        // ---------------------------------------------
+        /*
+         * ===============================================
+         * MILESTONE PAYMENT
+         * ===============================================
+         */
 
         if (
-          milestoneData.project_id !==
-          projectId
+          paymentMode ===
+          "milestone"
+        ) {
+          const {
+            data: milestoneData,
+            error: milestoneError,
+          } = await supabase
+            .from("milestones")
+            .select(`
+              id,
+              project_id,
+              contract_id,
+              title,
+              description,
+              amount,
+              status,
+              created_at
+            `)
+            .eq("id", milestoneId)
+            .maybeSingle();
+
+          if (milestoneError) {
+            console.error(
+              "Milestone loading error:",
+              milestoneError
+            );
+
+            setMessage(
+              milestoneError.message ||
+                "The selected milestone could not be loaded."
+            );
+
+            return;
+          }
+
+          if (!milestoneData) {
+            setMessage(
+              "The selected milestone could not be found."
+            );
+
+            return;
+          }
+
+          /*
+           * Milestone must belong to the project
+           * from the URL.
+           */
+
+          if (
+            milestoneData.project_id !==
+            projectId
+          ) {
+            console.error(
+              "Milestone/project mismatch:",
+              {
+                milestoneId,
+                milestoneProjectId:
+                  milestoneData.project_id,
+                projectId,
+              }
+            );
+
+            setMessage(
+              "This milestone is not linked to the selected project."
+            );
+
+            return;
+          }
+
+          setMilestone(
+            milestoneData as Milestone
+          );
+
+          return;
+        }
+
+        /*
+         * ===============================================
+         * DIRECT-HIRE PAYMENT
+         * ===============================================
+         *
+         * No milestoneId means this page must find
+         * the accepted contract linked directly to
+         * this project.
+         * ===============================================
+         */
+
+        const {
+          data: contractData,
+          error: contractError,
+        } = await supabase
+          .from("contracts")
+          .select(`
+            id,
+            project_id,
+            client_id,
+            freelancer_id,
+            project_title,
+            project_description,
+            budget,
+            status,
+            created_at
+          `)
+          .eq("project_id", projectId)
+          .eq("client_id", user.id)
+          .maybeSingle();
+
+        if (contractError) {
+          console.error(
+            "Direct-hire contract loading error:",
+            contractError
+          );
+
+          setMessage(
+            contractError.message ||
+              "Unable to load the direct-hire contract."
+          );
+
+          return;
+        }
+
+        if (!contractData) {
+          setMessage(
+            "No direct-hire contract is linked to this project."
+          );
+
+          return;
+        }
+
+        /*
+         * Cross-check the freelancer relationship.
+         */
+
+        if (
+          contractData.freelancer_id !==
+          loadedProject.freelancer_id
         ) {
           console.error(
-            "Milestone/project mismatch:",
+            "Direct-hire freelancer mismatch:",
             {
-              milestoneId,
-              milestoneProjectId:
-                milestoneData.project_id,
-              urlProjectId:
-                projectId,
+              contractFreelancerId:
+                contractData.freelancer_id,
+              projectFreelancerId:
+                loadedProject.freelancer_id,
             }
           );
 
           setMessage(
-            "This milestone is not linked to the selected project."
+            "The contract and project freelancer information do not match."
           );
 
           return;
         }
 
-        setMilestone(
-          milestoneData as Milestone
+        setDirectHireContract(
+          contractData as DirectHireContract
         );
       } catch (error) {
         console.error(
@@ -283,18 +406,91 @@ export default function PaymentPage() {
       }
     };
 
-  // --------------------------------------------------
-  // PAYMENT AMOUNT
-  // --------------------------------------------------
+  /*
+   * =====================================================
+   * PAYMENT AMOUNT
+   * =====================================================
+   *
+   * Display only.
+   *
+   * The server will independently load the amount
+   * from Supabase before signing the PayFast request.
+   * =====================================================
+   */
 
   const paymentAmount =
-    milestone?.amount
-      ? Number(milestone.amount)
-      : 0;
+    paymentMode === "milestone"
+      ? Number(
+          milestone?.amount ?? 0
+        )
+      : Number(
+          directHireContract?.budget ??
+            0
+        );
 
-  // --------------------------------------------------
-  // SECURE PAYFAST PAYMENT
-  // --------------------------------------------------
+  /*
+   * =====================================================
+   * DIRECT-HIRE STATE
+   * =====================================================
+   */
+
+  const contractStatus =
+    directHireContract?.status
+      ?.toLowerCase() ?? "";
+
+  const projectStatus =
+    project?.status
+      ?.toLowerCase() ?? "";
+
+  const projectPaymentStatus =
+    project?.payment_status
+      ?.toLowerCase() ?? "";
+
+  const directHireAlreadyPaid =
+    paymentMode === "direct_hire" &&
+    (
+      projectPaymentStatus ===
+        "paid" ||
+      !!project?.paid_at
+    );
+
+  const directHireReady =
+    paymentMode === "direct_hire" &&
+    !!directHireContract &&
+    contractStatus === "accepted" &&
+    projectStatus === "pending" &&
+    projectPaymentStatus === "unpaid" &&
+    !project?.paid_at &&
+    Number.isFinite(
+      paymentAmount
+    ) &&
+    paymentAmount > 0;
+
+  /*
+   * =====================================================
+   * MILESTONE STATE
+   * =====================================================
+   */
+
+  const milestoneStatus =
+    milestone?.status
+      ?.toLowerCase() ?? "";
+
+  const milestoneReady =
+    paymentMode === "milestone" &&
+    !!milestone &&
+    milestoneStatus ===
+      "approved" &&
+    Number.isFinite(
+      paymentAmount
+    ) &&
+    paymentAmount > 0;
+
+  /*
+   * =====================================================
+   * PAYFAST
+   * =====================================================
+   */
 
   const handlePayment =
     async () => {
@@ -308,69 +504,153 @@ export default function PaymentPage() {
         return;
       }
 
-      if (!milestone) {
-        setMessage(
-          "Please select a valid milestone."
-        );
-
-        return;
-      }
-
-      if (!milestoneId) {
-        setMessage(
-          "Milestone ID is missing."
-        );
-
-        return;
-      }
+      /*
+       * ===============================================
+       * VALIDATE MILESTONE PAYMENT
+       * ===============================================
+       */
 
       if (
-        !Number.isFinite(
-          paymentAmount
-        ) ||
-        paymentAmount <= 0
+        paymentMode ===
+        "milestone"
       ) {
-        setMessage(
-          "The milestone amount must be greater than zero."
-        );
+        if (!milestone) {
+          setMessage(
+            "Please select a valid milestone."
+          );
 
-        return;
+          return;
+        }
+
+        if (!milestoneId) {
+          setMessage(
+            "Milestone ID is missing."
+          );
+
+          return;
+        }
+
+        if (
+          !Number.isFinite(
+            paymentAmount
+          ) ||
+          paymentAmount <= 0
+        ) {
+          setMessage(
+            "The milestone amount must be greater than zero."
+          );
+
+          return;
+        }
+
+        if (
+          milestoneStatus ===
+            "paid" ||
+          milestoneStatus ===
+            "completed"
+        ) {
+          setMessage(
+            "This milestone has already been paid."
+          );
+
+          return;
+        }
+
+        if (
+          milestoneStatus !==
+          "approved"
+        ) {
+          setMessage(
+            "Only approved milestones can be paid."
+          );
+
+          return;
+        }
       }
 
-      const milestoneStatus =
-        milestone.status
-          ?.toLowerCase() ?? "";
+      /*
+       * ===============================================
+       * VALIDATE DIRECT-HIRE PAYMENT
+       * ===============================================
+       */
 
       if (
-        milestoneStatus ===
-          "paid" ||
-        milestoneStatus ===
-          "completed"
+        paymentMode ===
+        "direct_hire"
       ) {
-        setMessage(
-          "This milestone has already been paid."
-        );
+        if (!directHireContract) {
+          setMessage(
+            "The direct-hire contract could not be found."
+          );
 
-        return;
-      }
+          return;
+        }
 
-      if (
-        milestoneStatus !==
-        "approved"
-      ) {
-        setMessage(
-          "Only approved milestones can be paid."
-        );
+        if (
+          contractStatus !==
+          "accepted"
+        ) {
+          setMessage(
+            "The freelancer must accept the contract before payment can be made."
+          );
 
-        return;
+          return;
+        }
+
+        if (
+          directHireAlreadyPaid
+        ) {
+          setMessage(
+            "This project has already been funded."
+          );
+
+          return;
+        }
+
+        if (
+          projectStatus !==
+          "pending"
+        ) {
+          setMessage(
+            "This project is not awaiting payment."
+          );
+
+          return;
+        }
+
+        if (
+          projectPaymentStatus !==
+          "unpaid"
+        ) {
+          setMessage(
+            "This project is not awaiting payment."
+          );
+
+          return;
+        }
+
+        if (
+          !Number.isFinite(
+            paymentAmount
+          ) ||
+          paymentAmount <= 0
+        ) {
+          setMessage(
+            "The contract budget must be greater than zero."
+          );
+
+          return;
+        }
       }
 
       setProcessing(true);
 
       try {
-        // ---------------------------------------------
-        // GET CURRENT SESSION
-        // ---------------------------------------------
+        /*
+         * ===============================================
+         * CURRENT SESSION
+         * ===============================================
+         */
 
         const {
           data: sessionData,
@@ -387,12 +667,38 @@ export default function PaymentPage() {
           );
 
           setProcessing(false);
+
           return;
         }
 
-        // ---------------------------------------------
-        // SERVER PREPARES SIGNED PAYFAST PAYMENT
-        // ---------------------------------------------
+        /*
+         * ===============================================
+         * SERVER PREPARES PAYFAST PAYMENT
+         * ===============================================
+         *
+         * IMPORTANT:
+         *
+         * No payment amount is sent from the browser.
+         *
+         * Server determines the correct amount from
+         * the database.
+         * ===============================================
+         */
+
+        const requestBody =
+          paymentMode ===
+          "milestone"
+            ? {
+                projectId,
+                milestoneId,
+                paymentType:
+                  "milestone",
+              }
+            : {
+                projectId,
+                paymentType:
+                  "direct_hire",
+              };
 
         const response =
           await fetch(
@@ -409,10 +715,9 @@ export default function PaymentPage() {
               },
 
               body:
-                JSON.stringify({
-                  projectId,
-                  milestoneId,
-                }),
+                JSON.stringify(
+                  requestBody
+                ),
             }
           );
 
@@ -428,6 +733,7 @@ export default function PaymentPage() {
           );
 
           setProcessing(false);
+
           return;
         }
 
@@ -443,6 +749,7 @@ export default function PaymentPage() {
           );
 
           setProcessing(false);
+
           return;
         }
 
@@ -460,12 +767,15 @@ export default function PaymentPage() {
           );
 
           setProcessing(false);
+
           return;
         }
 
-        // ---------------------------------------------
-        // REMOVE OLD FORM IF PRESENT
-        // ---------------------------------------------
+        /*
+         * ===============================================
+         * REMOVE OLD PAYFAST FORM
+         * ===============================================
+         */
 
         const oldForm =
           document.getElementById(
@@ -476,9 +786,11 @@ export default function PaymentPage() {
           oldForm.remove();
         }
 
-        // ---------------------------------------------
-        // BUILD FORM FROM SERVER-SIGNED FIELDS
-        // ---------------------------------------------
+        /*
+         * ===============================================
+         * BUILD FORM FROM SERVER-SIGNED FIELDS
+         * ===============================================
+         */
 
         const form =
           document.createElement(
@@ -528,9 +840,11 @@ export default function PaymentPage() {
           form
         );
 
-        // ---------------------------------------------
-        // SEND TO PAYFAST
-        // ---------------------------------------------
+        /*
+         * ===============================================
+         * REDIRECT TO PAYFAST
+         * ===============================================
+         */
 
         form.submit();
       } catch (error) {
@@ -547,9 +861,11 @@ export default function PaymentPage() {
       }
     };
 
-  // --------------------------------------------------
-  // LOADING
-  // --------------------------------------------------
+  /*
+   * =====================================================
+   * LOADING
+   * =====================================================
+   */
 
   if (loading) {
     return (
@@ -561,9 +877,11 @@ export default function PaymentPage() {
     );
   }
 
-  // --------------------------------------------------
-  // PROJECT FAILED TO LOAD
-  // --------------------------------------------------
+  /*
+   * =====================================================
+   * PROJECT FAILED TO LOAD
+   * =====================================================
+   */
 
   if (
     message &&
@@ -607,13 +925,34 @@ export default function PaymentPage() {
     );
   }
 
-  // --------------------------------------------------
-  // PAGE
-  // --------------------------------------------------
+  /*
+   * =====================================================
+   * DISPLAY INFORMATION
+   * =====================================================
+   */
+
+  const title =
+    paymentMode === "milestone"
+      ? milestone?.title ||
+        "Project Milestone"
+      : directHireContract
+          ?.project_title ||
+        "Direct Hire Project";
+
+  const description =
+    paymentMode === "milestone"
+      ? milestone?.description
+      : directHireContract
+          ?.project_description;
+
+  /*
+   * =====================================================
+   * PAGE
+   * =====================================================
+   */
 
   return (
     <main className="dashboard-page">
-
       {/* HEADER */}
 
       <section
@@ -628,13 +967,17 @@ export default function PaymentPage() {
         </p>
 
         <h1>
-          Make Payment
+          {paymentMode ===
+          "milestone"
+            ? "Make Milestone Payment"
+            : "Fund Project"}
         </h1>
 
         <p>
-          Securely pay for your
-          approved project milestone
-          through PayFast.
+          {paymentMode ===
+          "milestone"
+            ? "Securely pay for your approved project milestone through PayFast."
+            : "Securely fund this direct-hire project through PayFast. Work can begin after payment is confirmed."}
         </p>
       </section>
 
@@ -675,68 +1018,112 @@ export default function PaymentPage() {
             gap: 15,
           }}
         >
-          {/* PROJECT */}
+          {/* PAYMENT TYPE */}
 
           <div>
             <strong>
-              Project ID
+              Payment Type
             </strong>
 
             <p>
-              {project?.id}
+              {paymentMode ===
+              "milestone"
+                ? "Milestone Payment"
+                : "Direct Hire Project Funding"}
             </p>
           </div>
 
-          {/* MILESTONE */}
+          {/* TITLE */}
 
           <div>
             <strong>
-              Milestone
+              {paymentMode ===
+              "milestone"
+                ? "Milestone"
+                : "Project"}
             </strong>
 
             <p>
-              {milestone?.title ||
-                "Project Milestone"}
+              {title}
             </p>
           </div>
 
           {/* DESCRIPTION */}
 
-          {milestone?.description && (
+          {description && (
             <div>
               <strong>
                 Description
               </strong>
 
               <p>
-                {
-                  milestone.description
-                }
+                {description}
               </p>
             </div>
           )}
 
           {/* MILESTONE STATUS */}
 
+          {paymentMode ===
+            "milestone" &&
+            milestone && (
+              <div>
+                <strong>
+                  Milestone Status
+                </strong>
+
+                <p>
+                  <span
+                    className={`contract-status ${
+                      milestone.status ||
+                      "pending"
+                    }`}
+                  >
+                    {milestone.status ||
+                      "pending"}
+                  </span>
+                </p>
+              </div>
+            )}
+
+          {/* DIRECT HIRE CONTRACT STATUS */}
+
+          {paymentMode ===
+            "direct_hire" &&
+            directHireContract && (
+              <div>
+                <strong>
+                  Contract Status
+                </strong>
+
+                <p>
+                  <span
+                    className={`contract-status ${
+                      directHireContract.status ||
+                      "pending"
+                    }`}
+                  >
+                    {directHireContract.status ||
+                      "pending"}
+                  </span>
+                </p>
+              </div>
+            )}
+
+          {/* PROJECT STATUS */}
+
           <div>
             <strong>
-              Milestone Status
+              Project Status
             </strong>
 
             <p>
-              <span
-                className={`contract-status ${
-                  milestone?.status ||
-                  "pending"
-                }`}
-              >
-                {milestone?.status ||
-                  "pending"}
-              </span>
+              {project?.status ||
+                "Unknown"}
             </p>
           </div>
 
-          {/* PROJECT PAYMENT STATUS */}
+          {/* PAYMENT STATUS */}
 
           <div>
             <strong>
@@ -749,17 +1136,20 @@ export default function PaymentPage() {
                 "unpaid"}
             </p>
 
-            <p
-              style={{
-                fontSize: 13,
-                opacity: 0.7,
-                marginTop: 5,
-              }}
-            >
-              Individual milestone
-              payments are tracked
-              separately.
-            </p>
+            {paymentMode ===
+              "milestone" && (
+              <p
+                style={{
+                  fontSize: 13,
+                  opacity: 0.7,
+                  marginTop: 5,
+                }}
+              >
+                Individual milestone
+                payments are tracked
+                separately.
+              </p>
+            )}
           </div>
 
           {/* AMOUNT */}
@@ -793,114 +1183,230 @@ export default function PaymentPage() {
 
         <div className="profile-divider" />
 
-        {/* PAYMENT ACTION */}
+        {/* ==========================================
+            MILESTONE ACTION
+        ========================================== */}
 
-        {!milestone ? (
-          <div>
-            <p className="upload-message">
-              Milestone information
-              is unavailable.
-            </p>
-          </div>
-        ) : milestone.status
-            ?.toLowerCase() ===
-            "paid" ? (
-          <div>
-            <span className="contract-status completed">
-              Payment Completed
-            </span>
+        {paymentMode ===
+          "milestone" && (
+          <>
+            {!milestone ? (
+              <div>
+                <p className="upload-message">
+                  Milestone information
+                  is unavailable.
+                </p>
+              </div>
+            ) : milestoneStatus ===
+              "paid" ? (
+              <div>
+                <span className="contract-status completed">
+                  Payment Completed
+                </span>
 
-            <p
-              style={{
-                marginTop: 12,
-                opacity: 0.8,
-              }}
-            >
-              This milestone has been
-              successfully paid.
-            </p>
-          </div>
-        ) : milestone.status
-            ?.toLowerCase() ===
-            "completed" ? (
-          <div>
-            <span className="contract-status completed">
-              Milestone Completed
-            </span>
+                <p
+                  style={{
+                    marginTop: 12,
+                    opacity: 0.8,
+                  }}
+                >
+                  This milestone has
+                  already been paid.
+                </p>
+              </div>
+            ) : milestoneStatus ===
+              "completed" ? (
+              <div>
+                <span className="contract-status completed">
+                  Milestone Completed
+                </span>
 
-            <p
-              style={{
-                marginTop: 12,
-                opacity: 0.8,
-              }}
-            >
-              This milestone has already
-              been completed.
-            </p>
-          </div>
-        ) : milestone.status
-            ?.toLowerCase() !==
-            "approved" ? (
-          <div>
-            <p>
-              This milestone is not
-              ready for payment.
-            </p>
+                <p
+                  style={{
+                    marginTop: 12,
+                    opacity: 0.8,
+                  }}
+                >
+                  This milestone has
+                  already been
+                  completed.
+                </p>
+              </div>
+            ) : !milestoneReady ? (
+              <div>
+                <p>
+                  This milestone is not
+                  ready for payment.
+                </p>
 
-            <p
-              style={{
-                marginTop: 8,
-                opacity: 0.8,
-              }}
-            >
-              The freelancer must approve
-              the milestone before
-              payment can be made.
-            </p>
-          </div>
-        ) : (
-          <div>
-            <button
-              type="button"
-              onClick={
-                handlePayment
-              }
-              disabled={
-                processing
-              }
-              className="primary-action-btn"
-              style={{
-                width: "100%",
-                marginTop: 10,
-                cursor:
+                <p
+                  style={{
+                    marginTop: 8,
+                    opacity: 0.8,
+                  }}
+                >
+                  The milestone must be
+                  approved before
+                  payment can be made.
+                </p>
+              </div>
+            ) : (
+              <PaymentButton
+                processing={
                   processing
-                    ? "wait"
-                    : "pointer",
-              }}
-            >
-              {processing
-                ? "Preparing secure payment..."
-                : `Pay Now — ZAR ${paymentAmount.toFixed(
-                    2
-                  )}`}
-            </button>
+                }
+                paymentAmount={
+                  paymentAmount
+                }
+                label="Pay Now"
+                onClick={
+                  handlePayment
+                }
+              />
+            )}
+          </>
+        )}
 
-            <p
-              style={{
-                marginTop: 15,
-                textAlign:
-                  "center",
-                fontSize: 14,
-                opacity: 0.75,
-              }}
-            >
-              You will be redirected
-              to PayFast to complete
-              your payment securely.
-            </p>
-          </div>
+        {/* ==========================================
+            DIRECT HIRE ACTION
+        ========================================== */}
+
+        {paymentMode ===
+          "direct_hire" && (
+          <>
+            {!directHireContract ? (
+              <div>
+                <p className="upload-message">
+                  Direct-hire contract
+                  information is
+                  unavailable.
+                </p>
+              </div>
+            ) : directHireAlreadyPaid ? (
+              <div>
+                <span className="contract-status completed">
+                  Project Funded
+                </span>
+
+                <p
+                  style={{
+                    marginTop: 12,
+                    opacity: 0.8,
+                  }}
+                >
+                  Payment has already
+                  been confirmed for
+                  this project.
+                </p>
+              </div>
+            ) : contractStatus !==
+              "accepted" ? (
+              <div>
+                <p>
+                  Payment is not
+                  available yet.
+                </p>
+
+                <p
+                  style={{
+                    marginTop: 8,
+                    opacity: 0.8,
+                  }}
+                >
+                  The freelancer must
+                  accept the contract
+                  before the project
+                  can be funded.
+                </p>
+              </div>
+            ) : projectStatus !==
+              "pending" ? (
+              <div>
+                <p>
+                  This project is not
+                  awaiting funding.
+                </p>
+              </div>
+            ) : !directHireReady ? (
+              <div>
+                <p>
+                  This project cannot
+                  currently be funded.
+                </p>
+              </div>
+            ) : (
+              <PaymentButton
+                processing={
+                  processing
+                }
+                paymentAmount={
+                  paymentAmount
+                }
+                label="Fund Project"
+                onClick={
+                  handlePayment
+                }
+              />
+            )}
+          </>
         )}
       </section>
     </main>
+  );
+}
+
+/*
+ * =========================================================
+ * PAYMENT BUTTON
+ * =========================================================
+ */
+
+function PaymentButton({
+  processing,
+  paymentAmount,
+  label,
+  onClick,
+}: {
+  processing: boolean;
+  paymentAmount: number;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={processing}
+        className="primary-action-btn"
+        style={{
+          width: "100%",
+          marginTop: 10,
+          cursor:
+            processing
+              ? "wait"
+              : "pointer",
+        }}
+      >
+        {processing
+          ? "Preparing secure payment..."
+          : `${label} — ZAR ${paymentAmount.toFixed(
+              2
+            )}`}
+      </button>
+
+      <p
+        style={{
+          marginTop: 15,
+          textAlign: "center",
+          fontSize: 14,
+          opacity: 0.75,
+        }}
+      >
+        You will be redirected to
+        PayFast to complete your
+        payment securely.
+      </p>
+    </div>
   );
 }
