@@ -37,6 +37,8 @@ type Payout = {
 
   payout_reference?: string | null;
   payout_notes?: string | null;
+  payout_failed_at?: string | null;
+  payout_failure_reason?: string | null;
 
   processing_started_by?: string | null;
   processing_started_by_name?: string | null;
@@ -110,6 +112,7 @@ type FilterStatus =
   | "ready_for_payout"
   | "payout_requested"
   | "processing"
+  | "failed"
   | "paid_out";
 
 export default function AdminPayoutsPage() {
@@ -151,6 +154,8 @@ export default function AdminPayoutsPage() {
   ] = useState<
     Record<string, PaymentForm>
   >({});
+
+  const [failureReasons, setFailureReasons] = useState<Record<string, string>>({});
 
   const [
     searchTerm,
@@ -936,6 +941,58 @@ export default function AdminPayoutsPage() {
     };
 
   // --------------------------------------------------
+  // RECORD A CONFIRMED FAILED BANK TRANSFER
+  // --------------------------------------------------
+  const markTransferFailed = async (payout: Payout) => {
+    if (updatingId || payout.status !== "processing") return;
+
+    const failureReason = (failureReasons[payout.id] || "").trim();
+    if (failureReason.length < 10 || failureReason.length > 1000) {
+      setMessage("Enter a failure reason between 10 and 1000 characters.");
+      return;
+    }
+
+    if (!window.confirm(
+      "Have you verified with the bank that this transfer did NOT succeed? " +
+      "Do not mark a pending or uncertain transfer as failed. Continue?"
+    )) return;
+
+    setUpdatingId(payout.id);
+    setMessage("");
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session?.access_token) {
+        throw new Error("Please log in again.");
+      }
+
+      const response = await fetch("/api/admin/payouts/update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({ payoutId: payout.id, status: "failed", failureReason }),
+      });
+      const result = (await response.json()) as UpdateResponse;
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Unable to record the failed transfer.");
+      }
+
+      setFailureReasons((current) => {
+        const next = { ...current };
+        delete next[payout.id];
+        return next;
+      });
+      setMessage("Transfer failure recorded. Do not retry until the original transfer is reconciled.");
+      await loadPayouts();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to record the failed transfer.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  // --------------------------------------------------
   // HELPERS
   // --------------------------------------------------
 
@@ -1008,6 +1065,9 @@ export default function AdminPayoutsPage() {
         case "paid_out":
           return "Paid Out";
 
+        case "failed":
+          return "Failed";
+
         default:
           return status.replaceAll(
             "_",
@@ -1031,8 +1091,8 @@ export default function AdminPayoutsPage() {
           (
             payout.banking_status ===
               "pending" &&
-            payout.status !==
-              "paid_out"
+            payout.status !== "paid_out" &&
+            payout.status !== "failed"
           )
       ).length;
     }, [payouts]);
@@ -1131,8 +1191,8 @@ export default function AdminPayoutsPage() {
       () =>
         filteredPayouts.filter(
           (payout) =>
-            payout.status !==
-            "paid_out"
+            payout.status !== "paid_out" &&
+            payout.status !== "failed"
         ),
       [filteredPayouts]
     );
@@ -1142,8 +1202,8 @@ export default function AdminPayoutsPage() {
       () =>
         filteredPayouts.filter(
           (payout) =>
-            payout.status ===
-            "paid_out"
+            payout.status === "paid_out" ||
+            payout.status === "failed"
         ),
       [filteredPayouts]
     );
@@ -1404,6 +1464,14 @@ export default function AdminPayoutsPage() {
 
           <button
             type="button"
+            className={statusFilter === "failed" ? "primary-action-btn" : "secondary-action-btn"}
+            onClick={() => setStatusFilter("failed")}
+          >
+            Failed
+          </button>
+
+          <button
+            type="button"
             className={
               statusFilter ===
               "paid_out"
@@ -1437,8 +1505,8 @@ export default function AdminPayoutsPage() {
 
       {/* ACTIVE PAYOUTS */}
 
-      {statusFilter !==
-        "paid_out" && (
+      {statusFilter !== "paid_out" &&
+        statusFilter !== "failed" && (
         <section
           style={{
             marginBottom: 38,
@@ -2116,6 +2184,47 @@ export default function AdminPayoutsPage() {
                         </div>
                       )}
 
+                      {payout.status === "processing" && (
+                        <div style={{ marginTop: 18, padding: 18, border: "1px solid rgba(245,158,11,0.45)", borderRadius: 12 }}>
+                          <h3 style={{ marginBottom: 10 }}>Record Failed Bank Transfer</h3>
+                          <p style={{ marginBottom: 12 }}>
+                            Only use this after the bank confirms the transfer did not succeed.
+                            An uncertain or pending transfer must be investigated first.
+                          </p>
+                          <label htmlFor={`failure-${payout.id}`} style={{ display: "block", fontWeight: 600, marginBottom: 8 }}>
+                            Failure Reason *
+                          </label>
+                          <textarea
+                            id={`failure-${payout.id}`}
+                            rows={3}
+                            maxLength={1000}
+                            disabled={isUpdating}
+                            value={failureReasons[payout.id] || ""}
+                            onChange={(event) => setFailureReasons((current) => ({ ...current, [payout.id]: event.target.value }))}
+                            placeholder="Explain the confirmed bank rejection or failure (at least 10 characters)."
+                            style={{ width: "100%", padding: "12px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", color: "inherit", resize: "vertical", boxSizing: "border-box" }}
+                          />
+                          <button
+                            type="button"
+                            className="secondary-action-btn"
+                            style={{ marginTop: 12 }}
+                            disabled={isUpdating || (failureReasons[payout.id] || "").trim().length < 10}
+                            onClick={() => void markTransferFailed(payout)}
+                          >
+                            {isUpdating ? "Recording..." : "Mark Transfer Failed"}
+                          </button>
+                        </div>
+                      )}
+
+                      {payout.status === "failed" && (
+                        <div style={{ marginTop: 18, padding: 18, border: "1px solid rgba(245,158,11,0.45)", borderRadius: 12 }}>
+                          <h3>Transfer Failed</h3>
+                          <p>Do not retry until the original bank transfer has been reconciled.</p>
+                          {payout.payout_failure_reason && <p><strong>Reason:</strong> {payout.payout_failure_reason}</p>}
+                          {payout.payout_failed_at && <p><strong>Recorded:</strong> {formatDate(payout.payout_failed_at)}</p>}
+                        </div>
+                      )}
+
                     </article>
                   );
                 }
@@ -2173,9 +2282,7 @@ export default function AdminPayoutsPage() {
                       4,
                   }}
                 >
-                  Completed freelancer
-                  payments and their
-                  audit information.
+                  Completed payments and failed-transfer records, including their audit information.
                 </p>
               </div>
 
@@ -2226,8 +2333,8 @@ export default function AdminPayoutsPage() {
                           </p>
                         </div>
 
-                        <span className="contract-status paid_out">
-                          Paid Out
+                        <span className={`contract-status ${payout.status}`}>
+                          {payoutStatusLabel(payout.status)}
                         </span>
                       </div>
 

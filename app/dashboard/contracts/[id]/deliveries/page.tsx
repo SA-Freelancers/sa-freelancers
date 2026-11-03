@@ -1,401 +1,255 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 import EmptyState from "@/app/components/EmptyState";
 
-type Contract = {
-  id: string;
-  client_id?: string | null;
-  freelancer_id?: string | null;
-  project_title?: string;
-  project_description?: string;
-  budget?: number;
-  status?: string;
-  created_at?: string;
-};
-
-type Activity = {
-  id: string;
-  action?: string;
-  created_at?: string;
-};
-
-type Project = {
-  id: string;
-  status?: string | null;
-  payment_status?: string | null;
-  paid_at?: string | null;
-};
-
-type Payout = {
-  id: string;
-  payment_type?: string | null;
-  status?: string | null;
-};
-
 type Delivery = {
   id: string;
+  contract_id: string;
+  freelancer_id?: string | null;
   file_url?: string | null;
   note?: string | null;
   created_at?: string | null;
 };
 
-export default function ContractDetailsPage() {
+type Contract = {
+  id: string;
+  client_id?: string | null;
+  freelancer_id?: string | null;
+  project_title?: string | null;
+  status?: string | null;
+};
+
+export default function DeliveriesPage() {
   const params = useParams();
-  const id = params.id as string;
+  const contractId = params.id as string;
 
   const [contract, setContract] = useState<Contract | null>(null);
-  const [project, setProject] = useState<Project | null>(null);
-  const [payout, setPayout] = useState<Payout | null>(null);
-
-  const [activities, setActivities] = useState<Activity[]>([]);
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
-
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  const [file, setFile] = useState<File | null>(null);
+  const [note, setNote] = useState("");
+
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    if (!id) return;
+    if (!contractId) return;
 
-    loadContract();
-  }, [id]);
+    loadPage();
+  }, [contractId]);
 
-  const loadContract = async () => {
+  const loadPage = async () => {
     try {
       setLoading(true);
       setErrorMessage("");
 
-      /*
-       * ==========================================
-       * CURRENT USER
-       * ==========================================
-       */
-
       const {
-        data: authData,
+        data: { user },
         error: authError,
       } = await supabase.auth.getUser();
 
       if (authError) {
-        console.error(
-          "Contract auth error:",
-          authError
-        );
+        console.error("Auth error:", authError);
       }
 
-      const userId = authData.user?.id || null;
-
-      setCurrentUserId(userId);
-
-      /*
-       * ==========================================
-       * CONTRACT
-       * ==========================================
-       */
+      setCurrentUserId(user?.id || null);
 
       const {
         data: contractData,
         error: contractError,
       } = await supabase
         .from("contracts")
-        .select("*")
-        .eq("id", id)
+        .select(`
+          id,
+          client_id,
+          freelancer_id,
+          project_title,
+          status
+        `)
+        .eq("id", contractId)
         .maybeSingle();
 
       if (contractError) {
-        console.error(
-          "Contract loading error:",
-          contractError
-        );
-
-        setErrorMessage(
-          "Unable to load this contract."
-        );
-
-        setContract(null);
+        console.error("Contract error:", contractError);
+        setErrorMessage("Unable to load this contract.");
         return;
       }
 
-      if (!contractData) {
-        setContract(null);
-        return;
-      }
+      setContract((contractData as Contract) || null);
 
-      const loadedContract = contractData as Contract;
-
-      setContract(loadedContract);
-
-      /*
-       * ==========================================
-       * PROJECT
-       * ==========================================
-       */
-
-      let loadedProject: Project | null = null;
-
-      if (
-        loadedContract.client_id &&
-        loadedContract.freelancer_id
-      ) {
-        const {
-          data: projectData,
-          error: projectError,
-        } = await supabase
-          .from("projects")
-          .select(`
-            id,
-            status,
-            payment_status,
-            paid_at
-          `)
-          .eq(
-            "client_id",
-            loadedContract.client_id
-          )
-          .eq(
-            "freelancer_id",
-            loadedContract.freelancer_id
-          )
-          .order("created_at", {
-            ascending: false,
-          })
-          .limit(1)
-          .maybeSingle();
-
-        if (projectError) {
-          console.error(
-            "Project loading error:",
-            projectError
-          );
-        } else {
-          loadedProject =
-            (projectData as Project) || null;
-
-          setProject(loadedProject);
-        }
-      }
-
-      /*
-       * ==========================================
-       * PAYOUT
-       * ==========================================
-       */
-
-      if (loadedProject?.id) {
-        const {
-          data: payoutData,
-          error: payoutError,
-        } = await supabase
-          .from("freelancer_payouts")
-          .select(`
-            id,
-            payment_type,
-            status
-          `)
-          .eq(
-            "project_id",
-            loadedProject.id
-          )
-          .eq(
-            "contract_id",
-            loadedContract.id
-          )
-          .order("created_at", {
-            ascending: false,
-          })
-          .limit(1)
-          .maybeSingle();
-
-        if (payoutError) {
-          console.error(
-            "Payout loading error:",
-            payoutError
-          );
-        } else {
-          setPayout(
-            (payoutData as Payout) || null
-          );
-        }
-      }
-
-      /*
-       * ==========================================
-       * ATTACHED WORK FILES
-       *
-       * IMPORTANT:
-       * The real table used by the delivery
-       * page is contract_deliveries.
-       * ==========================================
-       */
-
-      const {
-        data: deliveryData,
-        error: deliveryError,
-      } = await supabase
-        .from("contract_deliveries")
-        .select(`
-          id,
-          file_url,
-          note,
-          created_at
-        `)
-        .eq("contract_id", id)
-        .order("created_at", {
-          ascending: false,
-        });
-
-      if (deliveryError) {
-        console.error(
-          "Contract delivery loading error:",
-          deliveryError
-        );
-
-        setDeliveries([]);
-      } else {
-        setDeliveries(
-          (deliveryData as Delivery[]) || []
-        );
-      }
-
-      /*
-       * ==========================================
-       * ACTIVITY
-       * ==========================================
-       */
-
-      const {
-        data: activityData,
-        error: activityError,
-      } = await supabase
-        .from("contract_activity")
-        .select("*")
-        .eq("contract_id", id)
-        .order("created_at", {
-          ascending: false,
-        });
-
-      if (activityError) {
-        console.error(
-          "Contract activity loading error:",
-          activityError
-        );
-
-        setActivities([]);
-      } else {
-        setActivities(
-          (activityData as Activity[]) || []
-        );
-      }
+      await loadDeliveries();
     } catch (error) {
-      console.error(
-        "Contract details error:",
-        error
-      );
-
-      setErrorMessage(
-        "Something went wrong while loading this contract."
-      );
+      console.error("Delivery page error:", error);
+      setErrorMessage("Something went wrong while loading this page.");
     } finally {
       setLoading(false);
     }
   };
 
-  /*
-   * ==========================================
-   * USER ROLE
-   * ==========================================
-   */
+  const loadDeliveries = async () => {
+    const {
+      data,
+      error,
+    } = await supabase
+      .from("contract_deliveries")
+      .select(`
+        id,
+        contract_id,
+        freelancer_id,
+        file_url,
+        note,
+        created_at
+      `)
+      .eq("contract_id", contractId)
+      .order("created_at", {
+        ascending: false,
+      });
 
-  const isFreelancer =
-    !!contract?.freelancer_id &&
-    currentUserId === contract.freelancer_id;
+    if (error) {
+      console.error("Delivery loading error:", error);
+      setDeliveries([]);
+      return;
+    }
 
-  const isClient =
-    !!contract?.client_id &&
-    currentUserId === contract.client_id;
+    setDeliveries((data as Delivery[]) || []);
+  };
 
-  /*
-   * ==========================================
-   * DIRECT HIRE
-   * ==========================================
-   */
+  const uploadDelivery = async () => {
+    setMessage("");
 
-  const isDirectHire =
-    payout?.payment_type === "direct_hire";
+    if (!file) {
+      setMessage("Please choose a file first.");
+      return;
+    }
 
-  /*
-   * ==========================================
-   * PAYMENT
-   * ==========================================
-   */
+    if (!currentUserId) {
+      setMessage("Please log in first.");
+      return;
+    }
 
-  const isFunded =
-    project?.payment_status === "paid" &&
-    !!project?.paid_at;
+    if (
+      !contract?.freelancer_id ||
+      currentUserId !== contract.freelancer_id
+    ) {
+      setMessage(
+        "Only the freelancer assigned to this contract can attach work files."
+      );
+      return;
+    }
 
-  /*
-   * ==========================================
-   * PROJECT STATUS
-   * ==========================================
-   */
+    try {
+      setUploading(true);
 
-  const isProjectActive =
-    project?.status === "active";
+      const safeFileName = file.name.replace(
+        /[^a-zA-Z0-9._-]/g,
+        "_"
+      );
 
-  const isProjectCompleted =
-    project?.status === "completed";
+      const storagePath =
+        `contract-deliveries/${contractId}/${Date.now()}-${safeFileName}`;
 
-  const isContractCompleted =
-    contract?.status === "completed";
+      const {
+        error: uploadError,
+      } = await supabase.storage
+        .from("uploads")
+        .upload(storagePath, file, {
+          upsert: false,
+        });
 
-  /*
-   * ==========================================
-   * FILE ATTACHMENT CHECK
-   *
-   * At least one REAL file URL must exist.
-   * ==========================================
-   */
+      if (uploadError) {
+        console.error("Storage upload error:", uploadError);
+        setMessage(uploadError.message);
+        return;
+      }
 
-  const attachedFiles =
-    deliveries.filter(
-      (delivery) =>
-        typeof delivery.file_url === "string" &&
-        delivery.file_url.trim().length > 0
-    );
+      const {
+        data: publicUrlData,
+      } = supabase.storage
+        .from("uploads")
+        .getPublicUrl(storagePath);
 
-  const hasAttachedFiles =
-    attachedFiles.length > 0;
+      const publicUrl =
+        publicUrlData.publicUrl;
 
-  /*
-   * ==========================================
-   * MARK AS COMPLETE RULE
-   *
-   * The freelancer cannot complete the work
-   * until a file has actually been attached.
-   * ==========================================
-   */
+      if (!publicUrl) {
+        setMessage(
+          "The file was uploaded but its URL could not be created."
+        );
+        return;
+      }
 
-  const canMarkComplete =
-    isFreelancer &&
-    contract?.status === "accepted" &&
-    isFunded &&
-    isProjectActive &&
-    hasAttachedFiles;
+      const {
+        error: insertError,
+      } = await supabase
+        .from("contract_deliveries")
+        .insert({
+          contract_id: contractId,
+          freelancer_id: currentUserId,
+          file_url: publicUrl,
+          note: note.trim() || null,
+        });
 
-  /*
-   * Reviews should only appear after the
-   * work/project has been completed.
-   * ==========================================
-   */
+      if (insertError) {
+        console.error(
+          "Delivery insert error:",
+          insertError
+        );
 
-  const canLeaveReview =
-    isProjectCompleted ||
-    isContractCompleted;
+        setMessage(insertError.message);
+        return;
+      }
+
+      const {
+        error: activityError,
+      } = await supabase
+        .from("contract_activity")
+        .insert({
+          contract_id: contractId,
+          action: `Work file attached: ${file.name}`,
+        });
+
+      if (activityError) {
+        console.error(
+          "Activity insert error:",
+          activityError
+        );
+      }
+
+      setFile(null);
+      setNote("");
+
+      const fileInput =
+        document.getElementById(
+          "delivery-file-input"
+        ) as HTMLInputElement | null;
+
+      if (fileInput) {
+        fileInput.value = "";
+      }
+
+      await loadDeliveries();
+
+      setMessage(
+        "Work file attached successfully. You can now return to the contract."
+      );
+    } catch (error) {
+      console.error("Upload error:", error);
+
+      setMessage(
+        "Something went wrong while uploading the file."
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
 
   if (loading) {
     return <LoadingSkeleton />;
@@ -403,7 +257,7 @@ export default function ContractDetailsPage() {
 
   if (!contract) {
     return (
-      <main className="contract-details-page">
+      <main className="contracts-page">
         <EmptyState
           emoji="📄"
           title="Contract not found"
@@ -416,358 +270,278 @@ export default function ContractDetailsPage() {
     );
   }
 
-  return (
-    <main className="contract-details-page">
-      <section className="dark-card contract-details-card">
+  const isFreelancer =
+    currentUserId === contract.freelancer_id;
 
+  const isClient =
+    currentUserId === contract.client_id;
+
+  return (
+    <main className="contracts-page">
+
+      {/* HEADER */}
+
+      <section className="contracts-header dark-card">
         <p className="dashboard-badge">
-          Contract Details
+          Work Files
         </p>
 
-        <div className="contract-top">
-          <h1>
-            {contract.project_title ||
-              "Untitled Project"}
-          </h1>
+        <h1>
+          Attach Work Files
+        </h1>
 
-          <span
-            className={`contract-status ${
-              contract.status || "pending"
-            }`}
-          >
-            {contract.status || "pending"}
-          </span>
-        </div>
-
-        {/* =====================================
-            CONTRACT INFORMATION
-        ====================================== */}
-
-        <div className="contract-info-grid">
-
-          <div className="dark-card contract-info-item">
-            <h3>Budget</h3>
-
-            <p>
-              ZAR{" "}
-              {Number(
-                contract.budget || 0
-              ).toLocaleString("en-ZA")}
-            </p>
-          </div>
-
-          <div className="dark-card contract-info-item">
-            <h3>
-              Contract Status
-            </h3>
-
-            <p>
-              {contract.status || "pending"}
-            </p>
-          </div>
-
-          <div className="dark-card contract-info-item">
-            <h3>
-              Project Status
-            </h3>
-
-            <p>
-              {project?.status || "pending"}
-            </p>
-          </div>
-
-          <div className="dark-card contract-info-item">
-            <h3>Payment</h3>
-
-            <p>
-              {isFunded
-                ? "Funded"
-                : "Not funded"}
-            </p>
-          </div>
-
-          <div className="dark-card contract-info-item">
-            <h3>Created</h3>
-
-            <p>
-              {contract.created_at
-                ? new Date(
-                    contract.created_at
-                  ).toLocaleDateString(
-                    "en-ZA"
-                  )
-                : "N/A"}
-            </p>
-          </div>
-
-        </div>
-
-        {/* =====================================
-            FUNDED MESSAGE
-        ====================================== */}
-
-        {isDirectHire && isFunded && (
-          <div
-            style={{
-              marginTop: 22,
-              padding: 18,
-              borderRadius: 14,
-              background:
-                "rgba(34, 197, 94, 0.10)",
-              border:
-                "1px solid rgba(34, 197, 94, 0.25)",
-            }}
-          >
-            <strong
-              style={{
-                display: "block",
-                marginBottom: 6,
-              }}
-            >
-              Payment confirmed
-            </strong>
-
-            <span
-              style={{
-                opacity: 0.75,
-                fontSize: 14,
-              }}
-            >
-              The client has funded this
-              project. You may now complete
-              the agreed work.
-            </span>
-          </div>
-        )}
-
-        {/* =====================================
-            ACTION BUTTONS
-        ====================================== */}
+        <p>
+          {contract.project_title ||
+            "Contract project"}
+        </p>
 
         <div
           style={{
-            marginTop: 24,
-            display: "flex",
-            gap: 12,
-            flexWrap: "wrap",
+            marginTop: 20,
           }}
         >
-
-          {/*
-           * STANDARD / MILESTONE CONTRACT
-           */}
-
-          {!isDirectHire && (
-            <a
-              href={`/dashboard/contracts/${contract.id}/milestones`}
-              className="primary-action-link"
-            >
-              Open Milestones
-            </a>
-          )}
-
-          {/*
-           * FREELANCER WORK ATTACHMENTS
-           */}
-
-          {isFreelancer &&
-            isFunded &&
-            !isProjectCompleted && (
-              <a
-                href={`/dashboard/contracts/${contract.id}/deliveries`}
-                className="primary-action-link"
-              >
-                Attach Work Files
-              </a>
-            )}
-
-          {/*
-           * CLIENT VIEWS THE FREELANCER'S
-           * SUBMITTED FILES.
-           */}
-
-          {isClient &&
-            hasAttachedFiles && (
-              <a
-                href={`/dashboard/contracts/${contract.id}/deliveries`}
-                className="primary-action-link"
-              >
-                View Submitted Files
-              </a>
-            )}
-
-          {/*
-           * MARK AS COMPLETE
-           *
-           * IMPORTANT:
-           * This button does NOT appear until
-           * a real work file has been attached.
-           */}
-
-          {canMarkComplete && (
-            <a
-              href="/dashboard/contracts"
-              className="primary-action-link"
-              style={{
-                background: "#16a34a",
-              }}
-            >
-              Mark as Complete
-            </a>
-          )}
-
-          {canLeaveReview && (
-            <a
-              href={`/dashboard/contracts/${contract.id}/review`}
-              className="primary-action-link"
-            >
-              Leave Review
-            </a>
-          )}
-
+          <Link
+            href={`/dashboard/contracts/${contractId}`}
+            className="primary-action-link"
+          >
+            ← Back to Contract
+          </Link>
         </div>
+      </section>
 
-        {/* =====================================
-            FILE ATTACHMENT STATUS
-        ====================================== */}
+      {/* FREELANCER UPLOAD */}
 
-        {isFreelancer &&
-          isDirectHire &&
-          isFunded &&
-          isProjectActive &&
-          !hasAttachedFiles && (
-            <div
-              style={{
-                marginTop: 18,
-                padding: 16,
-                borderRadius: 12,
-                background:
-                  "rgba(245, 158, 11, 0.10)",
-                border:
-                  "1px solid rgba(245, 158, 11, 0.25)",
-              }}
-            >
-              <strong
-                style={{
-                  display: "block",
-                  marginBottom: 5,
-                }}
-              >
-                Attach work before completion
-              </strong>
-
-              <span
-                style={{
-                  opacity: 0.75,
-                  fontSize: 14,
-                }}
-              >
-                Attach at least one completed
-                work file before you can mark
-                this project as complete.
-              </span>
-            </div>
-          )}
-
-        {isFreelancer &&
-          hasAttachedFiles &&
-          isProjectActive && (
-            <div
-              style={{
-                marginTop: 18,
-                padding: 16,
-                borderRadius: 12,
-                background:
-                  "rgba(34, 197, 94, 0.10)",
-                border:
-                  "1px solid rgba(34, 197, 94, 0.25)",
-              }}
-            >
-              <strong
-                style={{
-                  display: "block",
-                  marginBottom: 5,
-                }}
-              >
-                Work files attached
-              </strong>
-
-              <span
-                style={{
-                  opacity: 0.75,
-                  fontSize: 14,
-                }}
-              >
-                {attachedFiles.length}{" "}
-                {attachedFiles.length === 1
-                  ? "file has"
-                  : "files have"}{" "}
-                been attached. You may now
-                mark the work as complete.
-              </span>
-            </div>
-          )}
-
-        {/* =====================================
-            PROJECT DESCRIPTION
-        ====================================== */}
-
-        <div className="contract-description-box">
+      {isFreelancer && (
+        <section
+          className="dark-card hire-card"
+          style={{
+            marginTop: 24,
+          }}
+        >
           <h2>
-            Project Description
+            Attach Completed Work
+          </h2>
+
+          <p
+            style={{
+              marginBottom: 20,
+              opacity: 0.8,
+            }}
+          >
+            Attach at least one completed work file
+            before marking this contract as complete.
+          </p>
+
+          <div
+            style={{
+              display: "grid",
+              gap: 16,
+            }}
+          >
+            <input
+              id="delivery-file-input"
+              type="file"
+              onChange={(e) =>
+                setFile(
+                  e.target.files?.[0] ||
+                    null
+                )
+              }
+              className="form-input"
+            />
+
+            {file && (
+              <div
+                style={{
+                  padding: 14,
+                  borderRadius: 10,
+                  background:
+                    "rgba(34, 197, 94, 0.10)",
+                  border:
+                    "1px solid rgba(34, 197, 94, 0.25)",
+                }}
+              >
+                Selected file:{" "}
+                <strong>
+                  {file.name}
+                </strong>
+              </div>
+            )}
+
+            <textarea
+              placeholder="Add a short note about the completed work..."
+              value={note}
+              onChange={(e) =>
+                setNote(e.target.value)
+              }
+              className="form-input proposal-textarea"
+            />
+
+            <button
+              type="button"
+              onClick={uploadDelivery}
+              disabled={
+                uploading || !file
+              }
+              className="primary-action-btn"
+              style={{
+                opacity:
+                  uploading || !file
+                    ? 0.6
+                    : 1,
+                cursor:
+                  uploading || !file
+                    ? "not-allowed"
+                    : "pointer",
+              }}
+            >
+              {uploading
+                ? "Uploading..."
+                : "Attach Work File"}
+            </button>
+          </div>
+
+          {message && (
+            <p
+              style={{
+                marginTop: 16,
+              }}
+            >
+              {message}
+            </p>
+          )}
+        </section>
+      )}
+
+      {/* CLIENT MESSAGE */}
+
+      {isClient && (
+        <section
+          className="dark-card hire-card"
+          style={{
+            marginTop: 24,
+          }}
+        >
+          <h2>
+            Submitted Work
           </h2>
 
           <p>
-            {contract.project_description ||
-              "No description provided."}
+            Files attached by the freelancer
+            will appear below.
           </p>
-        </div>
+        </section>
+      )}
 
-        {/* =====================================
-            ACTIVITY TIMELINE
-        ====================================== */}
+      {/* ATTACHED FILES */}
 
-        <div className="contract-timeline">
-          <h2>
-            Activity Timeline
-          </h2>
+      <section
+        style={{
+          marginTop: 30,
+        }}
+      >
+        <h2
+          style={{
+            marginBottom: 18,
+          }}
+        >
+          Attached Files
+        </h2>
 
-          {activities.length === 0 ? (
-            <p>No activity yet.</p>
-          ) : (
-            <div className="timeline-list">
-              {activities.map(
-                (activity) => (
-                  <div
-                    key={activity.id}
-                    className="timeline-item"
+        {deliveries.length === 0 ? (
+          <EmptyState
+            emoji="📦"
+            title="No work files attached"
+            description="The freelancer has not attached any completed work files yet."
+          />
+        ) : (
+          <div className="contracts-grid">
+            {deliveries.map(
+              (delivery, index) => (
+                <div
+                  key={delivery.id}
+                  className="dark-card contract-card"
+                >
+                  <h2>
+                    Work File{" "}
+                    {deliveries.length -
+                      index}
+                  </h2>
+
+                  <p className="contract-description">
+                    {delivery.note ||
+                      "No delivery note provided."}
+                  </p>
+
+                  {delivery.file_url && (
+                    <a
+                      href={
+                        delivery.file_url
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                      className="primary-action-link"
+                    >
+                      View File
+                    </a>
+                  )}
+
+                  <small
+                    style={{
+                      display: "block",
+                      marginTop: 16,
+                      opacity: 0.7,
+                    }}
                   >
-                    <div className="timeline-dot" />
-
-                    <div>
-                      <strong>
-                        {activity.action ||
-                          "Contract activity"}
-                      </strong>
-
-                      <p>
-                        {activity.created_at
-                          ? new Date(
-                              activity.created_at
-                            ).toLocaleString(
-                              "en-ZA"
-                            )
-                          : ""}
-                      </p>
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
-          )}
-        </div>
-
+                    {delivery.created_at
+                      ? new Date(
+                          delivery.created_at
+                        ).toLocaleString(
+                          "en-ZA"
+                        )
+                      : ""}
+                  </small>
+                </div>
+              )
+            )}
+          </div>
+        )}
       </section>
+
+      {/* RETURN AFTER UPLOAD */}
+
+      {isFreelancer &&
+        deliveries.length > 0 && (
+          <section
+            className="dark-card hire-card"
+            style={{
+              marginTop: 30,
+            }}
+          >
+            <h2>
+              Work Attached ✓
+            </h2>
+
+            <p>
+              Your work file has been attached.
+              Return to the contract to continue
+              the completion process.
+            </p>
+
+            <div
+              style={{
+                marginTop: 18,
+              }}
+            >
+              <Link
+                href={`/dashboard/contracts/${contractId}`}
+                className="primary-action-link"
+              >
+                Return to Contract
+              </Link>
+            </div>
+          </section>
+        )}
     </main>
   );
 }

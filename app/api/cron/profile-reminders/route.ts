@@ -447,7 +447,7 @@ function buildFreelancerEmail(
             "
           >
             <a
-              href="${siteUrl}/dashboard/freelancer/profile"
+              href="${siteUrl}/dashboard/profile"
               style="
                 display:inline-block;
                 background:#22c55e;

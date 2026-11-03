@@ -1,26 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 import EmptyState from "@/app/components/EmptyState";
 
+/* =========================================================
+   TYPES
+========================================================= */
+
 type Contract = {
   id: string;
   client_id?: string | null;
   freelancer_id?: string | null;
-  project_title?: string;
-  project_description?: string;
-  budget?: number;
-  status?: string;
-  created_at?: string;
+  project_title?: string | null;
+  project_description?: string | null;
+  budget?: number | null;
+  status?: string | null;
+  created_at?: string | null;
 };
 
 type Activity = {
   id: string;
-  action?: string;
-  created_at?: string;
+  action?: string | null;
+  created_at?: string | null;
 };
 
 type Project = {
@@ -43,21 +48,51 @@ type Delivery = {
   created_at?: string | null;
 };
 
+/* =========================================================
+   COMPONENT
+========================================================= */
+
 export default function ContractDetailsPage() {
   const params = useParams();
   const id = params.id as string;
 
-  const [contract, setContract] = useState<Contract | null>(null);
-  const [project, setProject] = useState<Project | null>(null);
-  const [payout, setPayout] = useState<Payout | null>(null);
+  /* =======================================================
+     STATE
+  ======================================================= */
 
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
+  const [contract, setContract] =
+    useState<Contract | null>(null);
 
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [project, setProject] =
+    useState<Project | null>(null);
 
-  const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [payout, setPayout] =
+    useState<Payout | null>(null);
+
+  const [activities, setActivities] =
+    useState<Activity[]>([]);
+
+  const [deliveries, setDeliveries] =
+    useState<Delivery[]>([]);
+
+  const [currentUserId, setCurrentUserId] =
+    useState<string | null>(null);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [errorMessage, setErrorMessage] =
+    useState("");
+
+  const [completing, setCompleting] =
+    useState(false);
+
+  const [completionMessage, setCompletionMessage] =
+    useState("");
+
+  /* =======================================================
+     INITIAL LOAD
+  ======================================================= */
 
   useEffect(() => {
     if (!id) return;
@@ -65,16 +100,18 @@ export default function ContractDetailsPage() {
     loadContract();
   }, [id]);
 
+  /* =======================================================
+     LOAD CONTRACT
+  ======================================================= */
+
   const loadContract = async () => {
     try {
       setLoading(true);
       setErrorMessage("");
 
-      /*
-       * ==========================================
-       * CURRENT USER
-       * ==========================================
-       */
+      /* ---------------------------------------------------
+         CURRENT USER
+      --------------------------------------------------- */
 
       const {
         data: authData,
@@ -88,15 +125,14 @@ export default function ContractDetailsPage() {
         );
       }
 
-      const userId = authData.user?.id || null;
+      const userId =
+        authData.user?.id || null;
 
       setCurrentUserId(userId);
 
-      /*
-       * ==========================================
-       * CONTRACT
-       * ==========================================
-       */
+      /* ---------------------------------------------------
+         CONTRACT
+      --------------------------------------------------- */
 
       const {
         data: contractData,
@@ -126,17 +162,17 @@ export default function ContractDetailsPage() {
         return;
       }
 
-      const loadedContract = contractData as Contract;
+      const loadedContract =
+        contractData as Contract;
 
       setContract(loadedContract);
 
-      /*
-       * ==========================================
-       * PROJECT
-       * ==========================================
-       */
+      /* ---------------------------------------------------
+         PROJECT
+      --------------------------------------------------- */
 
-      let loadedProject: Project | null = null;
+      let loadedProject: Project | null =
+        null;
 
       if (
         loadedContract.client_id &&
@@ -172,19 +208,22 @@ export default function ContractDetailsPage() {
             "Project loading error:",
             projectError
           );
+
+          setProject(null);
         } else {
           loadedProject =
-            (projectData as Project) || null;
+            (projectData as Project) ||
+            null;
 
           setProject(loadedProject);
         }
+      } else {
+        setProject(null);
       }
 
-      /*
-       * ==========================================
-       * PAYOUT
-       * ==========================================
-       */
+      /* ---------------------------------------------------
+         PAYOUT
+      --------------------------------------------------- */
 
       if (loadedProject?.id) {
         const {
@@ -216,22 +255,21 @@ export default function ContractDetailsPage() {
             "Payout loading error:",
             payoutError
           );
+
+          setPayout(null);
         } else {
           setPayout(
-            (payoutData as Payout) || null
+            (payoutData as Payout) ||
+              null
           );
         }
+      } else {
+        setPayout(null);
       }
 
-      /*
-       * ==========================================
-       * ATTACHED WORK FILES
-       *
-       * IMPORTANT:
-       * The real table used by the delivery
-       * page is contract_deliveries.
-       * ==========================================
-       */
+      /* ---------------------------------------------------
+         WORK FILES
+      --------------------------------------------------- */
 
       const {
         data: deliveryData,
@@ -251,22 +289,21 @@ export default function ContractDetailsPage() {
 
       if (deliveryError) {
         console.error(
-          "Contract delivery loading error:",
+          "Delivery loading error:",
           deliveryError
         );
 
         setDeliveries([]);
       } else {
         setDeliveries(
-          (deliveryData as Delivery[]) || []
+          (deliveryData as Delivery[]) ||
+            []
         );
       }
 
-      /*
-       * ==========================================
-       * ACTIVITY
-       * ==========================================
-       */
+      /* ---------------------------------------------------
+         CONTRACT ACTIVITY
+      --------------------------------------------------- */
 
       const {
         data: activityData,
@@ -288,7 +325,8 @@ export default function ContractDetailsPage() {
         setActivities([]);
       } else {
         setActivities(
-          (activityData as Activity[]) || []
+          (activityData as Activity[]) ||
+            []
         );
       }
     } catch (error) {
@@ -305,44 +343,28 @@ export default function ContractDetailsPage() {
     }
   };
 
-  /*
-   * ==========================================
-   * USER ROLE
-   * ==========================================
-   */
+  /* =======================================================
+     PAGE STATE
+  ======================================================= */
 
   const isFreelancer =
     !!contract?.freelancer_id &&
-    currentUserId === contract.freelancer_id;
+    currentUserId ===
+      contract.freelancer_id;
 
   const isClient =
     !!contract?.client_id &&
-    currentUserId === contract.client_id;
-
-  /*
-   * ==========================================
-   * DIRECT HIRE
-   * ==========================================
-   */
+    currentUserId ===
+      contract.client_id;
 
   const isDirectHire =
-    payout?.payment_type === "direct_hire";
-
-  /*
-   * ==========================================
-   * PAYMENT
-   * ==========================================
-   */
+    payout?.payment_type ===
+    "direct_hire";
 
   const isFunded =
-    project?.payment_status === "paid" &&
+    project?.payment_status ===
+      "paid" &&
     !!project?.paid_at;
-
-  /*
-   * ==========================================
-   * PROJECT STATUS
-   * ==========================================
-   */
 
   const isProjectActive =
     project?.status === "active";
@@ -353,53 +375,280 @@ export default function ContractDetailsPage() {
   const isContractCompleted =
     contract?.status === "completed";
 
-  /*
-   * ==========================================
-   * FILE ATTACHMENT CHECK
-   *
-   * At least one REAL file URL must exist.
-   * ==========================================
-   */
+  /* =======================================================
+     FILE ATTACHMENT CHECK
+  ======================================================= */
 
   const attachedFiles =
     deliveries.filter(
       (delivery) =>
-        typeof delivery.file_url === "string" &&
-        delivery.file_url.trim().length > 0
+        typeof delivery.file_url ===
+          "string" &&
+        delivery.file_url.trim().length >
+          0
     );
 
   const hasAttachedFiles =
     attachedFiles.length > 0;
 
-  /*
-   * ==========================================
-   * MARK AS COMPLETE RULE
-   *
-   * The freelancer cannot complete the work
-   * until a file has actually been attached.
-   * ==========================================
-   */
+  /* =======================================================
+     MARK AS COMPLETE RULE
+  ======================================================= */
 
   const canMarkComplete =
     isFreelancer &&
-    contract?.status === "accepted" &&
+    contract?.status ===
+      "accepted" &&
     isFunded &&
     isProjectActive &&
     hasAttachedFiles;
 
-  /*
-   * Reviews should only appear after the
-   * work/project has been completed.
-   * ==========================================
-   */
+  /* =======================================================
+     REVIEW RULE
+  ======================================================= */
 
   const canLeaveReview =
     isProjectCompleted ||
     isContractCompleted;
 
+  /* =======================================================
+     MARK WORK AS COMPLETE
+  ======================================================= */
+
+  const markAsComplete = async () => {
+    if (!contract) {
+      setCompletionMessage(
+        "Contract could not be found."
+      );
+      return;
+    }
+
+    if (!project) {
+      setCompletionMessage(
+        "Project could not be found."
+      );
+      return;
+    }
+
+    if (
+      !currentUserId ||
+      currentUserId !==
+        contract.freelancer_id
+    ) {
+      setCompletionMessage(
+        "Only the assigned freelancer can mark this work as complete."
+      );
+      return;
+    }
+
+    if (!hasAttachedFiles) {
+      setCompletionMessage(
+        "Please attach at least one work file before completing the project."
+      );
+      return;
+    }
+
+    if (!isFunded) {
+      setCompletionMessage(
+        "The project cannot be completed because payment has not been confirmed."
+      );
+      return;
+    }
+
+    if (
+      contract.status !== "accepted" ||
+      project.status !== "active"
+    ) {
+      setCompletionMessage(
+        "This contract is not currently available for completion."
+      );
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        "Mark this work as complete? Make sure all required work files have been attached."
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setCompleting(true);
+      setCompletionMessage("");
+
+      /* ---------------------------------------------------
+         STEP 1
+         PROJECT: active -> completed
+
+         IMPORTANT:
+         payment_status remains paid.
+         paid_at remains unchanged.
+      --------------------------------------------------- */
+
+      const {
+        data: updatedProject,
+        error: projectError,
+      } = await supabase
+        .from("projects")
+        .update({
+          status: "completed",
+        })
+        .eq("id", project.id)
+        .eq(
+          "freelancer_id",
+          currentUserId
+        )
+        .eq("status", "active")
+        .select("id")
+        .maybeSingle();
+
+      if (projectError) {
+        console.error(
+          "Project completion error:",
+          projectError
+        );
+
+        setCompletionMessage(
+          `Unable to complete project: ${projectError.message}`
+        );
+
+        return;
+      }
+
+      if (!updatedProject) {
+        setCompletionMessage(
+          "The project was not updated. Please refresh the page and try again."
+        );
+
+        return;
+      }
+
+      /* ---------------------------------------------------
+         STEP 2
+         CONTRACT: accepted -> completed
+      --------------------------------------------------- */
+
+      const {
+        data: updatedContract,
+        error: contractError,
+      } = await supabase
+        .from("contracts")
+        .update({
+          status: "completed",
+        })
+        .eq("id", contract.id)
+        .eq(
+          "freelancer_id",
+          currentUserId
+        )
+        .eq("status", "accepted")
+        .select("id")
+        .maybeSingle();
+
+      if (
+        contractError ||
+        !updatedContract
+      ) {
+        console.error(
+          "Contract completion error:",
+          contractError
+        );
+
+        /*
+         * Roll the project back to active
+         * if the contract could not be
+         * completed.
+         */
+        const {
+          error: rollbackError,
+        } = await supabase
+          .from("projects")
+          .update({
+            status: "active",
+          })
+          .eq("id", project.id)
+          .eq("status", "completed");
+
+        if (rollbackError) {
+          console.error(
+            "Project rollback error:",
+            rollbackError
+          );
+        }
+
+        setCompletionMessage(
+          contractError
+            ? `Unable to complete contract: ${contractError.message}`
+            : "The contract was not updated."
+        );
+
+        return;
+      }
+
+      /* ---------------------------------------------------
+         STEP 3
+         CONTRACT ACTIVITY
+      --------------------------------------------------- */
+
+      const {
+        error: activityError,
+      } = await supabase
+        .from("contract_activity")
+        .insert({
+          contract_id: contract.id,
+          action:
+            "Freelancer marked the work as completed",
+        });
+
+      if (activityError) {
+        console.error(
+          "Completion activity error:",
+          activityError
+        );
+      }
+
+      /*
+       * DO NOT CHANGE PAYOUT HERE.
+       *
+       * freelancer_payouts.status
+       * remains "held".
+       *
+       * Completing the work does not mean
+       * the freelancer has been paid out.
+       */
+
+      setCompletionMessage(
+        "Work marked as complete successfully."
+      );
+
+      await loadContract();
+    } catch (error) {
+      console.error(
+        "Completion error:",
+        error
+      );
+
+      setCompletionMessage(
+        "Something went wrong while completing the project."
+      );
+    } finally {
+      setCompleting(false);
+    }
+  };
+
+  /* =======================================================
+     LOADING
+  ======================================================= */
+
   if (loading) {
     return <LoadingSkeleton />;
   }
+
+  /* =======================================================
+     CONTRACT NOT FOUND
+  ======================================================= */
 
   if (!contract) {
     return (
@@ -416,9 +665,17 @@ export default function ContractDetailsPage() {
     );
   }
 
+  /* =======================================================
+     PAGE
+  ======================================================= */
+
   return (
     <main className="contract-details-page">
       <section className="dark-card contract-details-card">
+
+        {/* =================================================
+            HEADER
+        ================================================= */}
 
         <p className="dashboard-badge">
           Contract Details
@@ -432,16 +689,18 @@ export default function ContractDetailsPage() {
 
           <span
             className={`contract-status ${
-              contract.status || "pending"
+              contract.status ||
+              "pending"
             }`}
           >
-            {contract.status || "pending"}
+            {contract.status ||
+              "pending"}
           </span>
         </div>
 
-        {/* =====================================
+        {/* =================================================
             CONTRACT INFORMATION
-        ====================================== */}
+        ================================================= */}
 
         <div className="contract-info-grid">
 
@@ -452,7 +711,9 @@ export default function ContractDetailsPage() {
               ZAR{" "}
               {Number(
                 contract.budget || 0
-              ).toLocaleString("en-ZA")}
+              ).toLocaleString(
+                "en-ZA"
+              )}
             </p>
           </div>
 
@@ -462,7 +723,8 @@ export default function ContractDetailsPage() {
             </h3>
 
             <p>
-              {contract.status || "pending"}
+              {contract.status ||
+                "pending"}
             </p>
           </div>
 
@@ -472,7 +734,8 @@ export default function ContractDetailsPage() {
             </h3>
 
             <p>
-              {project?.status || "pending"}
+              {project?.status ||
+                "N/A"}
             </p>
           </div>
 
@@ -482,7 +745,7 @@ export default function ContractDetailsPage() {
             <p>
               {isFunded
                 ? "Funded"
-                : "Not funded"}
+                : "Not Funded"}
             </p>
           </div>
 
@@ -502,47 +765,9 @@ export default function ContractDetailsPage() {
 
         </div>
 
-        {/* =====================================
-            FUNDED MESSAGE
-        ====================================== */}
-
-        {isDirectHire && isFunded && (
-          <div
-            style={{
-              marginTop: 22,
-              padding: 18,
-              borderRadius: 14,
-              background:
-                "rgba(34, 197, 94, 0.10)",
-              border:
-                "1px solid rgba(34, 197, 94, 0.25)",
-            }}
-          >
-            <strong
-              style={{
-                display: "block",
-                marginBottom: 6,
-              }}
-            >
-              Payment confirmed
-            </strong>
-
-            <span
-              style={{
-                opacity: 0.75,
-                fontSize: 14,
-              }}
-            >
-              The client has funded this
-              project. You may now complete
-              the agreed work.
-            </span>
-          </div>
-        )}
-
-        {/* =====================================
+        {/* =================================================
             ACTION BUTTONS
-        ====================================== */}
+        ================================================= */}
 
         <div
           style={{
@@ -550,167 +775,231 @@ export default function ContractDetailsPage() {
             display: "flex",
             gap: 12,
             flexWrap: "wrap",
+            alignItems: "center",
           }}
         >
 
-          {/*
-           * STANDARD / MILESTONE CONTRACT
-           */}
+          {/* MILESTONES */}
 
-          {!isDirectHire && (
-            <a
-              href={`/dashboard/contracts/${contract.id}/milestones`}
-              className="primary-action-link"
-            >
-              Open Milestones
-            </a>
-          )}
+          <Link
+            href={`/dashboard/contracts/${contract.id}/milestones`}
+            className="primary-action-link"
+          >
+            Open Milestones
+          </Link>
 
-          {/*
-           * FREELANCER WORK ATTACHMENTS
-           */}
+          {/* ===============================================
+              FREELANCER ATTACHES WORK FILES
+          =============================================== */}
 
           {isFreelancer &&
-            isFunded &&
-            !isProjectCompleted && (
-              <a
+            isDirectHire &&
+            !isContractCompleted && (
+              <Link
                 href={`/dashboard/contracts/${contract.id}/deliveries`}
                 className="primary-action-link"
               >
                 Attach Work Files
-              </a>
+              </Link>
             )}
 
-          {/*
-           * CLIENT VIEWS THE FREELANCER'S
-           * SUBMITTED FILES.
-           */}
+          {/* ===============================================
+              CLIENT VIEWS SUBMITTED FILES
+          =============================================== */}
 
           {isClient &&
             hasAttachedFiles && (
-              <a
+              <Link
                 href={`/dashboard/contracts/${contract.id}/deliveries`}
                 className="primary-action-link"
               >
                 View Submitted Files
-              </a>
+              </Link>
             )}
 
-          {/*
-           * MARK AS COMPLETE
-           *
-           * IMPORTANT:
-           * This button does NOT appear until
-           * a real work file has been attached.
-           */}
+          {/* ===============================================
+              MARK AS COMPLETE
+          =============================================== */}
 
           {canMarkComplete && (
-            <a
-              href="/dashboard/contracts"
+            <button
+              type="button"
+              onClick={
+                markAsComplete
+              }
+              disabled={completing}
               className="primary-action-link"
               style={{
-                background: "#16a34a",
+                background:
+                  "#16a34a",
+                border: "none",
+                cursor: completing
+                  ? "not-allowed"
+                  : "pointer",
+                opacity: completing
+                  ? 0.7
+                  : 1,
               }}
             >
-              Mark as Complete
-            </a>
+              {completing
+                ? "Completing..."
+                : "Mark as Complete"}
+            </button>
           )}
 
+          {/* ===============================================
+              REVIEW
+          =============================================== */}
+
           {canLeaveReview && (
-            <a
+            <Link
               href={`/dashboard/contracts/${contract.id}/review`}
               className="primary-action-link"
             >
               Leave Review
-            </a>
+            </Link>
           )}
 
         </div>
 
-        {/* =====================================
+        {/* =================================================
+            COMPLETION MESSAGE
+        ================================================= */}
+
+        {completionMessage && (
+          <div
+            style={{
+              marginTop: 16,
+              padding: 14,
+              borderRadius: 10,
+              background:
+                "rgba(59, 130, 246, 0.12)",
+              border:
+                "1px solid rgba(59, 130, 246, 0.25)",
+            }}
+          >
+            {completionMessage}
+          </div>
+        )}
+
+        {/* =================================================
             FILE ATTACHMENT STATUS
-        ====================================== */}
+        ================================================= */}
 
         {isFreelancer &&
           isDirectHire &&
-          isFunded &&
-          isProjectActive &&
-          !hasAttachedFiles && (
+          !isContractCompleted && (
             <div
               style={{
                 marginTop: 18,
                 padding: 16,
                 borderRadius: 12,
                 background:
-                  "rgba(245, 158, 11, 0.10)",
+                  hasAttachedFiles
+                    ? "rgba(34, 197, 94, 0.12)"
+                    : "rgba(245, 158, 11, 0.12)",
                 border:
-                  "1px solid rgba(245, 158, 11, 0.25)",
+                  hasAttachedFiles
+                    ? "1px solid rgba(34, 197, 94, 0.30)"
+                    : "1px solid rgba(245, 158, 11, 0.30)",
               }}
             >
-              <strong
-                style={{
-                  display: "block",
-                  marginBottom: 5,
-                }}
-              >
-                Attach work before completion
+              <strong>
+                {hasAttachedFiles
+                  ? "Work files attached"
+                  : "Work file required"}
               </strong>
 
-              <span
+              <p
                 style={{
-                  opacity: 0.75,
-                  fontSize: 14,
+                  marginTop: 6,
+                  marginBottom: 0,
                 }}
               >
-                Attach at least one completed
-                work file before you can mark
-                this project as complete.
-              </span>
+                {hasAttachedFiles
+                  ? `${attachedFiles.length} file${
+                      attachedFiles.length === 1
+                        ? ""
+                        : "s"
+                    } ${
+                      attachedFiles.length === 1
+                        ? "has"
+                        : "have"
+                    } been attached. You may now mark the work as complete.`
+                  : "Attach at least one completed work file before marking this project as complete."}
+              </p>
             </div>
           )}
+
+        {/* =================================================
+            COMPLETED STATUS
+        ================================================= */}
+
+        {isContractCompleted && (
+          <div
+            style={{
+              marginTop: 18,
+              padding: 16,
+              borderRadius: 12,
+              background:
+                "rgba(34, 197, 94, 0.12)",
+              border:
+                "1px solid rgba(34, 197, 94, 0.30)",
+            }}
+          >
+            <strong>
+              Work Completed
+            </strong>
+
+            <p
+              style={{
+                marginTop: 6,
+                marginBottom: 0,
+              }}
+            >
+              This contract has been
+              marked as completed.
+            </p>
+          </div>
+        )}
+
+        {/* =================================================
+            PAYOUT STATUS
+        ================================================= */}
 
         {isFreelancer &&
-          hasAttachedFiles &&
-          isProjectActive && (
+          payout && (
             <div
               style={{
                 marginTop: 18,
                 padding: 16,
                 borderRadius: 12,
                 background:
-                  "rgba(34, 197, 94, 0.10)",
+                  "rgba(59, 130, 246, 0.08)",
                 border:
-                  "1px solid rgba(34, 197, 94, 0.25)",
+                  "1px solid rgba(59, 130, 246, 0.20)",
               }}
             >
-              <strong
-                style={{
-                  display: "block",
-                  marginBottom: 5,
-                }}
-              >
-                Work files attached
+              <strong>
+                Payment Status
               </strong>
 
-              <span
+              <p
                 style={{
-                  opacity: 0.75,
-                  fontSize: 14,
+                  marginTop: 6,
+                  marginBottom: 0,
                 }}
               >
-                {attachedFiles.length}{" "}
-                {attachedFiles.length === 1
-                  ? "file has"
-                  : "files have"}{" "}
-                been attached. You may now
-                mark the work as complete.
-              </span>
+                Freelancer payout:{" "}
+                {payout.status ||
+                  "held"}
+              </p>
             </div>
           )}
 
-        {/* =====================================
+        {/* =================================================
             PROJECT DESCRIPTION
-        ====================================== */}
+        ================================================= */}
 
         <div className="contract-description-box">
           <h2>
@@ -723,9 +1012,9 @@ export default function ContractDetailsPage() {
           </p>
         </div>
 
-        {/* =====================================
+        {/* =================================================
             ACTIVITY TIMELINE
-        ====================================== */}
+        ================================================= */}
 
         <div className="contract-timeline">
           <h2>
@@ -733,7 +1022,9 @@ export default function ContractDetailsPage() {
           </h2>
 
           {activities.length === 0 ? (
-            <p>No activity yet.</p>
+            <p>
+              No activity yet.
+            </p>
           ) : (
             <div className="timeline-list">
               {activities.map(

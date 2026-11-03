@@ -11653,3 +11653,38 @@ span:last-child {
     order: 2;
   }
 }
+/* Client contract action buttons */
+.contract-actions {
+  align-items: flex-start;
+}
+
+.contract-actions > a {
+  align-self: flex-start;
+  height: auto;
+  min-height: 0;
+  width: auto;
+  padding: 12px 18px;
+  text-align: center;
+}
+/* Keep contract actions neatly aligned */
+.contract-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* Give the approval panel enough horizontal space */
+.contract-actions > :not(a) {
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Prevent approval text from becoming a tall column */
+.contract-actions > :not(a) * {
+  overflow-wrap: normal;
+  word-break: normal;
+}

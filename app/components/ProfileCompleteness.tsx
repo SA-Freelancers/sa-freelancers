@@ -151,11 +151,11 @@ export default function ProfileCompleteness() {
 
         {percentage < 100 && (
           <Link
-            href="/dashboard/freelancer/profile"
-            className="primary-action-link"
-          >
-            Complete Profile
-          </Link>
+  href="/dashboard/profile"
+  className="primary-action-link"
+>
+  Complete Profile
+</Link>
         )}
       </div>
 

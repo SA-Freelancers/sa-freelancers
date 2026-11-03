@@ -15,7 +15,8 @@ export const runtime = "nodejs";
 
 type NextPayoutStatus =
   | "processing"
-  | "paid_out";
+  | "paid_out"
+  | "failed";
 
 export async function POST(
   request: NextRequest
@@ -200,6 +201,7 @@ export async function POST(
       status?: NextPayoutStatus;
       payoutReference?: string;
       payoutNotes?: string;
+      failureReason?: string;
     };
 
     try {
@@ -231,6 +233,11 @@ export async function POST(
         body.payoutReference || ""
       ).trim();
 
+    const failureReason =
+      typeof body.failureReason === "string"
+        ? body.failureReason.trim()
+        : "";
+
     const payoutNotes =
       String(
         body.payoutNotes || ""
@@ -253,7 +260,9 @@ export async function POST(
       nextStatus !==
         "processing" &&
       nextStatus !==
-        "paid_out"
+        "paid_out" &&
+      nextStatus !==
+        "failed"
     ) {
       return NextResponse.json(
         {
@@ -317,6 +326,13 @@ export async function POST(
         {
           status: 400,
         }
+      );
+    }
+
+    if (nextStatus === "failed" && (failureReason.length < 10 || failureReason.length > 1000)) {
+      return NextResponse.json(
+        { success: false, error: "Provide a failure reason between 10 and 1000 characters." },
+        { status: 400 }
       );
     }
 
@@ -534,6 +550,13 @@ export async function POST(
       );
     }
 
+    if (nextStatus === "failed" && payout.status !== "processing") {
+      return NextResponse.json(
+        { success: false, error: "Only processing payouts can be marked as failed." },
+        { status: 409 }
+      );
+    }
+
     const now =
       new Date().toISOString();
 
@@ -565,6 +588,10 @@ export async function POST(
 
       payout_notes?:
         string | null;
+
+      payout_failed_at?: string;
+      payout_failed_by?: string;
+      payout_failure_reason?: string;
     } = {
       status:
         nextStatus,
@@ -617,6 +644,12 @@ export async function POST(
         payoutNotes || null;
     }
 
+    if (nextStatus === "failed") {
+      updateData.payout_failed_at = now;
+      updateData.payout_failed_by = adminUser.id;
+      updateData.payout_failure_reason = failureReason;
+    }
+
     // --------------------------------------------------
     // UPDATE PAYOUT
     //
@@ -657,6 +690,9 @@ export async function POST(
         payout_notes,
         paid_out_at,
         paid_out_by,
+        payout_failed_at,
+        payout_failed_by,
+        payout_failure_reason,
         updated_at
         `
       )
@@ -700,21 +736,12 @@ export async function POST(
     if (
       payout.contract_id
     ) {
-      const activity =
-        nextStatus ===
-        "processing"
-          ? `Freelancer payout of ZAR ${Number(
-              payout.freelancer_amount ||
-                0
-            ).toFixed(
-              2
-            )} moved to processing`
-          : `Freelancer payout of ZAR ${Number(
-              payout.freelancer_amount ||
-                0
-            ).toFixed(
-              2
-            )} marked as paid out with reference ${payoutReference}`;
+       const amount = Number(payout.freelancer_amount || 0).toFixed(2);
+       const activity = nextStatus === "processing"
+         ? `Freelancer payout of ZAR ${amount} moved to processing`
+         : nextStatus === "failed"
+           ? `Freelancer payout of ZAR ${amount} marked as failed. Reason: ${failureReason}`
+           : `Freelancer payout of ZAR ${amount} marked as paid out with reference ${payoutReference}`;
 
       const {
         error: activityError,
@@ -744,27 +771,15 @@ export async function POST(
     // NOTIFY FREELANCER
     // --------------------------------------------------
 
-    const notificationTitle =
-      nextStatus ===
-      "processing"
-        ? "Payout Processing"
-        : "Payout Sent";
+     const notificationTitle = nextStatus === "processing"
+       ? "Payout Processing"
+       : nextStatus === "failed" ? "Payout Issue" : "Payout Sent";
 
-    const notificationBody =
-      nextStatus ===
-      "processing"
-        ? `Your payout of ZAR ${Number(
-            payout.freelancer_amount ||
-              0
-          ).toFixed(
-            2
-          )} is being processed.`
-        : `Your payout of ZAR ${Number(
-            payout.freelancer_amount ||
-              0
-          ).toFixed(
-            2
-          )} has been sent. Payment reference: ${payoutReference}.`;
+     const notificationBody = nextStatus === "processing"
+       ? `Your payout of ZAR ${Number(payout.freelancer_amount || 0).toFixed(2)} is being processed.`
+       : nextStatus === "failed"
+         ? `Your payout of ZAR ${Number(payout.freelancer_amount || 0).toFixed(2)} could not be completed. Our team will review the issue before any further attempt.`
+         : `Your payout of ZAR ${Number(payout.freelancer_amount || 0).toFixed(2)} has been sent. Payment reference: ${payoutReference}.`;
 
     const {
       error:
