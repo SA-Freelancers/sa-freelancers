@@ -10,7 +10,7 @@ import Link from "next/link";
 import {
   supabase,
 } from "@/app/lib/supabase";
-
+import { calculateProfileCompleteness } from "@/app/lib/profileCompleteness";
 import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 
 type Stats = {

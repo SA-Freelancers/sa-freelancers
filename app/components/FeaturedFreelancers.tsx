@@ -465,7 +465,7 @@ export default function FeaturedFreelancers() {
                   result.checks.headline &&
                   result.checks.bio &&
                   result.checks.category &&
-                  result.checks.location &&
+                  Boolean(freelancer.location?.trim()) &&
                   result.checks.experience &&
                   result.checks.hourlyRate &&
                   result.checks.skills &&

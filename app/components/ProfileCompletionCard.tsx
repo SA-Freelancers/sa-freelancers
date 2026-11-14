@@ -1,4 +1,7 @@
+
 "use client";
+
+import { calculateProfileCompleteness } from "@/app/lib/profileCompleteness";
 
 type Props = {
   fullName?: string;
@@ -25,64 +28,38 @@ export default function ProfileCompletionCard({
   hourlyRate,
   yearsExperience,
 }: Props) {
-  const profileChecks = [
-    {
-      label: "Full Name",
-      complete: !!fullName?.trim(),
-    },
-    {
-      label: "Professional Headline",
-      complete: !!headline?.trim(),
-    },
-    {
-      label: "Professional Bio",
-      complete: !!bio?.trim(),
-    },
-    {
-      label: "Category",
-      complete: !!category?.trim(),
-    },
-    {
-      label: "Profile Picture",
-      complete: !!avatarUrl?.trim(),
-    },
-    {
-      label: "CV",
-      complete: !!cvUrl?.trim(),
-    },
-    {
-      label: "Portfolio",
-      complete: !!portfolioUrl?.trim(),
-    },
-    {
-      label: "Skills",
-      complete: Array.isArray(skills) && skills.length > 0,
-    },
-    {
-      label: "Hourly Rate",
-      complete:
-        typeof hourlyRate === "number" &&
-        Number.isFinite(hourlyRate) &&
-        hourlyRate > 0,
-    },
-    {
-      label: "Years of Experience",
-      complete:
-        typeof yearsExperience === "number" &&
-        Number.isFinite(yearsExperience) &&
-        yearsExperience >= 0,
-    },
-  ];
+  const result = calculateProfileCompleteness({
+    full_name: fullName,
+    headline,
+    bio,
+    category,
+    avatar_url: avatarUrl,
+    cv_url: cvUrl,
+    portfolio_url: portfolioUrl,
+    skills,
+    hourly_rate: hourlyRate,
+    years_experience: yearsExperience,
+  });
 
-  const completed = profileChecks.filter((item) => item.complete).length;
+  const percentage = result.percentage;
+  const completed = Object.values(result.checks).filter(Boolean).length;
 
-  const percentage = Math.round(
-    (completed / profileChecks.length) * 100
-  );
+  const labels: Record<string, string> = {
+    fullName: "Full Name",
+    headline: "Professional Headline",
+    bio: "Professional Bio",
+    category: "Category",
+    photo: "Profile Picture",
+    cv: "CV",
+    portfolio: "Portfolio",
+    skills: "Skills",
+    hourlyRate: "Hourly Rate",
+    experience: "Years of Experience",
+  };
 
-  const missingItems = profileChecks.filter(
-    (item) => !item.complete
-  );
+  const missingItems = result.missing.map((field) => ({
+    label: labels[field] ?? field,
+  }));
 
   return (
     <section
@@ -107,7 +84,7 @@ export default function ProfileCompletionCard({
           </h2>
 
           <p style={{ margin: 0, opacity: 0.8 }}>
-            {completed} of {profileChecks.length} profile requirements completed
+            {completed} of 10 profile requirements completed
           </p>
         </div>
 
