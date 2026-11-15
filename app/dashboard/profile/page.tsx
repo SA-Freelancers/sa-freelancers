@@ -95,6 +95,9 @@ export default function ProfilePage() {
   const [profile, setProfile] =
     useState<Profile | null>(null);
 
+  const [portfolioProjectExists, setPortfolioProjectExists] =
+    useState(false);
+
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("");
   const [bio, setBio] = useState("");
@@ -177,6 +180,31 @@ export default function ProfilePage() {
         data as Profile;
 
       setProfile(loadedProfile);
+
+      // Check whether this freelancer has at least one saved portfolio project.
+      // Portfolio projects are linked to the account through freelancer_id.
+      if (loadedProfile.role === "freelancer") {
+        const { data: portfolioProjects, error: portfolioError } =
+          await supabase
+            .from("portfolio_projects")
+            .select("id")
+            .eq("freelancer_id", user.id)
+            .limit(1);
+
+        if (portfolioError) {
+          console.error(
+            "Portfolio project loading error:",
+            portfolioError
+          );
+          setPortfolioProjectExists(false);
+        } else {
+          setPortfolioProjectExists(
+            (portfolioProjects?.length ?? 0) > 0
+          );
+        }
+      } else {
+        setPortfolioProjectExists(false);
+      }
 
       setFullName(
         loadedProfile.full_name || ""
@@ -775,6 +803,7 @@ export default function ProfilePage() {
             profile?.portfolio_url ||
             undefined
           }
+          portfolioProjectExists={portfolioProjectExists}
           skills={
             profileSkills
           }

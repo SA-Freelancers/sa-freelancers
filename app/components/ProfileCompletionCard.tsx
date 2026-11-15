@@ -1,4 +1,3 @@
-
 "use client";
 
 import { calculateProfileCompleteness } from "@/app/lib/profileCompleteness";
@@ -11,7 +10,8 @@ type Props = {
   avatarUrl?: string;
   cvUrl?: string;
   portfolioUrl?: string;
-  skills?: string[];
+  portfolioProjectExists?: boolean;
+  skills?: unknown;
   hourlyRate?: number;
   yearsExperience?: number;
 };
@@ -24,6 +24,7 @@ export default function ProfileCompletionCard({
   avatarUrl,
   cvUrl,
   portfolioUrl,
+  portfolioProjectExists = false,
   skills,
   hourlyRate,
   yearsExperience,
@@ -36,13 +37,14 @@ export default function ProfileCompletionCard({
     avatar_url: avatarUrl,
     cv_url: cvUrl,
     portfolio_url: portfolioUrl,
+    portfolio_project_exists: portfolioProjectExists,
     skills,
     hourly_rate: hourlyRate,
     years_experience: yearsExperience,
   });
 
-  const percentage = result.percentage;
-  const completed = Object.values(result.checks).filter(Boolean).length;
+  const { percentage, checks, missing } = result;
+  const completed = Object.values(checks).filter(Boolean).length;
 
   const labels: Record<string, string> = {
     fullName: "Full Name",
@@ -51,15 +53,11 @@ export default function ProfileCompletionCard({
     category: "Category",
     photo: "Profile Picture",
     cv: "CV",
-    portfolio: "Portfolio",
+    portfolio: "Portfolio or Portfolio Project",
     skills: "Skills",
     hourlyRate: "Hourly Rate",
     experience: "Years of Experience",
   };
-
-  const missingItems = result.missing.map((field) => ({
-    label: labels[field] ?? field,
-  }));
 
   return (
     <section
@@ -79,10 +77,7 @@ export default function ProfileCompletionCard({
         }}
       >
         <div>
-          <h2 style={{ marginBottom: 6 }}>
-            Profile Completion
-          </h2>
-
+          <h2 style={{ marginBottom: 6 }}>Profile Completion</h2>
           <p style={{ margin: 0, opacity: 0.8 }}>
             {completed} of 10 profile requirements completed
           </p>
@@ -131,13 +126,7 @@ export default function ProfileCompletionCard({
           <strong style={{ color: "#22c55e" }}>
             ✓ Your freelancer profile is complete.
           </strong>
-
-          <p
-            style={{
-              margin: "6px 0 0",
-              opacity: 0.8,
-            }}
-          >
+          <p style={{ margin: "6px 0 0", opacity: 0.8 }}>
             Your profile has all the main information clients need when
             reviewing freelancers.
           </p>
@@ -148,15 +137,10 @@ export default function ProfileCompletionCard({
             Complete the following to reach 100%:
           </p>
 
-          <div
-            style={{
-              display: "grid",
-              gap: 8,
-            }}
-          >
-            {missingItems.map((item) => (
+          <div style={{ display: "grid", gap: 8 }}>
+            {missing.map((field) => (
               <div
-                key={item.label}
+                key={field}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -167,16 +151,8 @@ export default function ProfileCompletionCard({
                   border: "1px solid rgba(245,158,11,.18)",
                 }}
               >
-                <span
-                  style={{
-                    color: "#f59e0b",
-                    fontWeight: 800,
-                  }}
-                >
-                  !
-                </span>
-
-                <span>{item.label}</span>
+                <span style={{ color: "#f59e0b", fontWeight: 800 }}>!</span>
+                <span>{labels[field] ?? field}</span>
               </div>
             ))}
           </div>
